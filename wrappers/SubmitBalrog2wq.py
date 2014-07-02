@@ -191,7 +191,7 @@ if __name__ == "__main__":
         #config['tileindexstart'] = i * config['ntot']
         #config['seed'] = int(datetime.datetime.now().microsecond) + i
         #config['seed'] = i
-        config['tileindex'] = i * config['ntot']
+        config['tileindex'] = i
         config['tile'] = tiles[i]
         run, dir = GetRun(tiles[i], alltiles, allruns, alldirs)
         config['imagedir'] = dir
