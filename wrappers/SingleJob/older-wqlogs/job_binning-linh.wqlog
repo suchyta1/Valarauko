@@ -1,0 +1,5 @@
+executing on host: astro0006 with pid: 8414
+tcgetattr: Inappropriate ioctl for device
+Connection to astro0006 closed.
+mpirun -np 2 -npernode 1 -hostfile %hostfile% ./RunJob.py
+

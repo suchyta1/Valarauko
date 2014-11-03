@@ -1,0 +1,6 @@
+command: |
+   mpirun -np 2 -npernode 1 -hostfile %hostfile% ./RunJob.py bin_logt2 0.1 log
+
+mode: bynode
+N: 2
+hostfile: auto
