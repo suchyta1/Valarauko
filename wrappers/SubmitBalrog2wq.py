@@ -35,7 +35,7 @@ class QueueThread(threading.Thread):
 
 
 def Config2wq(config, index, mincores):
-    req = 'mode:bynode; N:1; min_cores:%i; job_name:balrog%i' %(mincores, index)
+    req = 'mode:bynode; N:1; min_cores:%i; job_name:balrog%i; group:[new,new2,new3]' %(mincores, index)
     cmd = './WrapBalrogOnNode.py'
     for key in config:
         if type(config[key])==bool:
@@ -94,12 +94,14 @@ if __name__ == "__main__":
     filetype = 'coadd_image'
     runkey = 'coadd_run'
 
-    maxnodes = 20
-    mincores = 12
-    #bands = ['g', 'r', 'i', 'z', 'Y']
-    bands = ['r', 'i']
+    maxnodes = 25
+    mincores = 8
+    bands = ['g', 'r', 'i', 'z', 'Y']
+    tiles = TileLists.suchyta13
+
+    #bands = ['r', 'i']
     #tiles = TileLists.suchyta13[0:1]
-    tiles = [TileLists.suchyta13[0], TileLists.suchyta13[12]]
+    #tiles = [TileLists.suchyta13[0], TileLists.suchyta13[12]]
 
     config = {
         #'pyconfig': os.path.join(os.environ['BALROG_PYCONFIG'], 'default.py'),
@@ -109,17 +111,16 @@ if __name__ == "__main__":
         #'ntot': 1000, 
 
         'pyconfig': os.path.join(os.environ['BALROG_PYCONFIG'], 'r50_r90.py'),
-        'label': 'nomag_1n',
+        'label': 'mag_1e2_1n',
         'outdir': os.environ['BALROG_DEFAULT_OUT'],
 
         'compressed': True,
         'clean': True,
         'fullclean': True,
 
-        #'ntot': 300000, 
-        'ntot': 10000, 
+        'ntot': 300000, 
         'ngal': 1000,
-        'kappa': 0.0,
+        'kappa': 0.01,
 
         'presex': True,
         'sexnnw': os.path.join(os.environ['DESDM_CONFIG_SVA1'], 'sex.nnw'),
@@ -166,9 +167,6 @@ if __name__ == "__main__":
     create_config['presex'] = True
     index = 0
     for i in range(len(tiles[:1])):
-        #create_config['tileindexstart'] = i * create_config['ntot']
-        #create_config['seed'] = int(datetime.datetime.now().microsecond) + i
-        #create_config['seed'] = i
         create_config['tileindex'] = i
         create_config['tile'] = tiles[i]
         run, dir = GetRun(tiles[i], alltiles, allruns, alldirs)
@@ -188,9 +186,6 @@ if __name__ == "__main__":
     queue = Queue.Queue(queue_length)
     index = 0
     for i in range(len(tiles)):
-        #config['tileindexstart'] = i * config['ntot']
-        #config['seed'] = int(datetime.datetime.now().microsecond) + i
-        #config['seed'] = i
         config['tileindex'] = i
         config['tile'] = tiles[i]
         run, dir = GetRun(tiles[i], alltiles, allruns, alldirs)
