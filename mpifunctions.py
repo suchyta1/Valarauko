@@ -25,6 +25,18 @@ def gather(arr):
             arr = itertools.chain.from_iterable(itertools.chain.from_iterable(arr))
             arr = np.fromiter(arr, dtype=np.float)
             arr = np.reshape(arr, (arr.shape[0]/vlen, vlen))
+
+        '''
+        vlen = None
+        if arr[0].ndim > 1:
+            vlen = arr[0].shape[-1]
+        for i in range(arr[0].ndim):
+            arr = itertools.chain.from_iterable(arr)
+        arr = np.fromiter(arr, dtype=np.float)
+        if vlen!=None:
+            arr = np.reshape(arr, (arr.shape[0]/vlen, vlen))
+        '''
+
     return arr
 
 

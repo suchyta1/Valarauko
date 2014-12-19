@@ -7,12 +7,12 @@ class RunConfigurations:
         default = {
             'outdir': os.environ['BALROG_MPI_DEFAULT_OUT'],
             'compressed': True,
-            'clean': True,
             'fullclean': True,
-            'presex': True,
             'tiletotal': 300000, 
             'label': 'debug',
-            'bands': ['g','r','i','z','Y']
+            'bands': ['g','r','i','z','Y'],
+            'dualdetection': True,
+            'doDES': True
         }
 
 
@@ -20,6 +20,7 @@ class RunConfigurations:
 class BalrogConfigurations:
 
         default = {
+            'clean': True,
             'ngal': 1000,
             'pyconfig': os.path.join(os.environ['BALROG_PYCONFIG'], 'mag_desdm.py'),
             'magnification': 0.0, 
@@ -45,11 +46,11 @@ class desdbInfo:
 class DBInfo:
 
     default = {
-        'db_host' = 'leovip148.ncsa.uiuc.edu'
-        'protocol' = 'TCP'
-        'port' = '1521'
-        'server' = 'dedicated'
-        'service_name' = 'dessci'
+        'db_host' : 'leovip148.ncsa.uiuc.edu',
+        'protocol' : 'TCP',
+        'port' : '1521',
+        'server' : 'dedicated',
+        'service_name' : 'dessci',
     }
 
 

@@ -15,7 +15,6 @@ import astropy.io.fits as pyfits
 import desdb
 import numpy as np
 import numpy.lib.recfunctions as recfunctions
-from simple_utils import *
 
 
 
@@ -91,7 +90,6 @@ def TweakTable(file, ext, assoc=False, extras=[], index_key='balrog_index', crea
 
 def get_sqlldr_connection_info(db_specs):
     cur = desdb.connect()
-    user, password = retrieve_login(db_specs.db_host)
     return '%s/%s@"(DESCRIPTION=(ADDRESS=(PROTOCOL=%s)(HOST=%s)(PORT=%s))(CONNECT_DATA=(SERVER=%s)(SERVICE_NAME=%s)))"' %(cur.username,cur.password,db_specs['protocol'],db_specs['db_host'],db_specs['port'],db_specs['server'],db_specs['service_name']) 
 
 
