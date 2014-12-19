@@ -8,7 +8,8 @@ class RunConfigurations:
             'outdir': os.environ['BALROG_MPI_DEFAULT_OUT'],
             'compressed': True,
             'fullclean': True,
-            'tiletotal': 300000, 
+            #'tiletotal': 300000, 
+            'tiletotal': 36, 
             'label': 'debug',
             'bands': ['g','r','i','z','Y'],
             'dualdetection': True,
@@ -21,16 +22,17 @@ class BalrogConfigurations:
 
         default = {
             'clean': True,
-            'ngal': 1000,
-            'pyconfig': os.path.join(os.environ['BALROG_PYCONFIG'], 'mag_desdm.py'),
+            #'ngal': 1000,
+            'ngal': 2,
+            'pyconfig': os.path.join(os.environ['BALROG_MPI_PYCONFIG'], 'default.py'),
             'magnification': 0.0, 
 
             'fitstype': 'ldac',
-            'sexnnw': os.path.join(os.environ['DESDM_CONFIG_SVA1'], 'sex.nnw'),
-            'sexconv': os.path.join(os.environ['DESDM_CONFIG_SVA1'], 'sex.conv'),
+            'sexnnw': os.path.join(os.environ['BALROG_MPI_ASTRO_CONFIG'], 'sva1', 'sex.nnw'),
+            'sexconv': os.path.join(os.environ['BALROG_MPI_ASTRO_CONFIG'], 'sva1', 'sex.conv'),
+            'sexparam': os.path.join(os.environ['BALROG_MPI_ASTRO_CONFIG'], 'sva1', 'sex.param_diskonly'),
+            'sexconfig': os.path.join(os.environ['BALROG_MPI_ASTRO_CONFIG'], 'sva1', 'sex.config'),
             'sexpath': '/direct/astro+u/esuchyta/svn_repos/sextractor-2.18.10/install/bin/sex',
-            'sexparam': '/direct/astro+u/esuchyta/git_repos/BalrogSetupBNL/DESDM_config/sva1/sex.param_diskonly',
-            'sexconfig': '/direct/astro+u/esuchyta/git_repos/BalrogSetupBNL/DESDM_config/sva1/sex.config'
         }
 
 
