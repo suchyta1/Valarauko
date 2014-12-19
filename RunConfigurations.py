@@ -42,6 +42,16 @@ class desdbInfo:
     }
 
 
+class DBInfo:
+
+    default = {
+        'db_host' = 'leovip148.ncsa.uiuc.edu'
+        'protocol' = 'TCP'
+        'port' = '1521'
+        'server' = 'dedicated'
+        'service_name' = 'dessci'
+    }
+
 
 class TileLists:
 

@@ -13,9 +13,8 @@ import itertools
 from mpi4py import MPI
 import mpifunctions
 
-from simple_utils import *
-from runconfigs import *
-import RunNode
+from RunConfigurations import *
+#import runbalrog
 
 
 
@@ -47,12 +46,16 @@ def GetRun(tile, runinfo):
 
 
 def InitializeTables(config, bands):
+    cur = desdb.connect()
+    #u = cur.quick("select user from dual", array=True)
+    #user = u['user'][0]
+    user = cur.username
+
     band_tables = None
     if MPI.COMM_WORLD.Get_rank()==0:
-        user = retrieve_login(db_specs.db_host)[0]
-        cur = desdb.connect()
         tns = ['truth', 'nosim', 'sim', 'des']
         band_tables = {}
+
         for band in bands:
             ts = []
             for tn in tns:
@@ -316,13 +319,14 @@ def DoBalrog(config, bands, tiles, runinfo, band_tables, tilecoords, wcoords, wm
 
 if __name__ == "__main__":
     bands = ['g', 'r', 'i', 'z', 'Y']
-    SheldonConfig = SheldonInfo.sva1_coadd
+    SheldonConfig = desdb.sva1_coadd
     tiles = TileLists.suchyta13[1:2]
-    #tiles = TileLists.suchyta13
-    #tiles = TileLists.suchyta14
-    config = Configurations.mag_desdm
+    config = Configurations.default
 
     runinfo = GetRunInfo(bands, SheldonConfig)
+    print runinfo
+
+    """
     fileinfo = GetFileInfo(tiles, runinfo)
     tilecoords, wcoords, wmin = GeneratePositions(config, fileinfo, seed=100)
     #tilecoords, wcoords, wmin = GeneratePositions(config, fileinfo, seed=101)
@@ -336,3 +340,4 @@ if __name__ == "__main__":
 
     if MPI.COMM_WORLD.Get_rank()==0:
         SendEmail(config)
+    """
