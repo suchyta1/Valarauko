@@ -217,7 +217,7 @@ def PrepareIterations(tiles, images, psfs, position, config, RunConfig):
 if __name__ == "__main__":
     RunConfig = RunConfigurations.default
     SheldonConfig = desdbInfo.sva1_coadd
-    tiles = TileLists.suchyta13[1:2]
+    tiles = TileLists.suchyta13[1:3]
     config = BalrogConfigurations.default
 
     pos = RandomPositions(RunConfig, config, tiles)
