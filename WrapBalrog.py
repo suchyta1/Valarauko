@@ -227,6 +227,7 @@ if __name__ == "__main__":
         tables = DropTablesIfNeeded(RunConfig, config)
 
 
+    '''
     """This will do the minimal Balrog runs, which only run so the outputs exist to know what needs to write to the DB.
     Use the createonly array to tell you that all you want to do is make the DBs, and you're not doing a real balrog realization.
     Stuff like --ngal 0, --nonosim, and maybe association matching to an empty list
@@ -238,14 +239,15 @@ if __name__ == "__main__":
         sendtiles = sendimages = sendpsfs = sendpos = senditerations = sendcreateonly = None
     sendpos, sendtiles, sendimages, sendpsfs, senditerations, sendcreateonly = mpifunctions.Scatter(sendpos, sendtiles, sendimages, sendpsfs, senditerations, sendcreateonly)
     for i in range(len(senditerations)):
-        print 'sendpos =', sendpos
-        print 'sendtiles[%i] ='%i, sendtiles[i]
-        print 'sendimages[%i] ='%i, sendimages[i]
-        print 'sendpsfs[%i] ='%i, sendpsfs[i]
-        print 'senditerations[%i] ='%i, senditerations[i]
-        print 'sendcreateonly[%i] ='%i, sendcreateonly[i]
-        #RunBalrog( sendpos[i], sendtiles[i], sendimages[i], sendpsfs[i], senditerations[i], sendcreateonly[i] )
-    print '\n'
+        #print 'sendpos =', sendpos
+        #print 'sendtiles[%i] ='%i, sendtiles[i]
+        #print 'sendimages[%i] ='%i, sendimages[i]
+        #print 'sendpsfs[%i] ='%i, sendpsfs[i]
+        #print 'senditerations[%i] ='%i, senditerations[i]
+        #print 'sendcreateonly[%i] ='%i, sendcreateonly[i]
+        runbalrog.NewRunBalrog( sendpos, sendtiles[i], sendimages[i], sendpsfs[i], senditerations[i], sendcreateonly[i], RunConfig)
+    #print '\n'
+    '''
 
 
     """This is all the real Balrog realizations. Everything not passed to RunBalrog should be easily parseable from the config dictionaries, *I think*
@@ -257,14 +259,14 @@ if __name__ == "__main__":
         sendtiles = sendimages = sendpsfs = sendpos = senditerations = sendcreateonly = None
     sendpos, sendtiles, sendimages, sendpsfs, senditerations, sendcreateonly = mpifunctions.Scatter(sendpos, sendtiles, sendimages, sendpsfs, senditerations, sendcreateonly)
     for i in range(len(senditerations)):
-        if MPI.COMM_WORLD.Get_rank()==0:
-            print 'sendpos[%i] ='%i, sendpos[i]
-            print 'sendtiles[%i] ='%i, sendtiles[i]
-            print 'sendimages[%i] ='%i, sendimages[i]
-            print 'sendpsfs[%i] ='%i, sendpsfs[i]
-            print 'senditerations[%i] ='%i, senditerations[i]
-            print 'sendcreateonly[%i] ='%i, sendcreateonly[i]
-        #RunBalrog( sendpos[i], sendtiles[i], sendimages[i], sendpsfs[i], senditerations[i], sendcreateonly[i] )
+        #if MPI.COMM_WORLD.Get_rank()==0:
+        #    print 'sendpos[%i] ='%i, sendpos[i]
+        #    print 'sendtiles[%i] ='%i, sendtiles[i]
+        #    print 'sendimages[%i] ='%i, sendimages[i]
+        #    print 'sendpsfs[%i] ='%i, sendpsfs[i]
+        #    print 'senditerations[%i] ='%i, senditerations[i]
+        #    print 'sendcreateonly[%i] ='%i, sendcreateonly[i]
+        runbalrog.NewRunBalrog( sendpos[i], sendtiles[i], sendimages[i], sendpsfs[i], senditerations[i], sendcreateonly[i], RunConfig)
 
     """
     if MPI.COMM_WORLD.Get_rank()==0:

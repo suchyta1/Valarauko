@@ -246,6 +246,51 @@ class AttrDict(dict):
         self.__dict__ = self
 
 
+def Remove(file):
+    if os.path.lexists(file):
+        os.remove(file)
+
+def Mkdir(dir):
+    if not os.path.lexists(dir):
+        os.makedirs(dir)
+
+
+def DownloadImages(indir, images, psfs):
+    useimages = []
+
+    t1 = datetime.datetime.now()
+    for file in images:
+        infile = os.path.join(indir, os.path.basename(file))
+        Remove(infile)
+        subprocess.call( ['wget', '-q', '--no-check-certificate', file, '-O', infile] )
+        ufile = infile.replace('.fits.fz', '.fits')
+        Remove(ufile) 
+        subprocess.call(['funpack', '-O', ufile, infile])
+        useimages.append(ufile)
+
+    usepsfs = []
+    for psf in psfs:
+        pfile = os.path.join(indir, os.path.basename(psf))
+        Remove(pfile)
+        subprocess.call( ['wget', '-q', '--no-check-certificate', psf, '-O', pfile] )
+        usepsfs.append(pfile)
+
+    t2 = datetime.datetime.now()
+    print (t2-t1).total_seconds()
+
+    return [useimages, usepsfs]
+
+
+def NewRunBalrog(pos, tile, images, psfs, iteration, createonly, RunConfig):
+    workingdir = os.path.join(RunConfig['outdir'], RunConfig['label'], tile,'%i'%(iteration))
+    indir = os.path.join(workingdir, 'input')
+    Mkdir(indir)
+    outdir = os.path.join(workingdir, 'output')
+    Mkdir(outdir)
+
+    images, psfs = DownloadImages(indir, images, psfs)
+
+
 def RunBalrog(common_config, tile_config, band_config):
     opts = copy.copy(common_config)
     for key in tile_config.keys():
