@@ -12,6 +12,7 @@ class RunConfigurations:
             'presex': True,
             'tiletotal': 300000, 
             'label': 'debug',
+            'bands': ['g','r','i','z','Y']
         }
 
 
