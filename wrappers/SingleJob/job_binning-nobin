@@ -1,0 +1,6 @@
+command: |
+   mpirun -np 2 -npernode 1 -hostfile %hostfile% ./RunJob.py nobin2 0 lin
+
+mode: bynode
+N: 2
+hostfile: auto

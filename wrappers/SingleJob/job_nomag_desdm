@@ -1,0 +1,6 @@
+command: |
+   mpirun -np 14 -npernode 1 -hostfile %hostfile% ./RunJob_mag_desdm.py
+
+mode: bynode
+N: 14
+hostfile: auto

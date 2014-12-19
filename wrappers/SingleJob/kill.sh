@@ -1,0 +1,35 @@
+NUM=0001; ssh astro$NUM killall python; ssh astro$NUM killall sex; 
+NUM=0002; ssh astro$NUM killall python; ssh astro$NUM killall sex; 
+NUM=0003; ssh astro$NUM killall python; ssh astro$NUM killall sex; 
+NUM=0004; ssh astro$NUM killall python; ssh astro$NUM killall sex; 
+NUM=0005; ssh astro$NUM killall python; ssh astro$NUM killall sex; 
+NUM=0006; ssh astro$NUM killall python; ssh astro$NUM killall sex; 
+NUM=0007; ssh astro$NUM killall python; ssh astro$NUM killall sex; 
+NUM=0008; ssh astro$NUM killall python; ssh astro$NUM killall sex; 
+NUM=0009; ssh astro$NUM killall python; ssh astro$NUM killall sex; 
+NUM=0010; ssh astro$NUM killall python; ssh astro$NUM killall sex; 
+NUM=0011; ssh astro$NUM killall python; ssh astro$NUM killall sex
+
+NUM=0021; ssh astro$NUM killall python; ssh astro$NUM killall sex
+NUM=0022; ssh astro$NUM killall python; ssh astro$NUM killall sex
+NUM=0023; ssh astro$NUM killall python; ssh astro$NUM killall sex
+NUM=0024; ssh astro$NUM killall python; ssh astro$NUM killall sex
+NUM=0025; ssh astro$NUM killall python; ssh astro$NUM killall sex
+NUM=0026; ssh astro$NUM killall python; ssh astro$NUM killall sex
+NUM=0027; ssh astro$NUM killall python; ssh astro$NUM killall sex
+NUM=0028; ssh astro$NUM killall python; ssh astro$NUM killall sex
+NUM=0029; ssh astro$NUM killall python; ssh astro$NUM killall sex
+NUM=0030; ssh astro$NUM killall python; ssh astro$NUM killall sex
+NUM=0031; ssh astro$NUM killall python; ssh astro$NUM killall sex
+NUM=0032; ssh astro$NUM killall python; ssh astro$NUM killall sex
+
+NUM=0035; ssh astro$NUM killall python; ssh astro$NUM killall sex
+NUM=0036; ssh astro$NUM killall python; ssh astro$NUM killall sex
+NUM=0037; ssh astro$NUM killall python; ssh astro$NUM killall sex
+NUM=0038; ssh astro$NUM killall python; ssh astro$NUM killall sex
+NUM=0039; ssh astro$NUM killall python; ssh astro$NUM killall sex
+NUM=0040; ssh astro$NUM killall python; ssh astro$NUM killall sex
+NUM=0041; ssh astro$NUM killall python; ssh astro$NUM killall sex
+NUM=0042; ssh astro$NUM killall python; ssh astro$NUM killall sex
+NUM=0043; ssh astro$NUM killall python; ssh astro$NUM killall sex
+NUM=0044; ssh astro$NUM killall python; ssh astro$NUM killall sex
