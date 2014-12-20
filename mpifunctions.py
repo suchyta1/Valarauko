@@ -47,6 +47,7 @@ def Scatter(*args):
     else:
         return [scatter(arg) for arg in args]
 
+
 def Broadcast(*args):
     if len(args)==1:
         return broadcast(args[0])

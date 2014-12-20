@@ -8,14 +8,16 @@ class RunConfigurations:
             'outdir': os.environ['BALROG_MPI_DEFAULT_OUT'],
             'fullclean': True,
             #'tiletotal': 300000, 
-            'tiletotal': 36, 
+            'tiletotal': 100, 
             'label': 'debug',
             'bands': ['g','r','i','z','Y'],
             'dualdetection': [1,2,3],
             'doDES': True,
             'balrog': '/astro/u/esuchyta/git_repos/balrog-testing/Balrog/balrog.py',
             'fixposseed': None,
-            'fixwrapseed': None
+            'fixwrapseed': None,
+            'DBload': 'cx_Oracle'
+            #'DBload': 'sqlldr'
         }
 
 
@@ -27,7 +29,7 @@ class BalrogConfigurations:
             #'clean': True,
             'clean': False,
             #'ngal': 1000,
-            'ngal': 2,
+            'ngal': 50,
             'pyconfig': os.path.join(os.environ['BALROG_MPI_PYCONFIG'], 'default.py'),
 
             'catfitstype': 'ldac',

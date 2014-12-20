@@ -63,7 +63,7 @@ def GetFiles(RunConfig, SheldonConfig, tiles):
             kwargs[SheldonConfig['runkey']] = run
             kwargs['tilename'] = tile
 
-            for band in RunConfig['bands']:
+            for band in bands:
                 kwargs['band'] = band
                 image = desdb.files.get_url(**kwargs)
                 image = image.replace('7443','')
@@ -157,7 +157,7 @@ def DropTablesIfNeeded(RunConfig, BalrogConfig):
 
 
 def PrepareCreateOnly(tiles, images, psfs, position, config):
-    return tiles[0:1], images[0:1], psfs[0:1], [ [] ], [-2], [0]
+    return [tiles[0:1], images[0:1], psfs[0:1], [ [] ], [-2], [0]]
 
 
 def PrepareIterations(tiles, images, psfs, position, config, RunConfig):
@@ -177,7 +177,7 @@ def PrepareIterations(tiles, images, psfs, position, config, RunConfig):
         sendindexstart.append(indexstart)
         indexstart += len(pos[i])
 
-    return tiles, images, psfs, sendpos, senditerations, sendindexstart
+    return [tiles, images, psfs, sendpos, senditerations, sendindexstart]
 
 
 
@@ -186,6 +186,7 @@ if __name__ == "__main__":
     SheldonConfig = desdbInfo.sva1_coadd
     tiles = TileLists.suchyta13[1:3]
     config = BalrogConfigurations.default
+    DBConfig = DBInfo.default
 
     pos = RandomPositions(RunConfig, config, tiles)
 
@@ -198,32 +199,38 @@ if __name__ == "__main__":
     RunBalrog is in runbalrog.py, and does the work
     """
     if MPI.COMM_WORLD.Get_rank()==0:
-        sendtiles, sendimages, sendpsfs, sendpos, senditerations, sendindexstart = PrepareCreateOnly(tiles, images, psfs, pos, config)
+        ScatterStuff = PrepareCreateOnly(tiles, images, psfs, pos, config)
     else:
-        sendtiles = sendimages = sendpsfs = sendpos = senditerations = sendindexstart = None
-    sendpos, sendtiles, sendimages, sendpsfs, senditerations, sendindexstart = mpifunctions.Scatter(sendpos, sendtiles, sendimages, sendpsfs, senditerations, sendindexstart)
-    for i in range(len(senditerations)):
-        runbalrog.NewRunBalrog( sendpos, sendtiles[i], sendimages[i], sendpsfs[i], [senditerations[i]], sendindexstart[i], RunConfig, config)
+        ScatterStuff = [None]*6
+    ScatterStuff = mpifunctions.Scatter(*ScatterStuff)
+    for i in range(len(ScatterStuff[4])):
+        DerivedConfig = {'tile': ScatterStuff[0][i],
+                         'images': ScatterStuff[1][i],
+                         'psfs': ScatterStuff[2][i],
+                         'indexstart': ScatterStuff[5][i],
+                         'iterations': [ScatterStuff[4][i]],
+                         'pos': ScatterStuff[3],
+                         'db': DBConfig}
+        runbalrog.NewRunBalrog(RunConfig, config, DerivedConfig)
 
 
-    '''
     """This is all the real Balrog realizations. Everything not passed to RunBalrog should be easily parseable from the config dictionaries, *I think*
     RunBalrog is in runbalrog.py, and does the work
     """
     if MPI.COMM_WORLD.Get_rank()==0:
-        sendtiles, sendimages, sendpsfs, sendpos, senditerations, sendindexstart = PrepareIterations(tiles, images, psfs, pos, config, RunConfig)
+        ScatterStuff = PrepareIterations(tiles, images, psfs, pos, config, RunConfig)
     else:
-        sendtiles = sendimages = sendpsfs = sendpos = senditerations, sendindexstart =  None
-    sendpos, sendtiles, sendimages, sendpsfs, senditerations = sendindexstart = mpifunctions.Scatter(sendpos, sendtiles, sendimages, sendpsfs, senditerations, sendindexstart)
-    for i in range(len(senditerations)):
-        #if MPI.COMM_WORLD.Get_rank()==0:
-        #    print 'sendpos[%i] ='%i, sendpos[i]
-        #    print 'sendtiles[%i] ='%i, sendtiles[i]
-        #    print 'sendimages[%i] ='%i, sendimages[i]
-        #    print 'sendpsfs[%i] ='%i, sendpsfs[i]
-        #    print 'senditerations[%i] ='%i, senditerations[i]
-        runbalrog.NewRunBalrog( sendpos[i], sendtiles[i], sendimages[i], sendpsfs[i], senditerations[i], sendindexstart[i], RunConfig, config)
-    '''
+        ScatterStuff = [None]*6
+    ScatterStuff = mpifunctions.Scatter(*ScatterStuff)
+    for i in range(len(ScatterStuff[4])):
+        DerivedConfig = {'tile': ScatterStuff[0][i],
+                         'images': ScatterStuff[1][i],
+                         'psfs': ScatterStuff[2][i],
+                         'indexstart': ScatterStuff[5][i],
+                         'iterations': ScatterStuff[4][i],
+                         'pos': ScatterStuff[3][i],
+                         'db':DBConfig}
+        runbalrog.NewRunBalrog(RunConfig, config, DerivedConfig)
 
     """
     if MPI.COMM_WORLD.Get_rank()==0:
