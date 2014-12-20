@@ -164,53 +164,24 @@ def DropTablesIfNeeded(RunConfig, BalrogConfig):
 
 
 def PrepareCreateOnly(tiles, images, psfs, position, config):
-    sendimages = []
-    sendpsfs = []
-    sendpos = []
-    sendtiles = np.array([], dtype=np.str)
-    senditerations = np.array([], dtype=np.int32)
-    sendcreateonly = np.array([], dtype=np.bool_)
-    for i in range(len(tiles[0:])):
-        iterations = 1
-        sendpos.append( np.empty((0,2)) )
-        senditerations = np.append( senditerations, np.arange(iterations, dtype=np.int32) )
-        sendtiles = np.append( sendtiles, [tiles[i]]*iterations )  
-        sendcreateonly = np.append( sendcreateonly, [True]*iterations )  
-        sendimages.append( images[i] )
-        sendpsfs.append( psfs[i] )
-
-    return sendtiles, sendimages, sendpsfs, sendpos, senditerations, sendcreateonly
+    return tiles[0:1], images[0:1], psfs[0:1], [ [] ], [-2]
 
 
 def PrepareIterations(tiles, images, psfs, position, config, RunConfig):
-    pos = copy.copy(position)
-    sendtiles = np.array([], dtype=np.str)
-    senditerations = np.array([], dtype=np.int32)
-    sendcreateonly = np.array([], dtype=np.bool_)
+    sendpos = copy.copy(position)
+    senditerations = []
+
     for i in range(len(tiles)):
-        iterations = np.ceil(len(pos[i]) / config['ngal'])
-        pos[i] = np.array_split(pos[i], iterations, axis=0)
+        iterations = np.ceil( len(pos[i]) / float(config['ngal']))
+        sendpos[i] = np.array_split(pos[i], iterations, axis=0)
         if RunConfig['doDES']:
-            senditerations = np.append( senditerations, np.arange(-1, iterations, 1, dtype=np.int32) )
+            senditerations.append(np.arange(-1, iterations, 1, dtype=np.int32))
+            sendpos[i].insert(0, [])
         else:
-            senditerations = np.append( senditerations, np.arange(0, iterations, 1, dtype=np.int32) )
-        sendtiles = np.append( sendtiles, [tiles[i]]*iterations )  
-        sendcreateonly = np.append( sendcreateonly, [False]*iterations )  
+            senditerations.append(np.arange(0, iterations, 1, dtype=np.int32))
 
-    sendimages = []
-    sendpsfs = []
-    sendpos = []
-    for i in range(len(tiles)):
-        if RunConfig['doDES']:
-            sendpos.append( [] )
-            sendimages.append( images[i] )
-            sendpsfs.append( psfs[i] )
-        for j in range(len(pos[i])):
-            sendpos.append(pos[i][j])
-            sendimages.append( images[i] )
-            sendpsfs.append( psfs[i] )
 
-    return sendtiles, sendimages, sendpsfs, sendpos, senditerations, sendcreateonly
+    return tiles, images, psfs, sendpos, senditerations
 
 
 
@@ -227,37 +198,32 @@ if __name__ == "__main__":
         tables = DropTablesIfNeeded(RunConfig, config)
 
 
-    '''
     """This will do the minimal Balrog runs, which only run so the outputs exist to know what needs to write to the DB.
-    Use the createonly array to tell you that all you want to do is make the DBs, and you're not doing a real balrog realization.
-    Stuff like --ngal 0, --nonosim, and maybe association matching to an empty list
     RunBalrog is in runbalrog.py, and does the work
     """
     if MPI.COMM_WORLD.Get_rank()==0:
-        sendtiles, sendimages, sendpsfs, sendpos, senditerations, sendcreateonly = PrepareCreateOnly(tiles, images, psfs, pos, config)
+        sendtiles, sendimages, sendpsfs, sendpos, senditerations = PrepareCreateOnly(tiles, images, psfs, pos, config)
     else:
-        sendtiles = sendimages = sendpsfs = sendpos = senditerations = sendcreateonly = None
-    sendpos, sendtiles, sendimages, sendpsfs, senditerations, sendcreateonly = mpifunctions.Scatter(sendpos, sendtiles, sendimages, sendpsfs, senditerations, sendcreateonly)
+        sendtiles = sendimages = sendpsfs = sendpos = senditerations = None
+    sendpos, sendtiles, sendimages, sendpsfs, senditerations = mpifunctions.Scatter(sendpos, sendtiles, sendimages, sendpsfs, senditerations)
     for i in range(len(senditerations)):
         #print 'sendpos =', sendpos
         #print 'sendtiles[%i] ='%i, sendtiles[i]
         #print 'sendimages[%i] ='%i, sendimages[i]
         #print 'sendpsfs[%i] ='%i, sendpsfs[i]
         #print 'senditerations[%i] ='%i, senditerations[i]
-        #print 'sendcreateonly[%i] ='%i, sendcreateonly[i]
-        runbalrog.NewRunBalrog( sendpos, sendtiles[i], sendimages[i], sendpsfs[i], senditerations[i], sendcreateonly[i], RunConfig)
-    #print '\n'
+        runbalrog.NewRunBalrog( sendpos, sendtiles[i], sendimages[i], sendpsfs[i], senditerations[i], RunConfig, config)
+
+
     '''
-
-
     """This is all the real Balrog realizations. Everything not passed to RunBalrog should be easily parseable from the config dictionaries, *I think*
     RunBalrog is in runbalrog.py, and does the work
     """
     if MPI.COMM_WORLD.Get_rank()==0:
-        sendtiles, sendimages, sendpsfs, sendpos, senditerations, sendcreateonly = PrepareIterations(tiles, images, psfs, pos, config, RunConfig)
+        sendtiles, sendimages, sendpsfs, sendpos, senditerations = PrepareIterations(tiles, images, psfs, pos, config, RunConfig)
     else:
-        sendtiles = sendimages = sendpsfs = sendpos = senditerations = sendcreateonly = None
-    sendpos, sendtiles, sendimages, sendpsfs, senditerations, sendcreateonly = mpifunctions.Scatter(sendpos, sendtiles, sendimages, sendpsfs, senditerations, sendcreateonly)
+        sendtiles = sendimages = sendpsfs = sendpos = senditerations =  None
+    sendpos, sendtiles, sendimages, sendpsfs, senditerations = mpifunctions.Scatter(sendpos, sendtiles, sendimages, sendpsfs, senditerations)
     for i in range(len(senditerations)):
         #if MPI.COMM_WORLD.Get_rank()==0:
         #    print 'sendpos[%i] ='%i, sendpos[i]
@@ -265,8 +231,8 @@ if __name__ == "__main__":
         #    print 'sendimages[%i] ='%i, sendimages[i]
         #    print 'sendpsfs[%i] ='%i, sendpsfs[i]
         #    print 'senditerations[%i] ='%i, senditerations[i]
-        #    print 'sendcreateonly[%i] ='%i, sendcreateonly[i]
-        runbalrog.NewRunBalrog( sendpos[i], sendtiles[i], sendimages[i], sendpsfs[i], senditerations[i], sendcreateonly[i], RunConfig)
+        runbalrog.NewRunBalrog( sendpos[i], sendtiles[i], sendimages[i], sendpsfs[i], senditerations[i], RunConfig, config)
+    '''
 
     """
     if MPI.COMM_WORLD.Get_rank()==0:

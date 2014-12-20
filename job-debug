@@ -1,5 +1,5 @@
 command: |
-   mpirun -hostfile %hostfile% ./WrapBalrog.py
+   mpirun -np 2 -hostfile %hostfile% ./WrapBalrog.py
 
 mode: bynode
 N: 2

@@ -281,14 +281,69 @@ def DownloadImages(indir, images, psfs):
     return [useimages, usepsfs]
 
 
-def NewRunBalrog(pos, tile, images, psfs, iteration, createonly, RunConfig):
-    workingdir = os.path.join(RunConfig['outdir'], RunConfig['label'], tile,'%i'%(iteration))
+
+def RunOnlyCreate(image, psf, bands, RunConfig, BalrogConfig, pos, outdir):
+    coordfile = WriteCoords(pos, outdir)
+
+
+def run_balrog(args):
+    iteration, images, psfs, bands, RunConfig, BalrogConfig, pos, outdir = args
+
+    if iteration==-2:
+        RunOnlyCreate(images, psfs, bands, RunConfig, BalrogConfig, pos, outdir)
+    elif type(iteration)==tuple:
+        RunDoDES()
+    else:
+        RunNormal()
+
+
+def WriteCoords(coords, outdir):
+    coordfile = os.path.join(outdir, 'coords.fits')
+    if coords==None:
+        rcol = pyfits.Column(name='ra', format='D', unit='deg', array=[])
+        dcol = pyfits.Column(name='dec', format='D', unit='deg', array=[])
+    else:
+        rcol = pyfits.Column(name='ra', format='D', unit='deg', array=opts.coords[:,0])
+        dcol = pyfits.Column(name='dec', format='D', unit='deg', array=opts.coords[:,1])
+    columns = [rcol, dcol]
+    tbhdu = pyfits.BinTableHDU.from_columns(pyfits.ColDefs(columns))
+    phdu = pyfits.PrimaryHDU()
+    hdus = pyfits.HDUList([phdu,tbhdu])
+    if os.path.lexists(opts.coordfile):
+        os.remove(opts.coordfile)
+    hdus.writeto(opts.coordfile)
+    return coordfile
+
+
+def NewRunBalrog(pos, tile, images, psfs, iterations, RunConfig, BalrogConfig):
+    workingdir = os.path.join(RunConfig['outdir'], RunConfig['label'], tile )
     indir = os.path.join(workingdir, 'input')
     Mkdir(indir)
-    outdir = os.path.join(workingdir, 'output')
-    Mkdir(outdir)
 
     images, psfs = DownloadImages(indir, images, psfs)
+
+    bands = RunConfig.bands
+    if RunConfig['dualdetection']:
+        bands.insert(0, 'det')
+    args = []
+    for it in iterations:
+        outdir = os.path.join(workingdir, 'output', '%i'%it)
+        Mkdir(outdir)
+
+        if it==-2:
+            arg = [it, images, psfs, RunConfig, BalrogConfig, bands, None, outdir ]
+
+        elif it==-1:
+            for i in range(len(bands)):
+                arg = [(it,i), images, psfs, RunConfig, BalrogConfig, bands, None, outdir ]
+                args.append(arg)
+        else:
+            arg = [it, images, psfs, RunConfig, BalrogConfig, bands, pos[i], outdir]
+            args.append(arg)
+    
+    nthreads = cpu_count()
+    pool = Pool(nthreads)
+    pool.map(run_balrog, args, chunksize=1)
 
 
 def RunBalrog(common_config, tile_config, band_config):
