@@ -3,51 +3,96 @@
 import os
 import sys
 import numpy as np
+import pywcs
 from model_class import *
 
 
 def CustomArgs(parser):
     parser.add_argument( "-cs", "--catalog", help="Catalog used to sample simulated galaxy parameter distriubtions from", type=str, default=None)
     parser.add_argument( "-ext", "--ext", help="Index of the data extension for sampling catalog", type=int, default=1)
-
     parser.add_argument( "-reff", "--reff", help="Column name when drawing half light radius from catalog", type=str, default="halflightradius")
     parser.add_argument( "-nsersic", "--sersicindex", help="Column name when drawing sersic index catalog", type=str, default="sersicindex")
     parser.add_argument( "-ax", "--axisratio", help="Axis ratio column", type=str, default="axisratio")
     parser.add_argument( "-beta", "--beta", help="Beta column", type=str, default="beta")
 
-    parser.add_argument( "-b", "--band", help="Which filter band to choose from COSMOS catalog. Only relevant if --mag is not given and using COSMOS catlalog.", type=str, default='i', choices=['g','r','i','z','Y'])
     parser.add_argument( "-tl", "--tile", help="Tilename", type=str, required=True)
+    
+    parser.add_argument( "-b", "--band", help="Which filter band to choose from COSMOS catalog. Only relevant if --mag is not given and using COSMOS catlalog.", type=str, default='i', choices=['det','g','r','i','z','Y'])
+    parser.add_argument( "-detb", "--detbands", help="detection bands", type=str, default='r,i,z')
+    parser.add_argument( "-detz", "--detzeropoints", help="zeropoints for detection bands", type=str, default=None)
 
-    parser.add_argument( "-posstart", "--posstart", help="Index to start in position catalog", type=int, default=1)
-    parser.add_argument( "-poscat", "--poscat", help="Position catalog", type=str, required=True)
+    parser.add_argument( "-posstart", "--posstart", help="Index to start in position catalog", type=int, default=0)
+    parser.add_argument( "-poscat", "--poscat", help="Position catalog", type=str, default=None)
     parser.add_argument( "-posext", "--posext", help="Position extension", type=int, default=1)
-    parser.add_argument( "-xkey", "--xkey", help='x col', type=str, default='x')
-    parser.add_argument( "-ykey", "--ykey", help='y col', type=str, default='y')
     parser.add_argument( "-rakey", "--rakey", help='ra col', type=str, default='ra')
     parser.add_argument( "-deckey", "--deckey", help='dec col', type=str, default='dec')
 
-    parser.add_argument( "-magn", "--magnification", help='Constant magnification (i.e. 1+*magn, so mang=2k)', type=float, default=0.0)
 
+def ByBand(band):
+    if band=='det':
+        mag = 'det'
+    if band=='Y':
+        mag = 'Mapp_HSC_y'
+    else:
+        mag = 'Mapp_%s_subaru' %(band)
+    return mag
 
 
 def CustomParseArgs(args):
     thisdir = os.path.dirname( os.path.realpath(__file__) )
     if args.catalog==None:
-        #args.catalog = '/direct/astro+u/esuchyta/git_repos/BalrogSetupBNL/input_cats/CMC_sersic_alltypes.fits'
-        #args.catalog = '/direct/astro+u/esuchyta/git_repos/BalrogSetupBNL/input_cats/CMC_allband_upsample_SG.fits'
         args.catalog = '/direct/astro+u/esuchyta/git_repos/BalrogSetupBNL/input_cats/CMC_allband_upsample.fits'
 
-    if args.band=='Y':
-        args.mag = 'Mapp_HSC_y'
+    if args.band == 'det':
+        if args.detbands==None:
+            raise Exception("when using --band = 'det', you must also give --detbands")
+        if args.detzeropoints==None:
+            raise Exception("when using --band = 'det', you must also give --detzeropoints")
+    if args.detbands!=None:
+        args.detbands = args.detbands.split(',')
+        args.detzeropoints = args.detzeropoints.split(',')
+        for i in range(len(args.detzeropoints)):
+            args.detzeropoints[i] = float(args.detzeropoints[i])
+    args.mag = ByBand(args.band)
+
+    if args.ngal > 0:
+        coords = np.array( pyfits.open(args.poscat)[args.posext].data[args.posstart:(args.posstart+args.ngal)] )
+        args.ra = coords[args.rakey]
+        args.dec = coords[args.deckey]
     else:
-        args.mag = 'Mapp_%s_subaru' %(args.band)
+        args.ra = []
+        args.dec = []
 
-    coords = np.array( pyfits.open(args.poscat)[args.posext].data[args.posstart:(args.posstart+args.ngal)] )
-    args.x = coords[args.xkey]
-    args.y = coords[args.ykey]
-    args.ra = coords[args.rakey]
-    args.dec = coords[args.deckey]
 
+def GetImageCoords(args):
+    header = pyfits.open(args.image)[args.imageext].header
+    wcs = pywcs.WCS(header)
+    wcoords = np.dstack((args.ra,args.dec))[0]
+    wcoords = w.wcs_sky2pix(wcoords, 1)
+
+def GetXCoords(args, wpos):
+    wcoords = GetImageCoords(args, wpos)
+    return wcoords[:,0]
+
+def GetYCoords(args, wpos):
+    wcoords = GetImageCoords(args, wpos)
+    return wcoords[:,1]
+
+def MultibandMag(mz, args):
+    flux = np.zeros(args.ngal)
+    for i in range(len(mz)):
+        mag, zp = mz[i]
+        f = np.power(10.0, (zp - mag) / 2.5)
+        flux += f
+    mag = Flux2Mag(flux, args)
+    return mag
+
+def Flux2Mag(flux, args):
+    mag = np.array( [99.0]*args.ngal )
+    cut = (flux > 0)
+    args.zeropoint - 2.5 * np.log10(flux)
+    mag[cut] = args.zeropoint - 2.5 * np.log10(flux)
+    return mag
 
 
 def SimulationRules(args, rules, sampled, TruthCat):
@@ -55,29 +100,47 @@ def SimulationRules(args, rules, sampled, TruthCat):
     ext = args.ext
     tab = Table(file=args.catalog, ext=args.ext)
 
-    rules.x = args.x
-    rules.y = args.y
     rules.g1 = 0
     rules.g2 = 0
-    redshift = tab.Column('z')
-    rules.magnification = 1.0 + args.magnification
+    rules.magnification = 0
+
+    if args.ngal > 0:
+        rules.x = Function(function=GetXCoords, args=[args])
+        rules.y = Function(function=GetYCoords, args=[args])
+    else:
+        rules.x = 0
+        rules.y = 0
     
     rules.halflightradius = tab.Column(args.reff)
-    rules.magnitude = tab.Column(args.mag)
     rules.beta = tab.Column(args.beta)
     rules.axisratio = tab.Column(args.axisratio)
     rules.sersicindex = tab.Column(args.sersicindex)
 
+    if args.band=='det':
+        bz = []
+        for i in range(len(args.detbands)):
+            m = ByBand(args.detbands[i])
+            z = args.detzeropoints[i]
+            bz.append( [tab.Column(m),z] )
+        rules.magnitude = Function(function=MultibandMag, args=[bz,args])
+    else:
+        rules.magnitude = tab.Column(args.mag)
+
+
     TruthCat.AddColumn(tab.Column('Id'))
     TruthCat.AddColumn(tab.Column('Mod'))
     TruthCat.AddColumn(tab.Column('type'), name='OBJTYPE')
-    TruthCat.AddColumn(redshift)
-    TruthCat.AddColumn(tab.Column(args.mag), name='MAG')
+    TruthCat.AddColumn(tab.Column('z'))
     TruthCat.AddColumn(args.seed, name='SEED', fmt='J')
     TruthCat.AddColumn(args.zeropoint, name='ZEROPOINT', fmt='E')
     TruthCat.AddColumn(args.tile, name='TILENAME', fmt='12A')
     TruthCat.AddColumn(args.ra, name='RA', fmt='E')
     TruthCat.AddColumn(args.dec, name='DEC', fmt='E')
+
+    if args.detbands==None:
+        TruthCat.AddColumn(tab.Column(args.mag), name='MAG')
+    else:
+        TruthCat.AddColumn( Function(function=Flux2Mag, args=[sampled.magnitude,args]), name='MAG', fmt='E' )
 
 
 

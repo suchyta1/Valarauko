@@ -2,14 +2,10 @@
 
 import sys
 import os
-import Queue
 import numpy as np
 import desdb
 import copy
-import pywcs
-import pyfits
 
-import itertools
 from mpi4py import MPI
 import mpifunctions
 
@@ -48,8 +44,7 @@ def SendEmail(config):
 def GetFiles(RunConfig, SheldonConfig, tiles):
     bands = RunConfig['bands']
     runs = np.array( desdb.files.get_release_runs(SheldonConfig['release'], withbands=bands) )
-    if RunConfig['dualdetection']:
-        bands.insert(0, 'det')
+    bands = runbalrog.PrependDet(RunConfig)
     kwargs = {}
     kwargs['type'] = SheldonConfig['filetype']
     kwargs['fs'] = 'net'
@@ -72,9 +67,9 @@ def GetFiles(RunConfig, SheldonConfig, tiles):
                 kwargs['band'] = band
                 image = desdb.files.get_url(**kwargs)
                 image = image.replace('7443','')
-                psf = image.replace('.fits.fz', '.psfcat.psf')
+                psf = image.replace('.fits.fz', '_psfcat.psf')
                 keepimages[-1].append(image)
-                keeppsfs[-1].append(image)
+                keeppsfs[-1].append(psf)
 
     return [keepimages, keeppsfs]    
 
@@ -105,8 +100,8 @@ def RandomPositions(RunConfiguration, BalrogConfiguration, tiles, seed=None):
     #inc = 10000 
     inc = 1
     
-    if seed!=None:
-        np.random.seed(seed)
+    if RunConfiguration['fixposseed']!=None:
+        np.random.seed(RunConfiguration['fixposseed'])
 
     numfound = 0
     while numfound < target:
@@ -145,9 +140,7 @@ def DropTablesIfNeeded(RunConfig, BalrogConfig):
     if RunConfig['doDES']:
         tables.append('des')
 
-    bands = RunConfig['bands']
-    if RunConfig['dualdetection']:
-        bands.insert(0, 'det')
+    bands = runbalrog.PrependDet(RunConfig)
 
     for table in tables:
         for band in bands:
@@ -164,13 +157,15 @@ def DropTablesIfNeeded(RunConfig, BalrogConfig):
 
 
 def PrepareCreateOnly(tiles, images, psfs, position, config):
-    return tiles[0:1], images[0:1], psfs[0:1], [ [] ], [-2]
+    return tiles[0:1], images[0:1], psfs[0:1], [ [] ], [-2], [0]
 
 
 def PrepareIterations(tiles, images, psfs, position, config, RunConfig):
     sendpos = copy.copy(position)
     senditerations = []
+    sendindexstart = []
 
+    indexstart = 0
     for i in range(len(tiles)):
         iterations = np.ceil( len(pos[i]) / float(config['ngal']))
         sendpos[i] = np.array_split(pos[i], iterations, axis=0)
@@ -179,9 +174,10 @@ def PrepareIterations(tiles, images, psfs, position, config, RunConfig):
             sendpos[i].insert(0, [])
         else:
             senditerations.append(np.arange(0, iterations, 1, dtype=np.int32))
+        sendindexstart.append(indexstart)
+        indexstart += len(pos[i])
 
-
-    return tiles, images, psfs, sendpos, senditerations
+    return tiles, images, psfs, sendpos, senditerations, sendindexstart
 
 
 
@@ -202,17 +198,12 @@ if __name__ == "__main__":
     RunBalrog is in runbalrog.py, and does the work
     """
     if MPI.COMM_WORLD.Get_rank()==0:
-        sendtiles, sendimages, sendpsfs, sendpos, senditerations = PrepareCreateOnly(tiles, images, psfs, pos, config)
+        sendtiles, sendimages, sendpsfs, sendpos, senditerations, sendindexstart = PrepareCreateOnly(tiles, images, psfs, pos, config)
     else:
-        sendtiles = sendimages = sendpsfs = sendpos = senditerations = None
-    sendpos, sendtiles, sendimages, sendpsfs, senditerations = mpifunctions.Scatter(sendpos, sendtiles, sendimages, sendpsfs, senditerations)
+        sendtiles = sendimages = sendpsfs = sendpos = senditerations = sendindexstart = None
+    sendpos, sendtiles, sendimages, sendpsfs, senditerations, sendindexstart = mpifunctions.Scatter(sendpos, sendtiles, sendimages, sendpsfs, senditerations, sendindexstart)
     for i in range(len(senditerations)):
-        #print 'sendpos =', sendpos
-        #print 'sendtiles[%i] ='%i, sendtiles[i]
-        #print 'sendimages[%i] ='%i, sendimages[i]
-        #print 'sendpsfs[%i] ='%i, sendpsfs[i]
-        #print 'senditerations[%i] ='%i, senditerations[i]
-        runbalrog.NewRunBalrog( sendpos, sendtiles[i], sendimages[i], sendpsfs[i], [senditerations[i]], RunConfig, config)
+        runbalrog.NewRunBalrog( sendpos, sendtiles[i], sendimages[i], sendpsfs[i], [senditerations[i]], sendindexstart[i], RunConfig, config)
 
 
     '''
@@ -220,10 +211,10 @@ if __name__ == "__main__":
     RunBalrog is in runbalrog.py, and does the work
     """
     if MPI.COMM_WORLD.Get_rank()==0:
-        sendtiles, sendimages, sendpsfs, sendpos, senditerations = PrepareIterations(tiles, images, psfs, pos, config, RunConfig)
+        sendtiles, sendimages, sendpsfs, sendpos, senditerations, sendindexstart = PrepareIterations(tiles, images, psfs, pos, config, RunConfig)
     else:
-        sendtiles = sendimages = sendpsfs = sendpos = senditerations =  None
-    sendpos, sendtiles, sendimages, sendpsfs, senditerations = mpifunctions.Scatter(sendpos, sendtiles, sendimages, sendpsfs, senditerations)
+        sendtiles = sendimages = sendpsfs = sendpos = senditerations, sendindexstart =  None
+    sendpos, sendtiles, sendimages, sendpsfs, senditerations = sendindexstart = mpifunctions.Scatter(sendpos, sendtiles, sendimages, sendpsfs, senditerations, sendindexstart)
     for i in range(len(senditerations)):
         #if MPI.COMM_WORLD.Get_rank()==0:
         #    print 'sendpos[%i] ='%i, sendpos[i]
@@ -231,7 +222,7 @@ if __name__ == "__main__":
         #    print 'sendimages[%i] ='%i, sendimages[i]
         #    print 'sendpsfs[%i] ='%i, sendpsfs[i]
         #    print 'senditerations[%i] ='%i, senditerations[i]
-        runbalrog.NewRunBalrog( sendpos[i], sendtiles[i], sendimages[i], sendpsfs[i], senditerations[i], RunConfig, config)
+        runbalrog.NewRunBalrog( sendpos[i], sendtiles[i], sendimages[i], sendpsfs[i], senditerations[i], sendindexstart[i], RunConfig, config)
     '''
 
     """

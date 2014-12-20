@@ -246,138 +246,6 @@ class AttrDict(dict):
         self.__dict__ = self
 
 
-def Remove(file):
-    if os.path.lexists(file):
-        os.remove(file)
-
-def Mkdir(dir):
-    if not os.path.lexists(dir):
-        os.makedirs(dir)
-
-
-def DownloadImages(indir, images, psfs):
-    useimages = []
-
-    t1 = datetime.datetime.now()
-    for file in images:
-        infile = os.path.join(indir, os.path.basename(file))
-        #Remove(infile)
-        #subprocess.call( ['wget', '-q', '--no-check-certificate', file, '-O', infile] )
-        ufile = infile.replace('.fits.fz', '.fits')
-        #Remove(ufile) 
-        #subprocess.call(['funpack', '-O', ufile, infile])
-        useimages.append(ufile)
-
-    usepsfs = []
-    for psf in psfs:
-        pfile = os.path.join(indir, os.path.basename(psf))
-        #Remove(pfile)
-        #subprocess.call( ['wget', '-q', '--no-check-certificate', psf, '-O', pfile] )
-        usepsfs.append(pfile)
-
-    t2 = datetime.datetime.now()
-    print (t2-t1).total_seconds()
-
-    return [useimages, usepsfs]
-
-
-def Dict2Cmd(d, cmd):
-    l = [cmd]
-    for key in d.keys():
-        if type(d[key])==bool:
-            if d[key]:
-                l.append('--%s' %key)
-        else:
-            l.append('--%s' %key)
-            l.append(str(d[key]))
-    return l
-
-
-def RunOnlyCreate(iteration, images, psfs, bands, RunConfig, BalrogConfig, pos, outdir):
-    coordfile = WriteCoords(pos, outdir)
-    BalrogConfig['image'] = images[0]
-    BalrogConfig['psf'] = psfs[0]
-    BalrogConfig['band'] = bands[0]
-    BalrogConfig['poscat'] = coordfile
-    BalrogConfig['ngal'] = 0
-    BalrogConfig['indexstart'] = 0
-    BalrogConfig['posstart'] = 0
-    BalrogConfig['seed'] = 0
-
-    print'a'
-    cmd = Dict2Cmd(BalrogConfig, RunConfig['balrog'])
-    subprocess.call(cmd)
-    print 'b'
-
-
-
-def run_balrog(args):
-    print '0'
-    iteration, images, psfs, bands, RunConfig, BalrogConfig, pos, outdir = args
-    BalrogConfig['outdir'] = outdir
-
-    print iteration
-    if iteration==-2:
-        RunOnlyCreate(iteration, images, psfs, bands, RunConfig, BalrogConfig, pos, outdir)
-    elif type(iteration)==tuple:
-        RunDoDES()
-    else:
-        RunNormal()
-
-
-def WriteCoords(coords, outdir):
-    coordfile = os.path.join(outdir, 'coords.fits')
-    if coords==None:
-        rcol = pyfits.Column(name='ra', format='D', unit='deg', array=[])
-        dcol = pyfits.Column(name='dec', format='D', unit='deg', array=[])
-    else:
-        rcol = pyfits.Column(name='ra', format='D', unit='deg', array=opts.coords[:,0])
-        dcol = pyfits.Column(name='dec', format='D', unit='deg', array=opts.coords[:,1])
-    columns = [rcol, dcol]
-    tbhdu = pyfits.BinTableHDU.from_columns(pyfits.ColDefs(columns))
-    phdu = pyfits.PrimaryHDU()
-    hdus = pyfits.HDUList([phdu,tbhdu])
-    if os.path.lexists(opts.coordfile):
-        os.remove(opts.coordfile)
-    hdus.writeto(opts.coordfile)
-    return coordfile
-
-
-def NewRunBalrog(pos, tile, images, psfs, iterations, RunConfig, BalrogConfig):
-    workingdir = os.path.join(RunConfig['outdir'], RunConfig['label'], tile )
-    indir = os.path.join(workingdir, 'input')
-    Mkdir(indir)
-
-    images, psfs = DownloadImages(indir, images, psfs)
-    BalrogConfig['tile'] = tile
-
-    bands = RunConfig['bands']
-    if RunConfig['dualdetection']:
-        bands.insert(0, 'det')
-    args = []
-    for it in iterations:
-        outdir = os.path.join(workingdir, 'output', '%i'%it)
-        Mkdir(outdir)
-
-        if it==-2:
-            arg = [it, images, psfs, RunConfig, BalrogConfig, bands, None, outdir ]
-            args.append(arg)
-
-        elif it==-1:
-            for i in range(len(bands)):
-                arg = [(it,i), images, psfs, RunConfig, BalrogConfig, bands, None, outdir ]
-                args.append(arg)
-        else:
-            arg = [it, images, psfs, RunConfig, BalrogConfig, bands, pos[i], outdir]
-            args.append(arg)
-   
-    print '0'
-    nthreads = cpu_count()
-    pool = Pool(nthreads)
-    run_balrog(args[0])
-    #pool.map(run_balrog, args, chunksize=1)
-
-
 def RunBalrog(common_config, tile_config, band_config):
     opts = copy.copy(common_config)
     for key in tile_config.keys():
@@ -511,4 +379,175 @@ def RunBalrog(common_config, tile_config, band_config):
     f = open(logfile, 'w')
     f.write(outlog)
     f.close()
+
+
+#####################################################################################
+
+
+def Remove(file):
+    if os.path.lexists(file):
+        os.remove(file)
+
+def Mkdir(dir):
+    if not os.path.lexists(dir):
+        os.makedirs(dir)
+
+
+def DownloadImages(indir, images, psfs):
+    useimages = []
+
+    time1 = datetime.datetime.now()
+    for file in images:
+        infile = os.path.join(indir, os.path.basename(file))
+        #Remove(infile)
+        #subprocess.call( ['wget', '-q', '--no-check-certificate', file, '-O', infile] )
+        ufile = infile.replace('.fits.fz', '.fits')
+        #Remove(ufile) 
+        #subprocess.call(['funpack', '-O', ufile, infile])
+        useimages.append(ufile)
+
+    usepsfs = []
+    for psf in psfs:
+        pfile = os.path.join(indir, os.path.basename(psf))
+        #Remove(pfile)
+        #subprocess.call( ['wget', '-q', '--no-check-certificate', psf, '-O', pfile] )
+        usepsfs.append(pfile)
+    time2 = datetime.datetime.now()
+    #print (time2-time1).total_seconds()
+
+    return [useimages, usepsfs]
+
+
+def Dict2Cmd(d, cmd):
+    l = [cmd]
+    for key in d.keys():
+        if type(d[key])==bool:
+            if d[key]:
+                l.append('--%s' %key)
+        else:
+            l.append('--%s' %key)
+            l.append(str(d[key]))
+    return l
+
+
+def PrependDet(RunConfig):
+    bands = copy.copy(RunConfig['bands'])
+    if RunConfig['dualdetection']!=None:
+        bands.insert(0, 'det')
+    return bands
+
+
+def GetDetStuff(BalrogConfig, RunConfig, images, ext=0, zpkey='SEXMGZPT'):
+    index = np.array( RunConfig['dualdetection'] )
+    bands =  np.array(RunConfig['bands'])
+    BalrogConfig['detbands'] = ','.join(bands[index] )
+
+    zps = []
+    for i in index:
+        num = i + 1
+        header = pyfits.open(images[num])[ext].header
+        zp = header[zpkey]
+        zps.append(str(zp))
+    BalrogConfig['detzeropoints'] = ','.join(zps)
+    return BalrogConfig
+
+
+def DoBandStuff(BalrogConfig, RunConfig, band, images, ext=0, zpkey='SEXMGZPT'):
+    BalrogConfig['band'] = band
+    if band=='det':
+        BalrogConfig = GetDetStuff(BalrogConfig, RunConfig, images, ext=ext, zpkey=zpkey)
+    return BalrogConfig
+
+
+def GetSeed(RunConfig, BalrogConfig):
+    BalrogConfig['seed'] = BalrogConfig['indexstart']
+    if RunConfig['fixwrapseed']!=None:
+        BalrogConfig['seed'] += RunConfig['fixwrapseed']
+    '''
+    else:
+        BalrogConfig['seed'] += 
+    '''
+    return BalrogConfig
+
+
+def RunOnlyCreate(iteration, images, psfs, bands, RunConfig, BalrogConfig, outdir, tileindexstart):
+    #coordfile = WriteCoords(pos, outdir)
+    BalrogConfig['image'] = images[0]
+    BalrogConfig['psf'] = psfs[0]
+    BalrogConfig['ngal'] = 0
+    BalrogConfig['indexstart'] = tileindexstart + iteration*BalrogConfig['ngal']
+    BalrogConfig = GetSeed(RunConfig, BalrogConfig)
+    BalrogConfig = DoBandStuff(BalrogConfig, RunConfig, bands[0], images)
+
+    cmd = Dict2Cmd(BalrogConfig, RunConfig['balrog'])
+    subprocess.call(cmd)
+
+
+def run_balrog(args):
+    iteration, images, psfs, RunConfig, BalrogConfig, bands, pos, outdir, tileindexstart = args
+    BalrogConfig['outdir'] = outdir
+
+    if iteration==-2:
+        RunOnlyCreate(iteration, images, psfs, bands, RunConfig, BalrogConfig, outdir, tileindexstart)
+    elif type(iteration)==tuple:
+        RunDoDES()
+    else:
+        RunNormal()
+
+
+def WriteCoords(coords, outdir):
+    coordfile = os.path.join(outdir, 'coords.fits')
+    '''
+    if coords==None:
+        rcol = pyfits.Column(name='ra', format='D', unit='deg', array=[])
+        dcol = pyfits.Column(name='dec', format='D', unit='deg', array=[])
+    else:
+        rcol = pyfits.Column(name='ra', format='D', unit='deg', array=opts.coords[:,0])
+        dcol = pyfits.Column(name='dec', format='D', unit='deg', array=opts.coords[:,1])
+    '''
+    rcol = pyfits.Column(name='ra', format='D', unit='deg', array=opts.coords[:,0])
+    dcol = pyfits.Column(name='dec', format='D', unit='deg', array=opts.coords[:,1])
+    columns = [rcol, dcol]
+    tbhdu = pyfits.BinTableHDU.from_columns(pyfits.ColDefs(columns))
+    phdu = pyfits.PrimaryHDU()
+    hdus = pyfits.HDUList([phdu,tbhdu])
+    if os.path.lexists(coordfile):
+        os.remove(coordfile)
+    hdus.writeto(coordfile)
+    return coordfile
+
+
+def NewRunBalrog(pos, tile, images, psfs, iterations, indexstart, RunConfig, BalrogConfig):
+    workingdir = os.path.join(RunConfig['outdir'], RunConfig['label'], tile )
+    indir = os.path.join(workingdir, 'input')
+    Mkdir(indir)
+
+    images, psfs = DownloadImages(indir, images, psfs)
+    BalrogConfig['tile'] = tile
+
+    bands = RunConfig['bands']
+    if RunConfig['dualdetection']!=None:
+        bands.insert(0, 'det')
+    args = []
+    for it in iterations:
+        outdir = os.path.join(workingdir, 'output', '%i'%it)
+        Mkdir(outdir)
+
+        if it==-2:
+            arg = [it, images, psfs, RunConfig, BalrogConfig, bands, None, outdir, indexstart ]
+            args.append(arg)
+
+        elif it==-1:
+            for i in range(len(bands)):
+                arg = [(it,i), images, psfs, RunConfig, BalrogConfig, bands, None, outdir, indexstart ]
+                args.append(arg)
+        else:
+            arg = [it, images, psfs, RunConfig, BalrogConfig, bands, pos[i], outdir, indexstart]
+            args.append(arg)
+   
+    nthreads = cpu_count()
+    pool = Pool(nthreads)
+    run_balrog(args[0])
+    #pool.map(run_balrog, args, chunksize=1)
+
 

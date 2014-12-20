@@ -11,9 +11,11 @@ class RunConfigurations:
             'tiletotal': 36, 
             'label': 'debug',
             'bands': ['g','r','i','z','Y'],
-            'dualdetection': True,
+            'dualdetection': [1,2,3],
             'doDES': True,
-            'balrog': '/astro/u/esuchyta/git_repos/balrog-testing/Balrog/balrog.py'
+            'balrog': '/astro/u/esuchyta/git_repos/balrog-testing/Balrog/balrog.py',
+            'fixposseed': None,
+            'fixwrapseed': None
         }
 
 
@@ -22,13 +24,13 @@ class BalrogConfigurations:
 
         default = {
             'fulltraceback': True,
-            'clean': True,
+            #'clean': True,
+            'clean': False,
             #'ngal': 1000,
             'ngal': 2,
             'pyconfig': os.path.join(os.environ['BALROG_MPI_PYCONFIG'], 'default.py'),
-            'magnification': 0.0, 
 
-            'fitstype': 'ldac',
+            'catfitstype': 'ldac',
             'sexnnw': os.path.join(os.environ['BALROG_MPI_ASTRO_CONFIG'], 'sva1', 'sex.nnw'),
             'sexconv': os.path.join(os.environ['BALROG_MPI_ASTRO_CONFIG'], 'sva1', 'sex.conv'),
             'sexparam': os.path.join(os.environ['BALROG_MPI_ASTRO_CONFIG'], 'sva1', 'sex.param_diskonly'),
