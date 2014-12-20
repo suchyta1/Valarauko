@@ -6,14 +6,14 @@ class RunConfigurations:
 
         default = {
             'outdir': os.environ['BALROG_MPI_DEFAULT_OUT'],
-            'compressed': True,
             'fullclean': True,
             #'tiletotal': 300000, 
             'tiletotal': 36, 
             'label': 'debug',
             'bands': ['g','r','i','z','Y'],
             'dualdetection': True,
-            'doDES': True
+            'doDES': True,
+            'balrog': '/astro/u/esuchyta/git_repos/balrog-testing/Balrog/balrog.py'
         }
 
 
@@ -21,6 +21,7 @@ class RunConfigurations:
 class BalrogConfigurations:
 
         default = {
+            'fulltraceback': True,
             'clean': True,
             #'ngal': 1000,
             'ngal': 2,

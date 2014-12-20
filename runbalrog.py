@@ -261,18 +261,18 @@ def DownloadImages(indir, images, psfs):
     t1 = datetime.datetime.now()
     for file in images:
         infile = os.path.join(indir, os.path.basename(file))
-        Remove(infile)
-        subprocess.call( ['wget', '-q', '--no-check-certificate', file, '-O', infile] )
+        #Remove(infile)
+        #subprocess.call( ['wget', '-q', '--no-check-certificate', file, '-O', infile] )
         ufile = infile.replace('.fits.fz', '.fits')
-        Remove(ufile) 
-        subprocess.call(['funpack', '-O', ufile, infile])
+        #Remove(ufile) 
+        #subprocess.call(['funpack', '-O', ufile, infile])
         useimages.append(ufile)
 
     usepsfs = []
     for psf in psfs:
         pfile = os.path.join(indir, os.path.basename(psf))
-        Remove(pfile)
-        subprocess.call( ['wget', '-q', '--no-check-certificate', psf, '-O', pfile] )
+        #Remove(pfile)
+        #subprocess.call( ['wget', '-q', '--no-check-certificate', psf, '-O', pfile] )
         usepsfs.append(pfile)
 
     t2 = datetime.datetime.now()
@@ -281,16 +281,44 @@ def DownloadImages(indir, images, psfs):
     return [useimages, usepsfs]
 
 
+def Dict2Cmd(d, cmd):
+    l = [cmd]
+    for key in d.keys():
+        if type(d[key])==bool:
+            if d[key]:
+                l.append('--%s' %key)
+        else:
+            l.append('--%s' %key)
+            l.append(str(d[key]))
+    return l
 
-def RunOnlyCreate(image, psf, bands, RunConfig, BalrogConfig, pos, outdir):
+
+def RunOnlyCreate(iteration, images, psfs, bands, RunConfig, BalrogConfig, pos, outdir):
     coordfile = WriteCoords(pos, outdir)
+    BalrogConfig['image'] = images[0]
+    BalrogConfig['psf'] = psfs[0]
+    BalrogConfig['band'] = bands[0]
+    BalrogConfig['poscat'] = coordfile
+    BalrogConfig['ngal'] = 0
+    BalrogConfig['indexstart'] = 0
+    BalrogConfig['posstart'] = 0
+    BalrogConfig['seed'] = 0
+
+    print'a'
+    cmd = Dict2Cmd(BalrogConfig, RunConfig['balrog'])
+    subprocess.call(cmd)
+    print 'b'
+
 
 
 def run_balrog(args):
+    print '0'
     iteration, images, psfs, bands, RunConfig, BalrogConfig, pos, outdir = args
+    BalrogConfig['outdir'] = outdir
 
+    print iteration
     if iteration==-2:
-        RunOnlyCreate(images, psfs, bands, RunConfig, BalrogConfig, pos, outdir)
+        RunOnlyCreate(iteration, images, psfs, bands, RunConfig, BalrogConfig, pos, outdir)
     elif type(iteration)==tuple:
         RunDoDES()
     else:
@@ -321,8 +349,9 @@ def NewRunBalrog(pos, tile, images, psfs, iterations, RunConfig, BalrogConfig):
     Mkdir(indir)
 
     images, psfs = DownloadImages(indir, images, psfs)
+    BalrogConfig['tile'] = tile
 
-    bands = RunConfig.bands
+    bands = RunConfig['bands']
     if RunConfig['dualdetection']:
         bands.insert(0, 'det')
     args = []
@@ -332,6 +361,7 @@ def NewRunBalrog(pos, tile, images, psfs, iterations, RunConfig, BalrogConfig):
 
         if it==-2:
             arg = [it, images, psfs, RunConfig, BalrogConfig, bands, None, outdir ]
+            args.append(arg)
 
         elif it==-1:
             for i in range(len(bands)):
@@ -340,10 +370,12 @@ def NewRunBalrog(pos, tile, images, psfs, iterations, RunConfig, BalrogConfig):
         else:
             arg = [it, images, psfs, RunConfig, BalrogConfig, bands, pos[i], outdir]
             args.append(arg)
-    
+   
+    print '0'
     nthreads = cpu_count()
     pool = Pool(nthreads)
-    pool.map(run_balrog, args, chunksize=1)
+    run_balrog(args[0])
+    #pool.map(run_balrog, args, chunksize=1)
 
 
 def RunBalrog(common_config, tile_config, band_config):

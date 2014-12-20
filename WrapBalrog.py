@@ -212,7 +212,7 @@ if __name__ == "__main__":
         #print 'sendimages[%i] ='%i, sendimages[i]
         #print 'sendpsfs[%i] ='%i, sendpsfs[i]
         #print 'senditerations[%i] ='%i, senditerations[i]
-        runbalrog.NewRunBalrog( sendpos, sendtiles[i], sendimages[i], sendpsfs[i], senditerations[i], RunConfig, config)
+        runbalrog.NewRunBalrog( sendpos, sendtiles[i], sendimages[i], sendpsfs[i], [senditerations[i]], RunConfig, config)
 
 
     '''
