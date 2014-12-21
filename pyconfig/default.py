@@ -133,7 +133,7 @@ def SimulationRules(args, rules, sampled, TruthCat):
     TruthCat.AddColumn(tab.Column('z'))
     TruthCat.AddColumn(args.seed, name='SEED', fmt='J')
     TruthCat.AddColumn(args.zeropoint, name='ZEROPOINT', fmt='E')
-    TruthCat.AddColumn(args.tile, name='TILENAME', fmt='12A')
+    #TruthCat.AddColumn(args.tile, name='TILENAME', fmt='12A')
     TruthCat.AddColumn(args.ra, name='RA', fmt='E')
     TruthCat.AddColumn(args.dec, name='DEC', fmt='E')
 

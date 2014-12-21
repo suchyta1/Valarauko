@@ -192,7 +192,6 @@ if __name__ == "__main__":
 
     if MPI.COMM_WORLD.Get_rank()==0:
         images, psfs = GetFiles(RunConfig, SheldonConfig, tiles)
-        '''
         tables = DropTablesIfNeeded(RunConfig, config)
 
 
@@ -213,7 +212,6 @@ if __name__ == "__main__":
                          'pos': ScatterStuff[3],
                          'db': DBConfig}
         runbalrog.NewRunBalrog(RunConfig, config, DerivedConfig)
-        '''
 
 
     """This is all the real Balrog realizations. Everything not passed to RunBalrog should be easily parseable from the config dictionaries, *I think*

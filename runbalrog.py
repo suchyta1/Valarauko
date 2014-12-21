@@ -517,6 +517,48 @@ def EnsureInt(DerivedConfig):
     return it
 
 
+def Number2NumberSex(ndata):
+    names = np.array( ndata.dtype.names )
+    dtype = []
+    for i in range(len(names)):
+        if names[i]=='NUMBER':
+            dt = ('NUMBER_SEX', ndata.dtype.descr[i][1])
+        else:
+            dt = ndata.dtype.descr[i]
+        dtype.append(dt)
+    ndata.dtype = dtype
+    return ndata
+
+
+def VecAssoc2BalrogIndex(header, ndata, label, index_key='balrog_index'):
+    pos = None
+    for name in header.keys():
+        if header[name] == index_key:
+            pos = int(name[1:])
+            break
+    if pos!=None:
+        if label!='des':
+            index = ndata['VECTOR_ASSOC'][:, pos]
+            ndata = recfunctions.append_fields(ndata, index_key, index, usemask=False)
+        ndata = recfunctions.drop_fields(ndata, 'VECTOR_ASSOC', usemask=False)
+    return ndata
+
+
+def NewMakeOracleFriendly(file, ext, BalrogConfig, DerivedConfig, label):
+    hdu = pyfits.open(file)[ext]
+    header = hdu.header
+    ndata = np.array(hdu.data)
+
+    if label in ['nosim', 'sim', 'des']:
+        ndata = Number2NumberSex(ndata)
+        if ((label!='des') or (DerivedConfig['iteration']==-2)) and (('noassoc' not in BalrogConfig.keys()) or (BalrogConfig['noassoc']==False)):
+            ndata = VecAssoc2BalrogIndex(header, ndata, label)
+        
+    t = np.array( [BalrogConfig['tile']]*len(ndata) )
+    ndata = recfunctions.append_fields(ndata, 'tilename', t, '|S12', usemask=False)
+    return ndata
+
+
 def NewWrite2DB(cats, labels, RunConfig, BalrogConfig, DerivedConfig):
     it = EnsureInt(DerivedConfig)
     create = False
@@ -531,7 +573,7 @@ def NewWrite2DB(cats, labels, RunConfig, BalrogConfig, DerivedConfig):
 
         cat = cats[i]
         tablename = '%s.balrog_%s_%s_%s' %(cur.username, RunConfig['label'], labels[i], BalrogConfig['band'])
-        arr = MakeOracleFriendly(cats[i], ext, create, it, BalrogConfig['tile'])
+        arr = NewMakeOracleFriendly(cats[i], ext, BalrogConfig, DerivedConfig, labels[i])
 
 
         if RunConfig['DBload']=='sqlldr':
@@ -561,16 +603,11 @@ def NewWrite2DB(cats, labels, RunConfig, BalrogConfig, DerivedConfig):
                 cur.quick(create_cmd)
             else:
                 istr, newarr = GetOracleStructure(arr, tablename, noarr=noarr)
-                cxcur = get_cx_oracle_cursor(DerivedConfig['db'])
-                '''
-                for row in range(len(newarr)):
-                    newarr[i] = tuple(newarr[i])
-                '''
-                #print newarr
-                print istr
-                print len(newarr), len(newarr[0])
+                cxcur, con = get_cx_oracle_cursor(DerivedConfig['db'])
                 cxcur.prepare(istr)
                 cxcur.executemany(None, newarr)
+                con.commit()
+                cxcur.close()
                 #cxcur.executemany(istr, newarr)
 
         if create:
@@ -582,9 +619,10 @@ def get_cx_oracle_cursor(db_specs):
     c = desdb.connect()
     connection = cx_Oracle.connect( "%s/%s@(DESCRIPTION=(ADDRESS=(PROTOCOL=%s)(HOST=%s)(PORT=%s))(CONNECT_DATA=(SERVER=%s)(SERVICE_NAME=%s)))" %(c.username,c.password,db_specs['protocol'],db_specs['db_host'],db_specs['port'],db_specs['server'],db_specs['service_name']) )
     cur = connection.cursor()
-    return cur
+    return cur, connection
 
 def MakeNewArray(alldefs, arr, tablename, noarr=False):
+    lists = []
     cols = []
     names = []
     nums = []
@@ -597,20 +635,21 @@ def MakeNewArray(alldefs, arr, tablename, noarr=False):
 
         if isarr==None:
             cols.append("arr['%s']"%(name) )
+            lists.append( (arr[name]).tolist() )
         else:
             n = name[ : (isarr.span()[0]) ]
             j = int( isarr.group(0)[1:] ) - 1
             cols.append("arr['%s'][:,%i]"%(n,j) )
+            lists.append( (arr[n][:,j]).tolist() )
         names.append(name)
         nums.append(':%i'%(i+1) )
     colstr = ', '.join(cols)
     numstr = ', '.join(nums)
     namestr = ', '.join(names)
-    print len(cols), len(nums), len(names)
-    estr = "newarr = np.dstack( (%s) )[0]" %(colstr)
+    newarr = zip(*lists)
     istr = "insert into %s (%s) values (%s)" %(tablename, namestr, numstr)
-    exec estr
-    return istr, newarr.tolist()
+
+    return istr, newarr
 
 
 def GetOracleStructure(arr, tablename, noarr=False, create=False):
