@@ -35,7 +35,8 @@ class BalrogConfigurations:
             'catfitstype': 'ldac',
             'sexnnw': os.path.join(os.environ['BALROG_MPI_ASTRO_CONFIG'], 'sva1', 'sex.nnw'),
             'sexconv': os.path.join(os.environ['BALROG_MPI_ASTRO_CONFIG'], 'sva1', 'sex.conv'),
-            'sexparam': os.path.join(os.environ['BALROG_MPI_ASTRO_CONFIG'], 'sva1', 'sex.param_diskonly'),
+            #'sexparam': os.path.join(os.environ['BALROG_MPI_ASTRO_CONFIG'], 'sva1', 'sex.param_diskonly'),
+            'sexparam': os.path.join(os.environ['BALROG_MPI_ASTRO_CONFIG'], 'sva1', 'sex.param'),
             'sexconfig': os.path.join(os.environ['BALROG_MPI_ASTRO_CONFIG'], 'sva1', 'sex.config'),
             'sexpath': '/direct/astro+u/esuchyta/svn_repos/sextractor-2.18.10/install/bin/sex',
         }

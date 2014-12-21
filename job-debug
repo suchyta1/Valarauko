@@ -2,6 +2,6 @@ command: |
    mpirun -np 2 -hostfile %hostfile% ./WrapBalrog.py
 
 mode: bynode
-N: 2
+N: 1
 hostfile: auto
-group: ['a43','a44']
+group: ['a43']

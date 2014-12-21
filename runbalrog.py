@@ -67,11 +67,11 @@ def TweakTable(file, ext, assoc=False, extras=[], index_key='balrog_index', crea
         
         if pos!=None:
             index = ndata['VECTOR_ASSOC'][:, pos]
-            ndata = recfunctions.append_fields(ndata, index_key, index)
-            ndata = recfunctions.drop_fields(ndata, 'VECTOR_ASSOC')
+            ndata = recfunctions.append_fields(ndata, index_key, index, usemask=False)
+            ndata = recfunctions.drop_fields(ndata, 'VECTOR_ASSOC', usemask=False)
 
     if create:
-        ndata = recfunctions.drop_fields(ndata, 'VECTOR_ASSOC')
+        ndata = recfunctions.drop_fields(ndata, 'VECTOR_ASSOC', usemask=False)
 
     names = np.array( ndata.dtype.names )
     dtype = []
@@ -84,7 +84,7 @@ def TweakTable(file, ext, assoc=False, extras=[], index_key='balrog_index', crea
     ndata.dtype = dtype
 
     for extra in extras:
-        ndata = recfunctions.append_fields(ndata, extra[0], data=extra[3], dtypes=extra[1])
+        ndata = recfunctions.append_fields(ndata, extra[0], data=extra[3], dtypes=extra[1], usemask=False)
 
 
     return ndata
@@ -395,24 +395,27 @@ def Mkdir(dir):
         os.makedirs(dir)
 
 
-def DownloadImages(indir, images, psfs):
+def DownloadImages(indir, images, psfs, skip=False):
     useimages = []
 
     time1 = datetime.datetime.now()
     for file in images:
         infile = os.path.join(indir, os.path.basename(file))
-        Remove(infile)
-        subprocess.call( ['wget', '-q', '--no-check-certificate', file, '-O', infile] )
+        if not skip:
+            Remove(infile)
+            subprocess.call( ['wget', '-q', '--no-check-certificate', file, '-O', infile] )
         ufile = infile.replace('.fits.fz', '.fits')
-        Remove(ufile) 
-        subprocess.call(['funpack', '-O', ufile, infile])
+        if not skip:
+            Remove(ufile) 
+            subprocess.call(['funpack', '-O', ufile, infile])
         useimages.append(ufile)
 
     usepsfs = []
     for psf in psfs:
         pfile = os.path.join(indir, os.path.basename(psf))
-        Remove(pfile)
-        subprocess.call( ['wget', '-q', '--no-check-certificate', psf, '-O', pfile] )
+        if not skip:
+            Remove(pfile)
+            subprocess.call( ['wget', '-q', '--no-check-certificate', psf, '-O', pfile] )
         usepsfs.append(pfile)
     time2 = datetime.datetime.now()
     #print (time2-time1).total_seconds()
@@ -467,6 +470,7 @@ def GetSeed(BalrogConfig, DerivedConfig):
 
 
 def GetRelevantCatalogs(BalrogConfig, RunConfig, DerivedConfig, band=None):
+    it = EnsureInt(DerivedConfig)
     if band==None:
         band = BalrogConfig['band']
 
@@ -479,7 +483,7 @@ def GetRelevantCatalogs(BalrogConfig, RunConfig, DerivedConfig, band=None):
     if 'nonosim' in BalrogConfig.keys():
         if BalrogConfig['nonosim']:
             relevant['nosim'] = False
-    if DerivedConfig['iteration']==-1:
+    if it==-1:
         relevant['truth'] = False
         relevant['nosim'] = False
 
@@ -494,7 +498,11 @@ def GetRelevantCatalogs(BalrogConfig, RunConfig, DerivedConfig, band=None):
     if relevant['sim']:
         files.append(out_sim)
         labels.append('sim')
-    if DerivedConfig['iteration']==-2:
+
+    if it==-1:
+        labels[-1] = 'des'
+
+    elif it==-2:
         if RunConfig['doDES']:
             files.append(out_sim)
             labels.append('des')
@@ -502,8 +510,17 @@ def GetRelevantCatalogs(BalrogConfig, RunConfig, DerivedConfig, band=None):
     return files, labels
 
 
+def EnsureInt(DerivedConfig):
+    it = DerivedConfig['iteration']
+    if type(it)==tuple:
+        it = -1
+    return it
+
+
 def NewWrite2DB(cats, labels, RunConfig, BalrogConfig, DerivedConfig):
-    if DerivedConfig['iteration']==-2:
+    it = EnsureInt(DerivedConfig)
+    create = False
+    if it==-2:
         create = True
 
     cur = desdb.connect()
@@ -514,7 +531,7 @@ def NewWrite2DB(cats, labels, RunConfig, BalrogConfig, DerivedConfig):
 
         cat = cats[i]
         tablename = '%s.balrog_%s_%s_%s' %(cur.username, RunConfig['label'], labels[i], BalrogConfig['band'])
-        arr = MakeOracleFriendly(cats[i], ext, create, DerivedConfig['iteration'], BalrogConfig['tile'])
+        arr = MakeOracleFriendly(cats[i], ext, create, it, BalrogConfig['tile'])
 
 
         if RunConfig['DBload']=='sqlldr':
@@ -545,8 +562,16 @@ def NewWrite2DB(cats, labels, RunConfig, BalrogConfig, DerivedConfig):
             else:
                 istr, newarr = GetOracleStructure(arr, tablename, noarr=noarr)
                 cxcur = get_cx_oracle_cursor(DerivedConfig['db'])
+                '''
+                for row in range(len(newarr)):
+                    newarr[i] = tuple(newarr[i])
+                '''
+                #print newarr
+                print istr
+                print len(newarr), len(newarr[0])
                 cxcur.prepare(istr)
                 cxcur.executemany(None, newarr)
+                #cxcur.executemany(istr, newarr)
 
         if create:
             cur.quick("GRANT SELECT ON %s TO DES_READER" %tablename)
@@ -555,14 +580,16 @@ def NewWrite2DB(cats, labels, RunConfig, BalrogConfig, DerivedConfig):
 
 def get_cx_oracle_cursor(db_specs):
     c = desdb.connect()
-    connection = cx_Oracle.connect( "%s/%s@(DESCRIPTION=(ADDRESS=(PROTOCOL=%s)(HOST=%s)(PORT=%s))(CONNECT_DATA=(SERVER=%s)(SERVICE_NAME=%s)))" %(c.username,c.password,db_specs.protocol,db_specs.db_host,db_specs.port,db_specs.server,db_specs.service_name) )
+    connection = cx_Oracle.connect( "%s/%s@(DESCRIPTION=(ADDRESS=(PROTOCOL=%s)(HOST=%s)(PORT=%s))(CONNECT_DATA=(SERVER=%s)(SERVICE_NAME=%s)))" %(c.username,c.password,db_specs['protocol'],db_specs['db_host'],db_specs['port'],db_specs['server'],db_specs['service_name']) )
     cur = connection.cursor()
     return cur
 
 def MakeNewArray(alldefs, arr, tablename, noarr=False):
     cols = []
-    for d in alldefs:
-        name = d[0]
+    names = []
+    nums = []
+    for i in range(len(alldefs)):
+        name = alldefs[i][0]
         if noarr:
             isarr = None
         else:
@@ -572,56 +599,29 @@ def MakeNewArray(alldefs, arr, tablename, noarr=False):
             cols.append("arr['%s']"%(name) )
         else:
             n = name[ : (isarr.span()[0]) ]
-            i = int( isarr.group(0)[1:] ) - 1
-            cols.append("arr['%s'][:,%i]"%(n,i) )
+            j = int( isarr.group(0)[1:] ) - 1
+            cols.append("arr['%s'][:,%i]"%(n,j) )
+        names.append(name)
+        nums.append(':%i'%(i+1) )
     colstr = ', '.join(cols)
+    numstr = ', '.join(nums)
+    namestr = ', '.join(names)
+    print len(cols), len(nums), len(names)
     estr = "newarr = np.dstack( (%s) )[0]" %(colstr)
-    istr = "insert into %s (%s)" %(tablename, colstr)
+    istr = "insert into %s (%s) values (%s)" %(tablename, namestr, numstr)
     exec estr
-    return istr, newarr
+    return istr, newarr.tolist()
 
 
 def GetOracleStructure(arr, tablename, noarr=False, create=False):
     a = arr.view(np.ndarray)
     cs, alldefs = desdb.get_tabledef(a.dtype.descr, tablename)
-    MakeNewArray(alldefs, arr, tablename, noarr=noarr)
 
     if create:
         return cs
     else:
         istr, newarr = MakeNewArray(alldefs, arr, tablename, noarr=noarr)
         return istr, newarr
-
-
-
-def RunOnlyCreate(RunConfig, BalrogConfig, DerivedConfig):
-    BalrogConfig['image'] = DerivedConfig['images'][0]
-    BalrogConfig['psf'] = DerivedConfig['psfs'][0]
-    BalrogConfig['ngal'] = 0
-    BalrogConfig['indexstart'] = DerivedConfig['indexstart'] + DerivedConfig['iteration']*BalrogConfig['ngal']
-    BalrogConfig = GetSeed(BalrogConfig, DerivedConfig)
-    BalrogConfig = DoBandStuff(BalrogConfig, RunConfig, DerivedConfig['bands'][0], DerivedConfig['images'])
-    BalrogConfig['outdir'] = os.path.join(DerivedConfig['outdir'], BalrogConfig['band'])
-
-    cmd = Dict2Cmd(BalrogConfig, RunConfig['balrog'])
-    subprocess.call(cmd)
-
-    fixband = BalrogConfig['band']
-    for i in range(len(DerivedConfig['bands'])):
-        cats, labels = GetRelevantCatalogs(BalrogConfig, RunConfig, DerivedConfig, band=fixband)
-        BalrogConfig = DoBandStuff(BalrogConfig, RunConfig, DerivedConfig['bands'][i], DerivedConfig['images'])
-        NewWrite2DB(cats, labels, RunConfig, BalrogConfig, DerivedConfig)
-
-
-def run_balrog(args):
-    RunConfig, BalrogConfig, DerivedConfig = args
-
-    if DerivedConfig['iteration']==-2:
-        RunOnlyCreate(RunConfig, BalrogConfig, DerivedConfig)
-    elif type(DerivedConfig['iteration'])==tuple:
-        RunDoDES()
-    else:
-        RunNormal()
 
 
 def WriteCoords(coords, outdir):
@@ -638,6 +638,57 @@ def WriteCoords(coords, outdir):
     return coordfile
 
 
+def RunOnlyCreate(RunConfig, BalrogConfig, DerivedConfig):
+    BalrogConfig['ngal'] = 0
+    BalrogConfig['image'] = DerivedConfig['images'][0]
+    BalrogConfig['psf'] = DerivedConfig['psfs'][0]
+    BalrogConfig['indexstart'] = DerivedConfig['indexstart'] + DerivedConfig['iteration']*BalrogConfig['ngal']
+    BalrogConfig = GetSeed(BalrogConfig, DerivedConfig)
+    BalrogConfig = DoBandStuff(BalrogConfig, RunConfig, DerivedConfig['bands'][0], DerivedConfig['images'])
+    BalrogConfig['outdir'] = os.path.join(DerivedConfig['outdir'], BalrogConfig['band'])
+
+    cmd = Dict2Cmd(BalrogConfig, RunConfig['balrog'])
+    subprocess.call(cmd)
+
+    fixband = BalrogConfig['band']
+    for i in range(len(DerivedConfig['bands'])):
+        cats, labels = GetRelevantCatalogs(BalrogConfig, RunConfig, DerivedConfig, band=fixband)
+        BalrogConfig = DoBandStuff(BalrogConfig, RunConfig, DerivedConfig['bands'][i], DerivedConfig['images'])
+        NewWrite2DB(cats, labels, RunConfig, BalrogConfig, DerivedConfig)
+
+
+def RunDoDES(RunConfig, BalrogConfig, DerivedConfig):
+    BalrogConfig['noassoc'] = True
+    BalrogConfig['nonosim'] = True
+    BalrogConfig['ngal'] = 0
+    BalrogConfig['image'] = DerivedConfig['images'][ DerivedConfig['iteration'][1] ]
+    BalrogConfig['psf'] = DerivedConfig['psfs'][ DerivedConfig['iteration'][1] ]
+    BalrogConfig['indexstart'] = DerivedConfig['indexstart'] + DerivedConfig['iteration'][0]*BalrogConfig['ngal']
+    BalrogConfig = GetSeed(BalrogConfig, DerivedConfig)
+    BalrogConfig = DoBandStuff(BalrogConfig, RunConfig, DerivedConfig['bands'][0], DerivedConfig['images'])
+    BalrogConfig['outdir'] = os.path.join(DerivedConfig['outdir'], BalrogConfig['band'])
+    if RunConfig['dualdetection']!=None:
+        BalrogConfig['detimage'] = DerivedConfig['images'][0]
+        BalrogConfig['detpsf'] = DerivedConfig['psfs'][0]
+
+    cmd = Dict2Cmd(BalrogConfig, RunConfig['balrog'])
+    subprocess.call(cmd)
+
+    cats, labels = GetRelevantCatalogs(BalrogConfig, RunConfig, DerivedConfig)
+    NewWrite2DB(cats, labels, RunConfig, BalrogConfig, DerivedConfig)
+
+
+def run_balrog(args):
+    RunConfig, BalrogConfig, DerivedConfig = args
+    it = EnsureInt(DerivedConfig)
+
+    if it==-2:
+        RunOnlyCreate(RunConfig, BalrogConfig, DerivedConfig)
+    elif it==-1:
+        RunDoDES(RunConfig, BalrogConfig, DerivedConfig)
+    else:
+        RunNormal()
+
 def NewRunBalrog(RunConfig, BalrogConfig, DerivedConfig):
     workingdir = os.path.join(RunConfig['outdir'], RunConfig['label'], DerivedConfig['tile'] )
     indir = os.path.join(workingdir, 'input')
@@ -649,7 +700,7 @@ def NewRunBalrog(RunConfig, BalrogConfig, DerivedConfig):
         DerivedConfig['seedoffset'] = np.random.randint(10000)
 
 
-    DerivedConfig['images'], DerivedConfig['psfs'] = DownloadImages(indir, DerivedConfig['images'], DerivedConfig['psfs'])
+    DerivedConfig['images'], DerivedConfig['psfs'] = DownloadImages(indir, DerivedConfig['images'], DerivedConfig['psfs'], skip=True)
     BalrogConfig['tile'] = DerivedConfig['tile']
     DerivedConfig['bands'] = PrependDet(RunConfig)
 
@@ -670,7 +721,7 @@ def NewRunBalrog(RunConfig, BalrogConfig, DerivedConfig):
 
         elif it==-1:
             DConfig['pos'] = None
-            for i in range(len(bands)):
+            for i in range(len(DerivedConfig['bands'])):
                 DDConfig = copy.copy(DConfig)
                 DDConfig['iteration'] = (it,i)
                 arg = [RunConfig, BalrogConfig, DDConfig]
