@@ -4,6 +4,7 @@ import os
 import sys
 import numpy as np
 import pywcs
+import esutil
 from model_class import *
 
 
@@ -65,17 +66,21 @@ def CustomParseArgs(args):
 
 
 def GetImageCoords(args):
+    import pyfits
     header = pyfits.open(args.image)[args.imageext].header
+    #header = esutil.io.read_header(args.image, ext=args.imageext)
+    #print args.image, args.imageext, header.keys()
     wcs = pywcs.WCS(header)
     wcoords = np.dstack((args.ra,args.dec))[0]
-    wcoords = w.wcs_sky2pix(wcoords, 1)
+    wcoords = wcs.wcs_sky2pix(wcoords, 1)
+    return wcoords
 
-def GetXCoords(args, wpos):
-    wcoords = GetImageCoords(args, wpos)
+def GetXCoords(args):
+    wcoords = GetImageCoords(args)
     return wcoords[:,0]
 
-def GetYCoords(args, wpos):
-    wcoords = GetImageCoords(args, wpos)
+def GetYCoords(args):
+    wcoords = GetImageCoords(args)
     return wcoords[:,1]
 
 def MultibandMag(mz, args):
@@ -102,7 +107,7 @@ def SimulationRules(args, rules, sampled, TruthCat):
 
     rules.g1 = 0
     rules.g2 = 0
-    rules.magnification = 0
+    rules.magnification = 1
 
     if args.ngal > 0:
         rules.x = Function(function=GetXCoords, args=[args])
