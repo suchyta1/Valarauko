@@ -195,9 +195,7 @@ if __name__ == "__main__":
         tables = DropTablesIfNeeded(RunConfig, config)
 
 
-    """This will do the minimal Balrog runs, which only run so the outputs exist to know what needs to write to the DB.
-    RunBalrog is in runbalrog.py, and does the work
-    """
+    #This will do the minimal Balrog run, which only runs so the outputs exist to know what needs to write to the DB.
     if MPI.COMM_WORLD.Get_rank()==0:
         ScatterStuff = PrepareCreateOnly(tiles, images, psfs, pos, config)
     else:
@@ -214,9 +212,7 @@ if __name__ == "__main__":
         runbalrog.NewRunBalrog(RunConfig, config, DerivedConfig)
 
 
-    """This is all the real Balrog realizations. Everything not passed to RunBalrog should be easily parseable from the config dictionaries, *I think*
-    RunBalrog is in runbalrog.py, and does the work
-    """
+    #This is all the real Balrog realizations. Everything not passed to RunBalrog should be easily parseable from the config dictionaries, *I think*
     if MPI.COMM_WORLD.Get_rank()==0:
         ScatterStuff = PrepareIterations(tiles, images, psfs, pos, config, RunConfig)
     else:

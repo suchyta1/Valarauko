@@ -464,9 +464,11 @@ def DoBandStuff(BalrogConfig, RunConfig, band, images, ext=0, zpkey='SEXMGZPT'):
     return BalrogConfig
 
 
+'''
 def GetSeed(BalrogConfig, DerivedConfig):
     BalrogConfig['seed'] = BalrogConfig['indexstart'] + DerivedConfig['seedoffset']
     return BalrogConfig
+'''
 
 
 def GetRelevantCatalogs(BalrogConfig, RunConfig, DerivedConfig, band=None):
@@ -681,8 +683,6 @@ def RunOnlyCreate(RunConfig, BalrogConfig, DerivedConfig):
     BalrogConfig['ngal'] = 0
     BalrogConfig['image'] = DerivedConfig['images'][0]
     BalrogConfig['psf'] = DerivedConfig['psfs'][0]
-    BalrogConfig['indexstart'] = DerivedConfig['indexstart'] + DerivedConfig['iteration']*BalrogConfig['ngal']
-    BalrogConfig = GetSeed(BalrogConfig, DerivedConfig)
     BalrogConfig = DoBandStuff(BalrogConfig, RunConfig, DerivedConfig['bands'][0], DerivedConfig['images'])
     BalrogConfig['outdir'] = os.path.join(DerivedConfig['outdir'], BalrogConfig['band'])
 
@@ -702,8 +702,6 @@ def RunDoDES(RunConfig, BalrogConfig, DerivedConfig):
     BalrogConfig['ngal'] = 0
     BalrogConfig['image'] = DerivedConfig['images'][ DerivedConfig['iteration'][1] ]
     BalrogConfig['psf'] = DerivedConfig['psfs'][ DerivedConfig['iteration'][1] ]
-    BalrogConfig['indexstart'] = DerivedConfig['indexstart'] + DerivedConfig['iteration'][0]*BalrogConfig['ngal']
-    BalrogConfig = GetSeed(BalrogConfig, DerivedConfig)
     BalrogConfig = DoBandStuff(BalrogConfig, RunConfig, DerivedConfig['bands'][0], DerivedConfig['images'])
     BalrogConfig['outdir'] = os.path.join(DerivedConfig['outdir'], BalrogConfig['band'])
     if RunConfig['dualdetection']!=None:
@@ -717,6 +715,38 @@ def RunDoDES(RunConfig, BalrogConfig, DerivedConfig):
     NewWrite2DB(cats, labels, RunConfig, BalrogConfig, DerivedConfig)
 
 
+def GetBalroggedDetImage(DerivedConfig):
+    band = DerivedConfig['bands'][0]
+    inimage = os.path.basename(DerivedConfig['images'][0])
+    outimage = inimage.replace('.fits', '.sim.fits')
+    file = os.path.join(DerivedConfig['outdir'], band, 'balrog_image', outimage)
+    return file
+
+
+def RunNormal(RunConfig, BalrogConfig, DerivedConfig):
+    coordfile = WriteCoords(DerivedCconfig['pos'], DerivedConfig['outdir'])
+    detimage = GetBalroggedDetImage(DerivedConfig)
+    detpsf = DerivedConfig['psfs'][0]
+
+    for i in range(len(DerivedConfig['bands'])):
+        BalrogConfig['poscat'] = coordfile
+        BalrogConfig['image'] = DerivedConfig['images'][i]
+        BalrogConfig['psf'] = DerivedConfig['psfs'][i]
+        BalrogConfig = DoBandStuff(BalrogConfig, RunConfig, DerivedConfig['bands'][i], DerivedConfig['images'])
+        BalrogConfig['outdir'] = os.path.join(DerivedConfig['outdir'], BalrogConfig['band'])
+
+        if (RunConfig['dualdetection']!=None) and (i > 0):
+            BalrogConfig['detimage'] = detimage
+            BalrogConfig['detpsf'] = detpsf
+
+        cmd = Dict2Cmd(BalrogConfig, RunConfig['balrog'])
+        subprocess.call(cmd)
+
+        cats, labels = GetRelevantCatalogs(BalrogConfig, RunConfig, DerivedConfig)
+        NewWrite2DB(cats, labels, RunConfig, BalrogConfig, DerivedConfig)
+
+
+
 def run_balrog(args):
     RunConfig, BalrogConfig, DerivedConfig = args
     it = EnsureInt(DerivedConfig)
@@ -726,7 +756,8 @@ def run_balrog(args):
     elif it==-1:
         RunDoDES(RunConfig, BalrogConfig, DerivedConfig)
     else:
-        RunNormal()
+        RunNormal(RunConfig, BalrogConfig, DerivedConfig)
+
 
 def NewRunBalrog(RunConfig, BalrogConfig, DerivedConfig):
     workingdir = os.path.join(RunConfig['outdir'], RunConfig['label'], DerivedConfig['tile'] )
@@ -748,10 +779,13 @@ def NewRunBalrog(RunConfig, BalrogConfig, DerivedConfig):
         outdir = os.path.join(workingdir, 'output', '%i'%it)
         Mkdir(outdir)
         
-        BConfig = copy.copy(BalrogConfig)
         DConfig = copy.copy(DerivedConfig)
         DConfig['iteration'] = it
         DConfig['outdir'] = outdir
+
+        BConfig = copy.copy(BalrogConfig)
+        BConfig['indexstart'] = DConfig['indexstart'] + it*BConfig['ngal']
+        BConfig['seed'] = BConfig['indexstart'] + DConfig['seedoffset']
 
         if it==-2:
             DConfig['pos'] = None
@@ -763,11 +797,11 @@ def NewRunBalrog(RunConfig, BalrogConfig, DerivedConfig):
             for i in range(len(DerivedConfig['bands'])):
                 DDConfig = copy.copy(DConfig)
                 DDConfig['iteration'] = (it,i)
-                arg = [RunConfig, BalrogConfig, DDConfig]
+                arg = [RunConfig, BConfig, DDConfig]
                 args.append(arg)
         else:
             DConfig['pos'] = DerivedConfig['pos'][it]
-            arg = [RunConfig, BalrogConfig]
+            arg = [RunConfig, BConfig, DConfig]
             args.append(arg)
    
     nthreads = cpu_count()
