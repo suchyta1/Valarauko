@@ -33,7 +33,6 @@ def Mkdir(dir):
 def DownloadImages(indir, images, psfs, skip=False):
     useimages = []
 
-    time1 = datetime.datetime.now()
     for file in images:
         infile = os.path.join(indir, os.path.basename(file))
         if not skip:
@@ -52,8 +51,6 @@ def DownloadImages(indir, images, psfs, skip=False):
             Remove(pfile)
             subprocess.call( ['wget', '-q', '--no-check-certificate', psf, '-O', pfile] )
         usepsfs.append(pfile)
-    time2 = datetime.datetime.now()
-    #print (time2-time1).total_seconds()
 
     return [useimages, usepsfs]
 
@@ -77,25 +74,48 @@ def PrependDet(RunConfig):
     return bands
 
 
-def GetDetStuff(BalrogConfig, RunConfig, images, ext=0, zpkey='SEXMGZPT'):
+def GetDetStuff(BalrogConfig, RunConfig, images, ext=0, zpkey='SEXMGZPT', doprint=False):
     index = np.array( RunConfig['dualdetection'] )
     bands =  np.array(RunConfig['bands'])
     BalrogConfig['detbands'] = ','.join(bands[index] )
     
     zps = []
+    inc = 0
     for i in index:
         num = i + 1
         header = pyfits.open(images[num])[ext].header
         zp = header[zpkey]
-        zps.append(str(zp))
+
+        #zps.append(str(zp))
+        zps.append(zp)
+
+        '''
+        if inc==0:
+            zpnew = zp
+        else:
+            zpnew += 2.5 * np.log10(1 + np.power(10.0, (zp-zpnew)/2.5))
+        inc += 1
+
+        if doprint:
+            print num, images[num], zp
+        '''
+
+    #BalrogConfig['zeropoint'] = np.average(zps)
+    BalrogConfig['zeropoint'] = np.amin(zps)
+    for i in range(len(zps)):
+        zps[i] = str(zps[i])
+
     BalrogConfig['detzeropoints'] = ','.join(zps)
+    if doprint:
+        print BalrogConfig['detzeropoints'], BalrogConfig['detbands'], BalrogConfig['zeropoint'], BalrogConfig['band']
+
     return BalrogConfig
 
 
-def DoBandStuff(BalrogConfig, RunConfig, band, images, ext=0, zpkey='SEXMGZPT'):
+def DoBandStuff(BalrogConfig, RunConfig, band, images, ext=0, zpkey='SEXMGZPT', doprint=False):
     BalrogConfig['band'] = band
     if band=='det':
-        BalrogConfig = GetDetStuff(BalrogConfig, RunConfig, images, ext=ext, zpkey=zpkey)
+        BalrogConfig = GetDetStuff(BalrogConfig, RunConfig, images, ext=ext, zpkey=zpkey, doprint=doprint)
     return BalrogConfig
 
 
@@ -229,9 +249,7 @@ def NewWrite2DB(cats, labels, RunConfig, BalrogConfig, DerivedConfig):
             else:
                 connstr = get_sqlldr_connection_info(DerivedConfig['db'])
                 logfile = controlfile + '.sqlldr.log'
-                print 'pushing %s' %(controlfile); sys.stdout.flush()
                 subprocess.call(['sqlldr', '%s' %(connstr), 'control=%s' %(controlfile), 'log=%s' %(logfile), 'silent=(header, feedback)'])
-                print 'done pushing %s' %(controlfile); sys.stdout.flush()
 
 
         elif RunConfig['DBload']=='cx_Oracle':
@@ -340,7 +358,7 @@ def RunDoDES(RunConfig, BalrogConfig, DerivedConfig):
     BalrogConfig['ngal'] = 0
     BalrogConfig['image'] = DerivedConfig['images'][ DerivedConfig['iteration'][1] ]
     BalrogConfig['psf'] = DerivedConfig['psfs'][ DerivedConfig['iteration'][1] ]
-    BalrogConfig = DoBandStuff(BalrogConfig, RunConfig, DerivedConfig['bands'][0], DerivedConfig['images'])
+    BalrogConfig = DoBandStuff(BalrogConfig, RunConfig, DerivedConfig['bands'][DerivedConfig['iteration'][1]], DerivedConfig['images'])
     BalrogConfig['outdir'] = os.path.join(DerivedConfig['outdir'], BalrogConfig['band'])
     if RunConfig['dualdetection']!=None:
         BalrogConfig['detimage'] = DerivedConfig['images'][0]
@@ -366,11 +384,12 @@ def RunNormal(RunConfig, BalrogConfig, DerivedConfig):
     detimage = GetBalroggedDetImage(DerivedConfig)
     detpsf = DerivedConfig['psfs'][0]
 
-    for i in range(len(DerivedConfig['bands'])):
+    #for i in range(len(DerivedConfig['bands'])):
+    for i in range(len(DerivedConfig['bands'][0:1])):
         BalrogConfig['poscat'] = coordfile
         BalrogConfig['image'] = DerivedConfig['images'][i]
         BalrogConfig['psf'] = DerivedConfig['psfs'][i]
-        BalrogConfig = DoBandStuff(BalrogConfig, RunConfig, DerivedConfig['bands'][i], DerivedConfig['images'])
+        BalrogConfig = DoBandStuff(BalrogConfig, RunConfig, DerivedConfig['bands'][i], DerivedConfig['images'], doprint=False)
         BalrogConfig['outdir'] = os.path.join(DerivedConfig['outdir'], BalrogConfig['band'])
 
         if (RunConfig['dualdetection']!=None) and (i > 0):
@@ -396,6 +415,11 @@ def run_balrog(args):
     else:
         RunNormal(RunConfig, BalrogConfig, DerivedConfig)
 
+    if RunConfig['intermediate-clean']:
+        subprocess.call( ['rm', '-r', BalrogConfig['outdir']] )
+
+    #print 'done'
+
 
 def NewRunBalrog(RunConfig, BalrogConfig, DerivedConfig):
     workingdir = os.path.join(RunConfig['outdir'], RunConfig['label'], DerivedConfig['tile'] )
@@ -408,11 +432,12 @@ def NewRunBalrog(RunConfig, BalrogConfig, DerivedConfig):
         DerivedConfig['seedoffset'] = np.random.randint(10000)
 
 
-    DerivedConfig['images'], DerivedConfig['psfs'] = DownloadImages(indir, DerivedConfig['images'], DerivedConfig['psfs'], skip=True)
+    DerivedConfig['images'], DerivedConfig['psfs'] = DownloadImages(indir, DerivedConfig['images'], DerivedConfig['psfs'], skip=False)
     BalrogConfig['tile'] = DerivedConfig['tile']
     DerivedConfig['bands'] = PrependDet(RunConfig)
 
     args = []
+    inc = 0
     for it in DerivedConfig['iterations']:
         outdir = os.path.join(workingdir, 'output', '%i'%it)
         Mkdir(outdir)
@@ -422,7 +447,10 @@ def NewRunBalrog(RunConfig, BalrogConfig, DerivedConfig):
         DConfig['outdir'] = outdir
 
         BConfig = copy.copy(BalrogConfig)
-        BConfig['indexstart'] = DConfig['indexstart'] + it*BConfig['ngal']
+        
+        BConfig['indexstart'] = DConfig['indexstart']
+        if it > 0:
+            BConfig['indexstart'] += it*BConfig['ngal']
         BConfig['seed'] = BConfig['indexstart'] + DConfig['seedoffset']
 
         if it==-2:
@@ -438,13 +466,19 @@ def NewRunBalrog(RunConfig, BalrogConfig, DerivedConfig):
                 arg = [RunConfig, BConfig, DDConfig]
                 args.append(arg)
         else:
-            DConfig['pos'] = DerivedConfig['pos'][it]
+            DConfig['pos'] = DerivedConfig['pos'][inc]
             arg = [RunConfig, BConfig, DConfig]
             args.append(arg)
+
+        inc += 1
    
     nthreads = cpu_count()
     pool = Pool(nthreads)
-    run_balrog(args[0])
-    #pool.map(run_balrog, args, chunksize=1)
+    pool.map(run_balrog, args, chunksize=1)
+    '''
+    for arg in args:
+        run_balrog(args[0])
+    '''
 
-
+    if RunConfig['tile-clean']:
+        subprocess.call( ['rm', '-r', workingdir] )

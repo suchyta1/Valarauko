@@ -19,7 +19,7 @@ def CustomArgs(parser):
     parser.add_argument( "-tl", "--tile", help="Tilename", type=str, required=True)
     
     parser.add_argument( "-b", "--band", help="Which filter band to choose from COSMOS catalog. Only relevant if --mag is not given and using COSMOS catlalog.", type=str, default='i', choices=['det','g','r','i','z','Y'])
-    parser.add_argument( "-detb", "--detbands", help="detection bands", type=str, default='r,i,z')
+    parser.add_argument( "-detb", "--detbands", help="detection bands", type=str, default=None)
     parser.add_argument( "-detz", "--detzeropoints", help="zeropoints for detection bands", type=str, default=None)
 
     parser.add_argument( "-posstart", "--posstart", help="Index to start in position catalog", type=int, default=0)
@@ -49,11 +49,13 @@ def CustomParseArgs(args):
             raise Exception("when using --band = 'det', you must also give --detbands")
         if args.detzeropoints==None:
             raise Exception("when using --band = 'det', you must also give --detzeropoints")
+
     if args.detbands!=None:
         args.detbands = args.detbands.split(',')
         args.detzeropoints = args.detzeropoints.split(',')
         for i in range(len(args.detzeropoints)):
             args.detzeropoints[i] = float(args.detzeropoints[i])
+        #print args.detbands, args.detzeropoints, args.band, args.zeropoint, args.ngal
     args.mag = ByBand(args.band)
 
     if args.ngal > 0:
@@ -68,8 +70,6 @@ def CustomParseArgs(args):
 def GetImageCoords(args):
     import pyfits
     header = pyfits.open(args.image)[args.imageext].header
-    #header = esutil.io.read_header(args.image, ext=args.imageext)
-    #print args.image, args.imageext, header.keys()
     wcs = pywcs.WCS(header)
     wcoords = np.dstack((args.ra,args.dec))[0]
     wcoords = wcs.wcs_sky2pix(wcoords, 1)
@@ -87,16 +87,22 @@ def MultibandMag(mz, args):
     flux = np.zeros(args.ngal)
     for i in range(len(mz)):
         mag, zp = mz[i]
-        f = np.power(10.0, (zp - mag) / 2.5)
+
+        f = np.power(10.0, (args.zeropoint - mag) / 2.5) * np.power(10.0, (args.zeropoint - zp) / 2.5)
+        #f = np.power(10.0, (args.zeropoint - mag) / 2.5) * np.power(10.0, (zp - args.zeropoint) / 2.5)
+        #f = np.power(10.0, (zp - mag) / 2.5)
+        #f = np.power(10.0, (args.zeropoint - mag)/2.5)
+
         flux += f
+    flux = flux / len(mz)
     mag = Flux2Mag(flux, args)
     return mag
 
 def Flux2Mag(flux, args):
     mag = np.array( [99.0]*args.ngal )
     cut = (flux > 0)
-    args.zeropoint - 2.5 * np.log10(flux)
-    mag[cut] = args.zeropoint - 2.5 * np.log10(flux)
+    mag[cut] = args.zeropoint - 2.5 * np.log10(flux[cut])
+    #print mag
     return mag
 
 

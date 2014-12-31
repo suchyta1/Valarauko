@@ -5,20 +5,29 @@ import numpy as np
 class RunConfigurations:
 
         default = {
-            'outdir': os.environ['BALROG_MPI_DEFAULT_OUT'],
-            'fullclean': True,
-            #'tiletotal': 300000, 
-            'tiletotal': 100, 
-            'label': 'debug',
-            'bands': ['g','r','i','z','Y'],
-            'dualdetection': [1,2,3],
-            #'doDES': True,
-            'doDES': False,
             'balrog': '/astro/u/esuchyta/git_repos/balrog-testing/Balrog/balrog.py',
+            'outdir': os.environ['BALROG_MPI_DEFAULT_OUT'],
+            'intermediate-clean': False,
+            'tile-clean': False,
+
+            'label': 'debug2',
+            'DBload': 'cx_Oracle',
+
+            #'tiletotal': 300000, 
+            'tiletotal': 50000, 
+            #'tiletotal': 10000, 
             'fixposseed': None,
             'fixwrapseed': None,
-            'DBload': 'cx_Oracle'
-            #'DBload': 'sqlldr'
+
+            'doDES': True,
+            #'doDES': False,
+            'bands': ['g','r','i','z','Y'],
+            'dualdetection': [1,2,3]
+            #'bands': ['det'],
+            #'dualdetection': None
+            #'bands': ['r','i','z'],
+            #'dualdetection': [0,1,2]
+
         }
 
 
@@ -27,18 +36,16 @@ class BalrogConfigurations:
 
         default = {
             'fulltraceback': True,
-            #'clean': True,
-            'clean': False,
-            #'ngal': 1000,
-            'ngal': 50,
+            'ngal': 1000,
+            #'ngal': 50,
             'pyconfig': os.path.join(os.environ['BALROG_MPI_PYCONFIG'], 'default.py'),
 
             'catfitstype': 'ldac',
             'sexnnw': os.path.join(os.environ['BALROG_MPI_ASTRO_CONFIG'], 'sva1', 'sex.nnw'),
             'sexconv': os.path.join(os.environ['BALROG_MPI_ASTRO_CONFIG'], 'sva1', 'sex.conv'),
-            #'sexparam': os.path.join(os.environ['BALROG_MPI_ASTRO_CONFIG'], 'sva1', 'sex.param_diskonly'),
+            'sexparam': os.path.join(os.environ['BALROG_MPI_ASTRO_CONFIG'], 'sva1', 'sex.param_diskonly'),
             'sexparam': os.path.join(os.environ['BALROG_MPI_ASTRO_CONFIG'], 'sva1', 'sex.param'),
-            'sexconfig': os.path.join(os.environ['BALROG_MPI_ASTRO_CONFIG'], 'sva1', 'sex.config'),
+            #'sexconfig': os.path.join(os.environ['BALROG_MPI_ASTRO_CONFIG'], 'sva1', 'sex.config'),
             'sexpath': '/direct/astro+u/esuchyta/svn_repos/sextractor-2.18.10/install/bin/sex',
         }
 

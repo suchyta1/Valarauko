@@ -44,6 +44,7 @@ def SendEmail(config):
 def GetFiles(RunConfig, SheldonConfig, tiles):
     bands = RunConfig['bands']
     runs = np.array( desdb.files.get_release_runs(SheldonConfig['release'], withbands=bands) )
+    #runs = np.array( desdb.files.get_release_runs(SheldonConfig['release'], withbands=['g','r','i','z','Y']) )
     bands = runbalrog.PrependDet(RunConfig)
     kwargs = {}
     kwargs['type'] = SheldonConfig['filetype']
@@ -98,7 +99,8 @@ def RandomPositions(RunConfiguration, BalrogConfiguration, tiles, seed=None):
 
     target = len(tiles) * RunConfiguration['tiletotal'] / float(MPI.COMM_WORLD.size)
     #inc = 10000 
-    inc = 1
+    #inc = 1
+    inc = 1000
     
     if RunConfiguration['fixposseed']!=None:
         np.random.seed(RunConfiguration['fixposseed'])
@@ -184,12 +186,12 @@ def PrepareIterations(tiles, images, psfs, position, config, RunConfig):
 if __name__ == "__main__":
     RunConfig = RunConfigurations.default
     SheldonConfig = desdbInfo.sva1_coadd
-    tiles = TileLists.suchyta13[0:1]
+    tiles = TileLists.suchyta13[1:2]
     config = BalrogConfigurations.default
     DBConfig = DBInfo.default
 
     pos = RandomPositions(RunConfig, config, tiles)
-
+    
     if MPI.COMM_WORLD.Get_rank()==0:
         images, psfs = GetFiles(RunConfig, SheldonConfig, tiles)
         tables = DropTablesIfNeeded(RunConfig, config)
@@ -211,7 +213,7 @@ if __name__ == "__main__":
                          'db': DBConfig}
         runbalrog.NewRunBalrog(RunConfig, config, DerivedConfig)
 
-
+    
     #This is all the real Balrog realizations. Everything not passed to RunBalrog should be easily parseable from the config dictionaries, *I think*
     if MPI.COMM_WORLD.Get_rank()==0:
         ScatterStuff = PrepareIterations(tiles, images, psfs, pos, config, RunConfig)
