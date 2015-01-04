@@ -32,7 +32,7 @@ def CustomArgs(parser):
 def ByBand(band):
     if band=='det':
         mag = 'det'
-    if band=='Y':
+    elif band=='Y':
         mag = 'Mapp_HSC_y'
     else:
         mag = 'Mapp_%s_subaru' %(band)
@@ -148,7 +148,13 @@ def SimulationRules(args, rules, sampled, TruthCat):
     TruthCat.AddColumn(args.ra, name='RA', fmt='E')
     TruthCat.AddColumn(args.dec, name='DEC', fmt='E')
 
+    '''
     if args.detbands==None:
+        TruthCat.AddColumn(tab.Column(args.mag), name='MAG')
+    else:
+        TruthCat.AddColumn( Function(function=Flux2Mag, args=[sampled.magnitude,args]), name='MAG', fmt='E' )
+    '''
+    if args.band!='det':
         TruthCat.AddColumn(tab.Column(args.mag), name='MAG')
     else:
         TruthCat.AddColumn( Function(function=Flux2Mag, args=[sampled.magnitude,args]), name='MAG', fmt='E' )
