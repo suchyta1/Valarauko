@@ -313,6 +313,10 @@ def NewWrite2DB(cats, labels, RunConfig, BalrogConfig, DerivedConfig):
 
             if create:
                 create_cmd = GetOracleStructure(arr, tablename, noarr=noarr, create=True)
+                '''
+                if create_cmd.find('truth')!=-1:
+                    print create_cmd
+                '''
                 cur.quick(create_cmd)
             else:
                 istr, newarr = GetOracleStructure(arr, tablename, noarr=noarr)
@@ -554,8 +558,10 @@ def NewRunBalrog(RunConfig, BalrogConfig, DerivedConfig):
     nthreads = cpu_count()
     pool = Pool(nthreads)
     pool.map(run_balrog, args, chunksize=1)
+    '''
     for arg in args:
         run_balrog(arg)
+    '''
 
     if RunConfig['tile-clean']:
         subprocess.call( ['rm', '-r', workingdir] )

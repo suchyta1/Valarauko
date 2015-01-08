@@ -8,18 +8,23 @@ import esutil
 import scipy.special
 from model_class import *
 
+usemorph = False
+
 
 def CustomArgs(parser):
     parser.add_argument( "-cs", "--catalog", help="Catalog used to sample simulated galaxy parameter distriubtions from", type=str, default=None)
     parser.add_argument( "-ext", "--ext", help="Index of the data extension for sampling catalog", type=int, default=1)
-
-    parser.add_argument( "-reff", "--reff", help="Column name when drawing half light radius from catalog", type=str, default="HALF_LIGHT_RADIUS")
-    parser.add_argument( "-nsersic", "--sersicindex", help="Column name when drawing sersic index catalog", type=str, default="SERSIC_INDEX")
-    #parser.add_argument( "-ax", "--axisratio", help="Axis ratio column", type=str, default="axisratio")
-    #parser.add_argument( "-beta", "--beta", help="Beta column", type=str, default="beta")
+    
+    if usemorph:
+        parser.add_argument( "-reff", "--reff", help="Column name when drawing half light radius from catalog", type=str, default="halflightradius")
+        parser.add_argument( "-nsersic", "--sersicindex", help="Column name when drawing sersic index catalog", type=str, default="sersicindex")
+        parser.add_argument( "-ax", "--axisratio", help="Axis ratio column", type=str, default="axisratio")
+        parser.add_argument( "-beta", "--beta", help="Beta column", type=str, default="beta")
+    else:
+        parser.add_argument( "-reff", "--reff", help="Column name when drawing half light radius from catalog", type=str, default="HALF_LIGHT_RADIUS")
+        parser.add_argument( "-nsersic", "--sersicindex", help="Column name when drawing sersic index catalog", type=str, default="SERSIC_INDEX")
 
     parser.add_argument( "-tl", "--tile", help="Tilename", type=str, required=True)
-    
     parser.add_argument( "-b", "--band", help="Which filter band to choose from COSMOS catalog. Only relevant if --mag is not given and using COSMOS catlalog.", type=str, default='i', choices=['det','g','r','i','z','Y'])
     parser.add_argument( "-detb", "--detbands", help="detection bands", type=str, default=None)
     parser.add_argument( "-detz", "--detzeropoints", help="zeropoints for detection bands", type=str, default=None)
@@ -38,18 +43,22 @@ def ByBand(band):
         mag = 'det'
     elif band=='Y':
         mag = 'Mapp_HSC_y'
-        mag = mag.upper()
+        if not usemorph:
+            mag = mag.upper()
     else:
         mag = 'Mapp_%s_subaru' %(band)
-        mag = mag.upper()
+        if not usemorph:
+            mag = mag.upper()
     return mag
 
 
 def CustomParseArgs(args):
     thisdir = os.path.dirname( os.path.realpath(__file__) )
     if args.catalog==None:
-        #args.catalog = '/direct/astro+u/esuchyta/git_repos/BalrogSetupBNL/input_cats/CMC_allband_upsample.fits'
-        args.catalog = '/astro/u/esuchyta/git_repos/balrog-testing/Balrog/cosmos.fits'
+        if usemorph:
+            args.catalog = '/direct/astro+u/esuchyta/git_repos/BalrogSetupBNL/input_cats/CMC_allband_upsample.fits'
+        else:
+            args.catalog = '/astro/u/esuchyta/git_repos/balrog-testing/Balrog/cosmos.fits'
 
     if args.band == 'det':
         if args.detbands==None:
@@ -66,7 +75,6 @@ def CustomParseArgs(args):
             args.detzeropoints[i] = float(args.detzeropoints[i])
             args.detweights[i] = float(args.detweights[i])
         args.detweigths = np.array(args.detweights)
-        #print args.detbands, args.detzeropoints, args.band, args.zeropoint, args.ngal
     args.mag = ByBand(args.band)
 
     if args.ngal > 0:
@@ -95,49 +103,52 @@ def GetYCoords(args):
     return wcoords[:,1]
 
 def GetBias(n):
-    n = float(n)
+    #n = float(n)
     bias = np.sqrt(2) * scipy.special.gamma((n+1)/2) / scipy.special.gamma(n/2)
     return bias
 
-def MultibandMag(mz, args):
+def MultibandMag(mz, args, x, y):
     flux = np.zeros(args.ngal)
     #w = np.sqrt(args.detweights)
     #w = args.detweights
 
-    num = len(mz)
-    bias = GetBias(num)
+    nums = np.zeros(args.ngal)
     for i in range(len(mz)):
         mag = mz[i]
-
-        #f = np.power(10.0, (args.zeropoint - mag) / 2.5) * np.power(10.0, (args.zeropoint - zp) / 2.5)
-        #f = np.power(10.0, (args.zeropoint - mag) / 2.5) * np.power(10.0, (zp - args.zeropoint) / 2.5)
-        #f = np.power(10.0, (zp - mag) / 2.5)
-        #f = np.power(10.0, (args.zeropoint - mag)/2.5)
-        #flux += f
 
         #f = np.power(10.0, (args.zeropoint - mag) / 2.5) * np.power(10.0, (args.zeropoint - args.detzeropoints[i]) / 2.5)
         f = np.power(10.0, (args.detzeropoints[i] - mag) / 2.5)
 
         ws = pyfits.open(args.detfiles[i])[args.weightext].data
-        w = np.random.choice(ws.flatten())
+        #w = np.random.choice(ws.flatten())
+        w = ws[np.int32(y),np.int32(x)]
 
+
+        #flux += f
         #flux += f * args.detweights[i]
         #flux += f * w[i]
         #flux += f*f * w[i]
-        flux += f*f * w
+
+        cut = (w > 0)
+        nums[cut] = nums[cut] + 1
+        flux[cut] =  flux[cut] + np.power(f[cut],2.0) * w[cut]
 
     #flux = flux / len(mz)
     #flux = flux / np.sum(args.detweights)
     #flux = flux / np.sum(w)
-    flux = (np.sqrt(flux) - bias) / np.sqrt(num - bias*bias)
-    mag = Flux2Mag(flux, args)
-    return mag
+    #flux = (np.sqrt(flux) - bias) / np.sqrt(num - bias*bias)
+
+    bias = GetBias(nums)
+    cut = (nums > 0)
+    flux[cut] = (np.sqrt(flux[cut]) - bias[cut]) / np.sqrt(nums[cut] - bias[cut]*bias[cut])
+    #mag = Flux2Mag(flux, args)
+    #return mag
+    return flux
 
 def Flux2Mag(flux, args):
     mag = np.array( [99.0]*args.ngal )
     cut = (flux > 0)
     mag[cut] = args.zeropoint - 2.5 * np.log10(flux[cut])
-    #print mag
     return mag
 
 
@@ -159,10 +170,12 @@ def SimulationRules(args, rules, sampled, TruthCat):
     
     rules.halflightradius = tab.Column(args.reff)
     rules.sersicindex = tab.Column(args.sersicindex)
-    rules.beta = 0
-    rules.axisratio = 1
-    #rules.beta = tab.Column(args.beta)
-    #rules.axisratio = tab.Column(args.axisratio)
+    if usemorph:
+        rules.beta = tab.Column(args.beta)
+        rules.axisratio = tab.Column(args.axisratio)
+    else:
+        rules.beta = 0
+        rules.axisratio = 1
 
     if args.band=='det':
         bz = []
@@ -171,27 +184,27 @@ def SimulationRules(args, rules, sampled, TruthCat):
             #z = args.detzeropoints[i]
             #bz.append( [tab.Column(m),z] )
             bz.append( tab.Column(m) )
-        rules.magnitude = Function(function=MultibandMag, args=[bz,args])
+        rules.magnitude = Function(function=MultibandMag, args=[bz,args,sampled.x,sampled.y])
     else:
         rules.magnitude = tab.Column(args.mag)
 
 
-    TruthCat.AddColumn(tab.Column('ID'), name='CMCID')
-    TruthCat.AddColumn(tab.Column('_MOD'), name='CMCMOD')
-    TruthCat.AddColumn(tab.Column('TYPE'), name='CMCTYPE')
-    TruthCat.AddColumn(tab.Column('Z'))
+    if usemorph:
+        TruthCat.AddColumn(tab.Column('Id'))
+        TruthCat.AddColumn(tab.Column('Mod'))
+        TruthCat.AddColumn(tab.Column('type'), name='OBJTYPE')
+        TruthCat.AddColumn(tab.Column('z'))
+    else:
+        TruthCat.AddColumn(tab.Column('ID'), name='CMCID')
+        TruthCat.AddColumn(tab.Column('_MOD'), name='CMCMOD')
+        TruthCat.AddColumn(tab.Column('TYPE'), name='CMCTYPE')
+        TruthCat.AddColumn(tab.Column('Z'))
+
     TruthCat.AddColumn(args.seed, name='SEED', fmt='J')
     TruthCat.AddColumn(args.zeropoint, name='ZEROPOINT', fmt='E')
-    #TruthCat.AddColumn(args.tile, name='TILENAME', fmt='12A')
     TruthCat.AddColumn(args.ra, name='RA', fmt='E')
     TruthCat.AddColumn(args.dec, name='DEC', fmt='E')
 
-    '''
-    if args.detbands==None:
-        TruthCat.AddColumn(tab.Column(args.mag), name='MAG')
-    else:
-        TruthCat.AddColumn( Function(function=Flux2Mag, args=[sampled.magnitude,args]), name='MAG', fmt='E' )
-    '''
     if args.band!='det':
         TruthCat.AddColumn(tab.Column(args.mag), name='MAG')
     else:

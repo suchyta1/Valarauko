@@ -10,23 +10,18 @@ class RunConfigurations:
             'intermediate-clean': True,
             'tile-clean': True, 
 
-            'label': 'debug8',
+            'label': 'debug13',
             'DBload': 'cx_Oracle',
 
             #'tiletotal': 300000, 
             'tiletotal': 50000, 
-            #'tiletotal': 1000, 
             'fixposseed': None,
             'fixwrapseed': None,
 
             'doDES': True,
-            #'doDES': False,
             'bands': ['g','r','i','z','Y'],
             'dualdetection': [1,2,3]
-            #'bands': ['det'],
             #'dualdetection': None
-            #'bands': ['r','i','z'],
-            #'dualdetection': [0,1,2]
 
         }
 
@@ -37,7 +32,6 @@ class BalrogConfigurations:
         default = {
             'fulltraceback': True,
             'ngal': 1000,
-            #'ngal': 50,
             #'pyconfig': os.path.join(os.environ['BALROG_MPI_PYCONFIG'], 'default.py'),
             'pyconfig': os.path.join(os.environ['BALROG_MPI_PYCONFIG'], 'lessdefault.py'),
 
