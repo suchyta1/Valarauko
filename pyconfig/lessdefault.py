@@ -141,9 +141,8 @@ def MultibandMag(mz, args, x, y):
     bias = GetBias(nums)
     cut = (nums > 0)
     flux[cut] = (np.sqrt(flux[cut]) - bias[cut]) / np.sqrt(nums[cut] - bias[cut]*bias[cut])
-    #mag = Flux2Mag(flux, args)
-    #return mag
-    return flux
+    mag = Flux2Mag(flux, args)
+    return mag
 
 def Flux2Mag(flux, args):
     mag = np.array( [99.0]*args.ngal )
