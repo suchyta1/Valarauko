@@ -30,6 +30,7 @@ def Mkdir(dir):
         os.makedirs(dir)
 
 
+# Download and uncompress images
 def DownloadImages(indir, images, psfs, skip=False):
     useimages = []
 
@@ -55,6 +56,7 @@ def DownloadImages(indir, images, psfs, skip=False):
     return [useimages, usepsfs]
 
 
+# Convert Balrog dictionary to command line arguments
 def Dict2Cmd(d, cmd):
     l = [cmd]
     for key in d.keys():
@@ -115,6 +117,7 @@ def GetDetZps(RunConfig, DerivedConfig, ext=0, zpkey='SEXMGZPT'):
     return [','.join(zps), ','.join(ws), ','.join(fs)]
 
 
+"""
 def GetDetStuff(BalrogConfig, RunConfig, images, ext=0, zpkey='SEXMGZPT', doprint=False):
     index = np.array( RunConfig['dualdetection'] )
     bands =  np.array(RunConfig['bands'])
@@ -158,7 +161,6 @@ def GetDetStuff(BalrogConfig, RunConfig, images, ext=0, zpkey='SEXMGZPT', doprin
     return BalrogConfig
 
 
-"""
 def DoBandStuff(BalrogConfig, RunConfig, band, images, ext=0, zpkey='SEXMGZPT', doprint=False):
     #BalrogConfig['band'] = band
     '''
@@ -180,6 +182,7 @@ def GetSeed(BalrogConfig, DerivedConfig):
 """
 
 
+# Figure out which catalogs get writting to which DB tables
 def GetRelevantCatalogs(BalrogConfig, RunConfig, DerivedConfig, band=None):
     it = EnsureInt(DerivedConfig)
     if band==None:
@@ -241,6 +244,7 @@ def Number2NumberSex(ndata):
     return ndata
 
 
+# Remove VECASSOC in output catalog in favor of balrog_index
 def VecAssoc2BalrogIndex(header, ndata, label, index_key='balrog_index'):
     pos = None
     for name in header.keys():
@@ -255,6 +259,7 @@ def VecAssoc2BalrogIndex(header, ndata, label, index_key='balrog_index'):
     return ndata
 
 
+# Change some protected Oracle keywords and add the tilename to all tables
 def NewMakeOracleFriendly(file, ext, BalrogConfig, DerivedConfig, label):
     hdu = pyfits.open(file)[ext]
     header = hdu.header
@@ -269,11 +274,14 @@ def NewMakeOracleFriendly(file, ext, BalrogConfig, DerivedConfig, label):
     ndata = recfunctions.append_fields(ndata, 'tilename', t, '|S12', usemask=False)
     return ndata
 
+
+# How to connect sqlldr to the DB
 def get_sqlldr_connection_info(db_specs):
     cur = desdb.connect()
     return '%s/%s@"(DESCRIPTION=(ADDRESS=(PROTOCOL=%s)(HOST=%s)(PORT=%s))(CONNECT_DATA=(SERVER=%s)(SERVICE_NAME=%s)))"' %(cur.username,cur.password,db_specs['protocol'],db_specs['db_host'],db_specs['port'],db_specs['server'],db_specs['service_name'])
 
 
+# Write Balrog catalogs to DB
 def NewWrite2DB(cats, labels, RunConfig, BalrogConfig, DerivedConfig):
     it = EnsureInt(DerivedConfig)
     create = False
@@ -331,13 +339,15 @@ def NewWrite2DB(cats, labels, RunConfig, BalrogConfig, DerivedConfig):
             cur.quick("GRANT SELECT ON %s TO DES_READER" %tablename)
 
 
-
+#How to connect to DB in cx_Oracle
 def get_cx_oracle_cursor(db_specs):
     c = desdb.connect()
     connection = cx_Oracle.connect( "%s/%s@(DESCRIPTION=(ADDRESS=(PROTOCOL=%s)(HOST=%s)(PORT=%s))(CONNECT_DATA=(SERVER=%s)(SERVICE_NAME=%s)))" %(c.username,c.password,db_specs['protocol'],db_specs['db_host'],db_specs['port'],db_specs['server'],db_specs['service_name']) )
     cur = connection.cursor()
     return cur, connection
 
+ 
+# Convert numpy array to something can be written to the DB by cx_Oracle
 def MakeNewArray(alldefs, arr, tablename, noarr=False):
     lists = []
     cols = []
@@ -369,6 +379,7 @@ def MakeNewArray(alldefs, arr, tablename, noarr=False):
     return istr, newarr
 
 
+# Convert numpy array to something can be written to the DB by cx_Oracle
 def GetOracleStructure(arr, tablename, noarr=False, create=False):
     a = arr.view(np.ndarray)
     cs, alldefs = desdb.get_tabledef(a.dtype.descr, tablename)
@@ -380,6 +391,7 @@ def GetOracleStructure(arr, tablename, noarr=False, create=False):
         return istr, newarr
 
 
+# Write coordinates of simulated galaxies to a file so Balrog can read them in
 def WriteCoords(coords, outdir):
     coordfile = os.path.join(outdir, 'coords.fits')
     rcol = pyfits.Column(name='ra', format='D', unit='deg', array=coords[:,0])
@@ -452,6 +464,7 @@ def GetBalroggedDetImage(DerivedConfig):
     return file
 
 
+# This will need to be changed to coadd the detection image
 def RunNormal(RunConfig, BalrogConfig, DerivedConfig):
     coordfile = WriteCoords(DerivedConfig['pos'], DerivedConfig['outdir'])
     detimage = GetBalroggedDetImage(DerivedConfig)
@@ -490,10 +503,13 @@ def run_balrog(args):
     it = EnsureInt(DerivedConfig)
 
     if it==-2:
+        # Minimal Balrog run to create DB tables
         RunOnlyCreate(RunConfig, BalrogConfig, DerivedConfig)
     elif it==-1:
+        # No simulated galaxies
         RunDoDES(RunConfig, BalrogConfig, DerivedConfig)
     else:
+        # Actual Balrog realization
         RunNormal(RunConfig, BalrogConfig, DerivedConfig)
 
     if RunConfig['intermediate-clean']:
