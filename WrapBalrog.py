@@ -32,11 +32,12 @@ def SendEmail(config):
     obj.sendmail(sender, receivers, msg.as_string())
 
 
-
+# Find the files from the DES server we need to download
 def GetFiles(RunConfig, SheldonConfig, tiles):
+
+    #First get all runs
     bands = RunConfig['bands']
     runs = np.array( desdb.files.get_release_runs(SheldonConfig['release'], withbands=bands) )
-    #runs = np.array( desdb.files.get_release_runs(SheldonConfig['release'], withbands=['g','r','i','z','Y']) )
     bands = runbalrog.PrependDet(RunConfig)
     kwargs = {}
     kwargs['type'] = SheldonConfig['filetype']
@@ -46,6 +47,7 @@ def GetFiles(RunConfig, SheldonConfig, tiles):
     keepimages = []
     keeppsfs = []
 
+    # Pick out only the tiles we wanted
     for i in range(len(runs)):
         run = runs[i]
         tile = run[-12:]
@@ -67,18 +69,23 @@ def GetFiles(RunConfig, SheldonConfig, tiles):
     return [keepimages, keeppsfs]    
 
 
+# Generate random, unclustered object positions
 def RandomPositions(RunConfiguration, BalrogConfiguration, tiles, seed=None):
+
+    # Find the unique tile area, only simulate into the unique area since other area will get cut anyway
     cur = desdb.connect()
     q = "select urall, uraur, udecll, udecur, tilename from coaddtile"
     all = cur.quick(q, array=True)
     cut = np.in1d(all['tilename'], tiles)
     dcoords = all[cut]
+
+    # To make generating the sample easier, I simulate within bounds [ramin, ramax], [decmin,decmax] then only take what's in the tiles we're using
     ramin = np.amin(dcoords['urall'])
     ramax = np.amax(dcoords['uraur'])
     decmin = np.amin(dcoords['udecll'])
     decmax = np.amax(dcoords['udecur'])
 
-
+    # Put into right range for arccos
     if decmin < 0:
         decmin = 90 - decmin
     if decmax < 0:
@@ -91,12 +98,12 @@ def RandomPositions(RunConfiguration, BalrogConfiguration, tiles, seed=None):
 
     target = len(tiles) * RunConfiguration['tiletotal'] / float(MPI.COMM_WORLD.size)
     #inc = 10000 
-    #inc = 1
     inc = 1000
     
     if RunConfiguration['fixposseed']!=None:
         np.random.seed(RunConfiguration['fixposseed'])
 
+    # Loop until we've kept at least as many galaxies as we wanted, we'll generate inc at a time and see which of those lie in our tiles
     numfound = 0
     while numfound < target:
         ra = np.random.uniform(ramin,ramax, inc)
@@ -116,12 +123,12 @@ def RandomPositions(RunConfiguration, BalrogConfiguration, tiles, seed=None):
                 wcoords[i] = np.concatenate( (wcoords[i],coords[inside]), axis=0)
             numfound += found
 
-    #wcoords = np.array(wcoords)
     for i in range(len(wcoords)):
         wcoords[i] = mpifunctions.Gather(wcoords[i])
     return wcoords
 
 
+# Delete the existing DB tables for your run if the names already exist
 def DropTablesIfNeeded(RunConfig, BalrogConfig):
     cur = desdb.connect()
     user = cur.username
