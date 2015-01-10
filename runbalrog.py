@@ -158,6 +158,7 @@ def GetDetStuff(BalrogConfig, RunConfig, images, ext=0, zpkey='SEXMGZPT', doprin
     return BalrogConfig
 
 
+"""
 def DoBandStuff(BalrogConfig, RunConfig, band, images, ext=0, zpkey='SEXMGZPT', doprint=False):
     #BalrogConfig['band'] = band
     '''
@@ -172,12 +173,11 @@ def DoBandStuff(BalrogConfig, RunConfig, band, images, ext=0, zpkey='SEXMGZPT', 
     return BalrogConfig
 
 
-'''
 def GetSeed(BalrogConfig, DerivedConfig):
 
     BalrogConfig['seed'] = BalrogConfig['indexstart'] + DerivedConfig['seedoffset']
     return BalrogConfig
-'''
+"""
 
 
 def GetRelevantCatalogs(BalrogConfig, RunConfig, DerivedConfig, band=None):
@@ -502,6 +502,11 @@ def run_balrog(args):
     #print 'done'
 
 
+# This is the main function each node runs.
+# It starts as many threads as cores on the nodes and uses them all with multiprocessing pool
+# RunConfig is NEVER changed.
+# BalrogConfig will be given as command line arguments to Balrog
+# DerivedConfig is other stuff that will be useful to know down the line.
 def NewRunBalrog(RunConfig, BalrogConfig, DerivedConfig):
     workingdir = os.path.join(RunConfig['outdir'], RunConfig['label'], DerivedConfig['tile'] )
     indir = os.path.join(workingdir, 'input')
@@ -554,7 +559,9 @@ def NewRunBalrog(RunConfig, BalrogConfig, DerivedConfig):
             args.append(arg)
 
         inc += 1
-   
+  
+    # If you're going to be changing and debugging, debugging is a GIANT pain using pool.map
+    # The commented out loop is the same thing without parallel threads.
     nthreads = cpu_count()
     pool = Pool(nthreads)
     pool.map(run_balrog, args, chunksize=1)
