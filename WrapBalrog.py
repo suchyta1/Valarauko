@@ -13,7 +13,10 @@ from RunConfigurations import *
 import runbalrog
 
 
-
+"""
+This is kind of cool, so you can send an email to yourself when the run finishes.
+You'll notice my email in there, so if you're going to use this change the sender to yourself.
+"""
 def SendEmail(config):
     import smtplib
     from email.mime.text import MIMEText
@@ -25,17 +28,6 @@ def SendEmail(config):
     msg['From'] = sender
     msg['To'] = sender
     
-    '''
-    sender = 'eric.d.suchyta@gmail.com'
-    receivers = [sender]
-    message = """From: Eric Suchyta <eric.d.suchyta@gmail.com>
-    To: Eric Suchyta <eric.d.suchyta@gmail.com>
-    Subject: %s completed
-
-    Balrog run %s finished.
-    """ %(config['label'], config['label'])
-    '''
-
     obj = smtplib.SMTP('localhost')
     obj.sendmail(sender, receivers, msg.as_string())
 
@@ -184,20 +176,33 @@ def PrepareIterations(tiles, images, psfs, position, config, RunConfig):
 
 
 if __name__ == "__main__":
+
+    # These effect a whole run's behavior. That is they are higher level than a single Balrog call.
     RunConfig = RunConfigurations.default
+
+    # This is configuring desdb to find the right files.
     SheldonConfig = desdbInfo.sva1_coadd
+
+    # What tiles you want to Balrog
     tiles = TileLists.suchyta13[1:2]
+
+    # These get passes as command line arguments to Balrog. If you add too much it could mess things up.
     config = BalrogConfigurations.default
+
+    # Info for connecting to the DB. You probably don't need to touch this.
     DBConfig = DBInfo.default
 
+    # Generate positions for the simulated objects
     pos = RandomPositions(RunConfig, config, tiles)
-    
+   
+    # Call desdb to find the tiles we need to download and delete any existing DB tables which are the same as your run label.
     if MPI.COMM_WORLD.Get_rank()==0:
         images, psfs = GetFiles(RunConfig, SheldonConfig, tiles)
         tables = DropTablesIfNeeded(RunConfig, config)
 
 
-    #This will do the minimal Balrog run, which only runs so the outputs exist to know what needs to write to the DB.
+    # This creates the DB tables.
+    # It will do a minimal Balrog run, intended only to get the output catalog columns, so we know what needs to be written to the DB.
     if MPI.COMM_WORLD.Get_rank()==0:
         ScatterStuff = PrepareCreateOnly(tiles, images, psfs, pos, config)
     else:
@@ -214,7 +219,7 @@ if __name__ == "__main__":
         runbalrog.NewRunBalrog(RunConfig, config, DerivedConfig)
 
     
-    #This is all the real Balrog realizations. Everything not passed to RunBalrog should be easily parseable from the config dictionaries, *I think*
+    # This is all the real Balrog realizations.
     if MPI.COMM_WORLD.Get_rank()==0:
         ScatterStuff = PrepareIterations(tiles, images, psfs, pos, config, RunConfig)
     else:
@@ -230,6 +235,8 @@ if __name__ == "__main__":
                          'db':DBConfig}
         runbalrog.NewRunBalrog(RunConfig, config, DerivedConfig)
 
+
+    # Send email when the run finishes
     """
     if MPI.COMM_WORLD.Get_rank()==0:
         SendEmail(config)

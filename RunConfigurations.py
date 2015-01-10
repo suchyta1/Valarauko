@@ -5,22 +5,22 @@ import numpy as np
 class RunConfigurations:
 
         default = {
-            'balrog': '/astro/u/esuchyta/git_repos/balrog-testing/Balrog/balrog.py',
-            'outdir': os.environ['BALROG_MPI_DEFAULT_OUT'],
-            'intermediate-clean': True,
-            'tile-clean': True, 
+            'balrog': '/astro/u/esuchyta/git_repos/balrog-testing/Balrog/balrog.py',  # The Balrog executable you'll use
+            'outdir': os.environ['BALROG_MPI_DEFAULT_OUT'],  # The ouput directory for all intermediate work. This should be in the scratch area on the node.
+            'intermediate-clean': True,  # Delete an iteration's output Balrog images
+            'tile-clean': True,  # Delete the entire outdir/run's contents
 
-            'label': 'debug13',
-            'DBload': 'cx_Oracle',
+            'label': 'debug13',  # DB tables will look like <username>.balrog_<type>_<band>
+            'DBload': 'cx_Oracle',  # ['cx_Oracle', 'sqlldr'] How to write to DB
 
-            #'tiletotal': 300000, 
-            'tiletotal': 50000, 
-            'fixposseed': None,
-            'fixwrapseed': None,
+            #'tiletotal': 300000, # Approximate number of Balrog galaxies per tile.
+            'tiletotal': 50000,   
+            'fixposseed': None,  # Fix this to get the same positions every time you run
+            'fixwrapseed': None, # Fix this to get the same Balrog realizations set each time you run
 
-            'doDES': True,
-            'bands': ['g','r','i','z','Y'],
-            'dualdetection': [1,2,3]
+            'doDES': True,  # Run sextractor without any Balrog galaxies.
+            'bands': ['g','r','i','z','Y'], # Bands you'll get measurement catalogs for
+            'dualdetection': [1,2,3]  # Use None not to use detection image. Otherwise the indices in the array of bands.
             #'dualdetection': None
 
         }
