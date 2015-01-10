@@ -10,7 +10,7 @@ class RunConfigurations:
             'intermediate-clean': True,  # Delete an iteration's output Balrog images
             'tile-clean': True,  # Delete the entire outdir/run's contents
 
-            'label': 'debug',  # DB tables will look like <username>.balrog_<type>_<band>
+            'label': 'debug',  # DB tables will look like <username>.balrog_<label>_<type>_<band>
             'DBload': 'cx_Oracle',  # ['cx_Oracle', 'sqlldr'] How to write to DB
 
             #'tiletotal': 300000, # Approximate number of Balrog galaxies per tile.
