@@ -128,8 +128,9 @@ def RandomPositions(RunConfiguration, BalrogConfiguration, tiles, seed=None):
     return wcoords
 
 
+
 # Delete the existing DB tables for your run if the names already exist
-def DropTablesIfNeeded(RunConfig, BalrogConfig):
+def DropTablesIfNeeded(RunConfig, BalrogConfig, allbands=['g','r','i','z','Y','det']):
     cur = desdb.connect()
     user = cur.username
 
@@ -143,6 +144,27 @@ def DropTablesIfNeeded(RunConfig, BalrogConfig):
 
     bands = runbalrog.PrependDet(RunConfig)
 
+
+    write = allbands
+    max = -1
+    arr = cur.quick("select table_name from dba_tables where owner='%s'" %(user.upper()), array=True)
+    tables = arr['table_name']
+    for band in allbands:
+        for  kind in ['truth', 'nosim', 'sim', 'des']:
+            tab = 'balrog_%s_%s_%s' %(RunConfig['label'], kind, band)
+            if tab.upper() in tables:
+                if RunConfig['DBoverwrite']:
+                    cur.quick("DROP TABLE %s PURGE" %tab)
+                else:
+                    write = None
+                    if kind=='truth':
+                        arr = cur.quick("select coalesce(max(balrog_index),-1) as max from %s"%(tab), array=True)
+                        num = int(arr['max'][0])
+                        if num > max:
+                            max = num
+
+
+    '''
     for table in tables:
         for band in bands:
             t = '%s.balrog_%s_%s_%s' %(user, RunConfig['label'], table, band)
@@ -154,19 +176,20 @@ def DropTablesIfNeeded(RunConfig, BalrogConfig):
                                     RAISE; \
                                 END IF; \
                         END;" %(t))
-    return tables
+    '''
+    indexstart = max + 1
+    return indexstart,write
 
 
 def PrepareCreateOnly(tiles, images, psfs, position, config):
     return [tiles[0:1], images[0:1], psfs[0:1], [ [] ], [-2], [0]]
 
 
-def PrepareIterations(tiles, images, psfs, position, config, RunConfig):
+def PrepareIterations(tiles, images, psfs, position, config, RunConfig, indexstart):
     sendpos = copy.copy(position)
     senditerations = []
     sendindexstart = []
 
-    indexstart = 0
     for i in range(len(tiles)):
         iterations = np.ceil( len(pos[i]) / float(config['ngal']))
         sendpos[i] = np.array_split(pos[i], iterations, axis=0)
@@ -205,30 +228,31 @@ if __name__ == "__main__":
     # Call desdb to find the tiles we need to download and delete any existing DB tables which are the same as your run label.
     if MPI.COMM_WORLD.Get_rank()==0:
         images, psfs = GetFiles(RunConfig, SheldonConfig, tiles)
-        tables = DropTablesIfNeeded(RunConfig, config)
+        indexstart, write = DropTablesIfNeeded(RunConfig, config)
 
 
     # This creates the DB tables.
     # It will do a minimal Balrog run, intended only to get the output catalog columns, so we know what needs to be written to the DB.
-    if MPI.COMM_WORLD.Get_rank()==0:
-        ScatterStuff = PrepareCreateOnly(tiles, images, psfs, pos, config)
-    else:
-        ScatterStuff = [None]*6
-    ScatterStuff = mpifunctions.Scatter(*ScatterStuff)
-    for i in range(len(ScatterStuff[4])):
-        DerivedConfig = {'tile': ScatterStuff[0][i],
-                         'images': ScatterStuff[1][i],
-                         'psfs': ScatterStuff[2][i],
-                         'indexstart': ScatterStuff[5][i],
-                         'iterations': [ScatterStuff[4][i]],
-                         'pos': ScatterStuff[3],
-                         'db': DBConfig}
-        runbalrog.NewRunBalrog(RunConfig, config, DerivedConfig)
+    if write!=None:
+        if MPI.COMM_WORLD.Get_rank()==0:
+            ScatterStuff = PrepareCreateOnly(tiles, images, psfs, pos, config)
+        else:
+            ScatterStuff = [None]*6
+        ScatterStuff = mpifunctions.Scatter(*ScatterStuff)
+        for i in range(len(ScatterStuff[4])):
+            DerivedConfig = {'tile': ScatterStuff[0][i],
+                             'images': ScatterStuff[1][i],
+                             'psfs': ScatterStuff[2][i],
+                             'indexstart': ScatterStuff[5][i],
+                             'iterations': [ScatterStuff[4][i]],
+                             'pos': ScatterStuff[3],
+                             'db': DBConfig}
+            runbalrog.NewRunBalrog(RunConfig, config, DerivedConfig, write=write)
 
     
     # This is all the real Balrog realizations.
     if MPI.COMM_WORLD.Get_rank()==0:
-        ScatterStuff = PrepareIterations(tiles, images, psfs, pos, config, RunConfig)
+        ScatterStuff = PrepareIterations(tiles, images, psfs, pos, config, RunConfig, indexstart)
     else:
         ScatterStuff = [None]*6
     ScatterStuff = mpifunctions.Scatter(*ScatterStuff)

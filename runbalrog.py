@@ -5,7 +5,11 @@ import copy
 import time
 import datetime
 import StringIO
+
 import sys
+#import pickle
+#sys.modules['cPickle'] = pickle
+
 import os
 import re
 import subprocess
@@ -183,7 +187,7 @@ def GetSeed(BalrogConfig, DerivedConfig):
 
 
 # Figure out which catalogs get writting to which DB tables
-def GetRelevantCatalogs(BalrogConfig, RunConfig, DerivedConfig, band=None):
+def GetRelevantCatalogs(BalrogConfig, RunConfig, DerivedConfig, band=None, create=False):
     it = EnsureInt(DerivedConfig)
     if band==None:
         band = BalrogConfig['band']
@@ -220,6 +224,11 @@ def GetRelevantCatalogs(BalrogConfig, RunConfig, DerivedConfig, band=None):
         if RunConfig['doDES']:
             files.append(out_sim)
             labels.append('des')
+
+    if create:
+        files = [out_truth, out_nosim, out_sim, out_sim]
+        labels = ['truth', 'nosim', 'sim', 'des']
+
 
     return files, labels
 
@@ -321,10 +330,6 @@ def NewWrite2DB(cats, labels, RunConfig, BalrogConfig, DerivedConfig):
 
             if create:
                 create_cmd = GetOracleStructure(arr, tablename, noarr=noarr, create=True)
-                '''
-                if create_cmd.find('truth')!=-1:
-                    print create_cmd
-                '''
                 cur.quick(create_cmd)
             else:
                 istr, newarr = GetOracleStructure(arr, tablename, noarr=noarr)
@@ -417,13 +422,16 @@ def RunOnlyCreate(RunConfig, BalrogConfig, DerivedConfig):
         BalrogConfig['detbands'] = DetBands(RunConfig)
         BalrogConfig['detzeropoints'], BalrogConfig['detweights'], BalrogConfig['detfiles'] = GetDetZps(RunConfig, DerivedConfig)
 
+
+    BalrogConfig['nonosim'] = False
+
     BalrogConfig['outdir'] = os.path.join(DerivedConfig['outdir'], BalrogConfig['band'])
     cmd = Dict2Cmd(BalrogConfig, RunConfig['balrog'])
     subprocess.call(cmd)
 
     fixband = BalrogConfig['band']
     for i in range(len(DerivedConfig['bands'])):
-        cats, labels = GetRelevantCatalogs(BalrogConfig, RunConfig, DerivedConfig, band=fixband)
+        cats, labels = GetRelevantCatalogs(BalrogConfig, RunConfig, DerivedConfig, band=fixband, create=True)
         #BalrogConfig = DoBandStuff(BalrogConfig, RunConfig, DerivedConfig['bands'][i], DerivedConfig['images'])
         BalrogConfig['band'] = DerivedConfig['bands'][i]
         NewWrite2DB(cats, labels, RunConfig, BalrogConfig, DerivedConfig)
@@ -448,7 +456,6 @@ def RunDoDES(RunConfig, BalrogConfig, DerivedConfig):
         BalrogConfig['detimage'] = DerivedConfig['images'][0]
         BalrogConfig['detpsf'] = DerivedConfig['psfs'][0]
 
-    #print BalrogConfig['image'], DerivedConfig['iteration'][1], DerivedConfig['images']
     cmd = Dict2Cmd(BalrogConfig, RunConfig['balrog'])
     subprocess.call(cmd)
 
@@ -515,7 +522,6 @@ def run_balrog(args):
     if RunConfig['intermediate-clean']:
         subprocess.call( ['rm', '-r', BalrogConfig['outdir']] )
 
-    #print 'done'
 
 
 # This is the main function each node runs.
@@ -523,7 +529,7 @@ def run_balrog(args):
 # RunConfig is NEVER changed.
 # BalrogConfig will be given as command line arguments to Balrog
 # DerivedConfig is other stuff that will be useful to know down the line.
-def NewRunBalrog(RunConfig, BalrogConfig, DerivedConfig):
+def NewRunBalrog(RunConfig, BalrogConfig, DerivedConfig, write=None):
     workingdir = os.path.join(RunConfig['outdir'], RunConfig['label'], DerivedConfig['tile'] )
     indir = os.path.join(workingdir, 'input')
     Mkdir(indir)
@@ -536,7 +542,11 @@ def NewRunBalrog(RunConfig, BalrogConfig, DerivedConfig):
 
     DerivedConfig['images'], DerivedConfig['psfs'] = DownloadImages(indir, DerivedConfig['images'], DerivedConfig['psfs'], skip=False)
     BalrogConfig['tile'] = DerivedConfig['tile']
-    DerivedConfig['bands'] = PrependDet(RunConfig)
+
+    if write==None:
+        DerivedConfig['bands'] = PrependDet(RunConfig)
+    else:
+        DerivedConfig['bands'] = write
 
     args = []
     inc = 0
@@ -565,10 +575,8 @@ def NewRunBalrog(RunConfig, BalrogConfig, DerivedConfig):
             for i in range(len(DerivedConfig['bands'])):
                 DDConfig = copy.copy(DConfig)
                 DDConfig['iteration'] = (it,i)
-                #print i, DDConfig['iteration']
                 arg = [RunConfig, BConfig, DDConfig]
                 args.append(arg)
-            #print args
         else:
             DConfig['pos'] = DerivedConfig['pos'][inc]
             arg = [RunConfig, BConfig, DConfig]
@@ -587,4 +595,5 @@ def NewRunBalrog(RunConfig, BalrogConfig, DerivedConfig):
     '''
 
     if RunConfig['tile-clean']:
+    #print BalrogConfig['image'], DerivedConfig['iteration'][1], DerivedConfig['images']
         subprocess.call( ['rm', '-r', workingdir] )
