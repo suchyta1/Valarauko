@@ -550,6 +550,7 @@ def NewRunBalrog(RunConfig, BalrogConfig, DerivedConfig, write=None):
 
     args = []
     inc = 0
+    #print DerivedConfig['iterations']
     for it in DerivedConfig['iterations']:
         outdir = os.path.join(workingdir, 'output', '%i'%it)
         Mkdir(outdir)
@@ -579,6 +580,7 @@ def NewRunBalrog(RunConfig, BalrogConfig, DerivedConfig, write=None):
                 args.append(arg)
         else:
             DConfig['pos'] = DerivedConfig['pos'][inc]
+            BConfig['ngal'] = len(DConfig['pos'])
             arg = [RunConfig, BConfig, DConfig]
             args.append(arg)
 

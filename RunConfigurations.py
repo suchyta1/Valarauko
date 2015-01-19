@@ -10,13 +10,13 @@ class RunConfigurations:
             'intermediate-clean': True,  # Delete an iteration's output Balrog images
             'tile-clean': True,  # Delete the entire outdir/run's contents
 
-            'label': 'debug1',  # DB tables will look like <username>.balrog_<label>_<type>_<band>
+            'label': 'sva1_slr',  # DB tables will look like <username>.balrog_<label>_<type>_<band>
             'DBload': 'cx_Oracle',  # ['cx_Oracle', 'sqlldr'] How to write to DB
-            'DBoverwrite': False,  # Overwrite DB tables with same names (if they exist). False means append into existing tables
+            'DBoverwrite': True,  # Overwrite DB tables with same names (if they exist). False means append into existing tables
 
-            #'tiletotal': 300000, # Approximate number of Balrog galaxies per tile.
+            'tiletotal': 300000, # Approximate number of Balrog galaxies per tile.
             #'tiletotal': 50000,   
-            'tiletotal': 1000,   
+            #'tiletotal': 1000,   
             'fixposseed': None,  # Fix this to get the same positions every time you run
             'fixwrapseed': None, # Fix this to get the same Balrog realizations set each time you run
 
@@ -35,13 +35,14 @@ class BalrogConfigurations:
             'fulltraceback': True,
             'ngal': 1000,
             #'pyconfig': os.path.join(os.environ['BALROG_MPI_PYCONFIG'], 'default.py'),
-            'pyconfig': os.path.join(os.environ['BALROG_MPI_PYCONFIG'], 'lessdefault.py'),
+            #'pyconfig': os.path.join(os.environ['BALROG_MPI_PYCONFIG'], 'lessdefault.py'),
+            'pyconfig': os.path.join(os.environ['BALROG_MPI_PYCONFIG'], 'slr.py'),
 
             'catfitstype': 'ldac',
             'sexnnw': os.path.join(os.environ['BALROG_MPI_ASTRO_CONFIG'], 'sva1', 'sex.nnw'),
             'sexconv': os.path.join(os.environ['BALROG_MPI_ASTRO_CONFIG'], 'sva1', 'sex.conv'),
-            #'sexparam': os.path.join(os.environ['BALROG_MPI_ASTRO_CONFIG'], 'sva1', 'sex.param_diskonly'),
-            'sexparam': os.path.join(os.environ['BALROG_MPI_ASTRO_CONFIG'], 'sva1', 'sex.param'),
+            'sexparam': os.path.join(os.environ['BALROG_MPI_ASTRO_CONFIG'], 'sva1', 'sex.param_diskonly'),
+            #'sexparam': os.path.join(os.environ['BALROG_MPI_ASTRO_CONFIG'], 'sva1', 'sex.param'),
             'sexconfig': os.path.join(os.environ['BALROG_MPI_ASTRO_CONFIG'], 'sva1', 'sex.config'),
             'sexpath': '/direct/astro+u/esuchyta/svn_repos/sextractor-2.18.10/install/bin/sex',
         }

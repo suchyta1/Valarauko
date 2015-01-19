@@ -15,7 +15,7 @@ import runbalrog
 
 """
 This is kind of cool, so you can send an email to yourself when the run finishes.
-You'll notice my email in there, so if you're going to use this change the sender to yourself.
+You'll notice my email in there, so if you're going to use this change the sender/reciever to yourself.
 """
 def SendEmail(config):
     import smtplib
@@ -46,12 +46,14 @@ def GetFiles(RunConfig, SheldonConfig, tiles):
     keepruns = []
     keepimages = []
     keeppsfs = []
+    keeptiles = []
 
     # Pick out only the tiles we wanted
     for i in range(len(runs)):
         run = runs[i]
         tile = run[-12:]
         if tile in tiles:
+            keeptiles.append(tile)
             keepruns.append(run)
             keepimages.append( [] )
             keeppsfs.append( [] )
@@ -66,7 +68,7 @@ def GetFiles(RunConfig, SheldonConfig, tiles):
                 keepimages[-1].append(image)
                 keeppsfs[-1].append(psf)
 
-    return [keepimages, keeppsfs]    
+    return [keepimages, keeppsfs, keeptiles]    
 
 
 # Generate random, unclustered object positions
@@ -125,6 +127,7 @@ def RandomPositions(RunConfiguration, BalrogConfiguration, tiles, seed=None):
 
     for i in range(len(wcoords)):
         wcoords[i] = mpifunctions.Gather(wcoords[i])
+
     return wcoords
 
 
@@ -144,7 +147,6 @@ def DropTablesIfNeeded(RunConfig, BalrogConfig, allbands=['g','r','i','z','Y','d
 
     bands = runbalrog.PrependDet(RunConfig)
 
-
     write = allbands
     max = -1
     arr = cur.quick("select table_name from dba_tables where owner='%s'" %(user.upper()), array=True)
@@ -162,21 +164,6 @@ def DropTablesIfNeeded(RunConfig, BalrogConfig, allbands=['g','r','i','z','Y','d
                         num = int(arr['max'][0])
                         if num > max:
                             max = num
-
-
-    '''
-    for table in tables:
-        for band in bands:
-            t = '%s.balrog_%s_%s_%s' %(user, RunConfig['label'], table, band)
-            cur.quick("BEGIN \
-                            EXECUTE IMMEDIATE 'DROP TABLE %s'; \
-                        EXCEPTION \
-                            WHEN OTHERS THEN \
-                                IF SQLCODE != -942 THEN \
-                                    RAISE; \
-                                END IF; \
-                        END;" %(t))
-    '''
     indexstart = max + 1
     return indexstart,write
 
@@ -186,13 +173,29 @@ def PrepareCreateOnly(tiles, images, psfs, position, config):
 
 
 def PrepareIterations(tiles, images, psfs, position, config, RunConfig, indexstart):
-    sendpos = copy.copy(position)
+    #sendpos = copy.copy(position)
+    sendpos = []
     senditerations = []
     sendindexstart = []
 
+
+    cur = desdb.connect()
+    q = "select urall, uraur, udecll, udecur, tilename from coaddtile"
+    all = cur.quick(q, array=True)
+    cut = np.in1d(all['tilename'], tiles)
+    dcoords = all[cut]
+
+
     for i in range(len(tiles)):
         iterations = np.ceil( len(pos[i]) / float(config['ngal']))
-        sendpos[i] = np.array_split(pos[i], iterations, axis=0)
+
+        #sendpos[i] = np.array_split(pos[i], iterations, axis=0)
+        sendpos.append( [] )
+        for j in range(int(iterations)):
+            start = j * config['ngal']
+            stop = start + config['ngal']
+            sendpos[i].append( pos[i][start:stop] )
+
         if RunConfig['doDES']:
             senditerations.append(np.arange(-1, iterations, 1, dtype=np.int32))
             sendpos[i].insert(0, [])
@@ -200,7 +203,8 @@ def PrepareIterations(tiles, images, psfs, position, config, RunConfig, indexsta
             senditerations.append(np.arange(0, iterations, 1, dtype=np.int32))
         sendindexstart.append(indexstart)
         indexstart += len(pos[i])
-
+    
+    #sendpos = np.array(sendpos)
     return [tiles, images, psfs, sendpos, senditerations, sendindexstart]
 
 
@@ -214,7 +218,8 @@ if __name__ == "__main__":
     SheldonConfig = desdbInfo.sva1_coadd
 
     # What tiles you want to Balrog
-    tiles = TileLists.suchyta13[1:2]
+    tiles = TileLists.suchyta13
+    #tiles = TileLists.suchyta27
 
     # These get passes as command line arguments to Balrog. If you add too much it could mess things up.
     config = BalrogConfigurations.default
@@ -222,13 +227,18 @@ if __name__ == "__main__":
     # Info for connecting to the DB. You probably don't need to touch this.
     DBConfig = DBInfo.default
 
-    # Generate positions for the simulated objects
-    pos = RandomPositions(RunConfig, config, tiles)
-   
     # Call desdb to find the tiles we need to download and delete any existing DB tables which are the same as your run label.
     if MPI.COMM_WORLD.Get_rank()==0:
-        images, psfs = GetFiles(RunConfig, SheldonConfig, tiles)
+        images, psfs, tiles = GetFiles(RunConfig, SheldonConfig, tiles)
         indexstart, write = DropTablesIfNeeded(RunConfig, config)
+    else:
+        write = None
+        tiles = None
+    write = MPI.COMM_WORLD.allgather(write)[0]
+    tiles = MPI.COMM_WORLD.allgather(tiles)[0]
+
+    # Generate positions for the simulated objects
+    pos = RandomPositions(RunConfig, config, tiles)
 
 
     # This creates the DB tables.
