@@ -133,7 +133,7 @@ def RandomPositions(RunConfiguration, BalrogConfiguration, tiles, seed=None):
 
 
 # Delete the existing DB tables for your run if the names already exist
-def DropTablesIfNeeded(RunConfig, BalrogConfig, allbands=['g','r','i','z','Y','det']):
+def DropTablesIfNeeded(RunConfig, BalrogConfig, allbands=['det','g','r','i','z','Y']):
     cur = desdb.connect()
     user = cur.username
 
@@ -218,7 +218,7 @@ if __name__ == "__main__":
     SheldonConfig = desdbInfo.sva1_coadd
 
     # What tiles you want to Balrog
-    tiles = TileLists.suchyta13
+    tiles = TileLists.suchyta13[1:2]
     #tiles = TileLists.suchyta27
 
     # These get passes as command line arguments to Balrog. If you add too much it could mess things up.

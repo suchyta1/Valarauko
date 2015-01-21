@@ -15,6 +15,7 @@ import re
 import subprocess
 from multiprocessing import Pool, cpu_count, Lock
 import argparse
+import logging
 import threading
 #import pyfits
 import astropy.io.fits as pyfits
@@ -107,8 +108,9 @@ def DetZps(RunConfig, DerivedConfig, ext=0, zpkey='SEXMGZPT'):
 
 def GetZeropoint(RunConfig, DerivedConfig,BalrogConfig, ext=0, zpkey='SEXMGZPT'):
     if BalrogConfig['band']=='det':
-        zps, ws, fs = DetZps(RunConfig, DerivedConfig, ext=ext, zpkey=zpkey)
-        return np.amin(zps)
+        #zps, ws, fs = DetZps(RunConfig, DerivedConfig, ext=ext, zpkey=zpkey)
+        #return np.amin(zps)
+        return 30.0
     else:
         header = pyfits.open(BalrogConfig['image'])[ext].header
         return header[zpkey]
@@ -187,14 +189,18 @@ def GetSeed(BalrogConfig, DerivedConfig):
 
 
 # Figure out which catalogs get writting to which DB tables
-def GetRelevantCatalogs(BalrogConfig, RunConfig, DerivedConfig, band=None, create=False):
+def GetRelevantCatalogs(BalrogConfig, RunConfig, DerivedConfig, band=None, create=False, appendsim=False):
     it = EnsureInt(DerivedConfig)
     if band==None:
         band = BalrogConfig['band']
 
-    out_truth = os.path.join(BalrogConfig['outdir'], 'balrog_cat', '%s_%s.truthcat.sim.fits'%(BalrogConfig['tile'],band))
-    out_nosim = os.path.join(BalrogConfig['outdir'], 'balrog_cat', '%s_%s.measuredcat.nosim.fits'%(BalrogConfig['tile'],band))
-    out_sim = os.path.join(BalrogConfig['outdir'], 'balrog_cat', '%s_%s.measuredcat.sim.fits'%(BalrogConfig['tile'],band))
+    extra = ''
+    if appendsim:
+        extra = 'sim.'
+
+    out_truth = os.path.join(BalrogConfig['outdir'], 'balrog_cat', '%s_%s.%struthcat.sim.fits'%(BalrogConfig['tile'],band,extra))
+    out_nosim = os.path.join(BalrogConfig['outdir'], 'balrog_cat', '%s_%s.%smeasuredcat.nosim.fits'%(BalrogConfig['tile'],band,extra))
+    out_sim = os.path.join(BalrogConfig['outdir'], 'balrog_cat', '%s_%s.%smeasuredcat.sim.fits'%(BalrogConfig['tile'],band,extra))
 
     relevant = {'truth': True, 'nosim': True, 'sim': True}
 
@@ -204,6 +210,15 @@ def GetRelevantCatalogs(BalrogConfig, RunConfig, DerivedConfig, band=None, creat
     if it==-1:
         relevant['truth'] = False
         relevant['nosim'] = False
+
+    if 'imageonly' in BalrogConfig.keys():
+        if BalrogConfig['imageonly']:
+            relevant['nosim'] = False
+            relevant['sim'] = False
+    if 'nodraw' in BalrogConfig.keys():
+        if BalrogConfig['nodraw']:
+            relevant['truth'] = False
+
 
     files = []
     labels = []
@@ -411,20 +426,13 @@ def WriteCoords(coords, outdir):
 
 
 def RunOnlyCreate(RunConfig, BalrogConfig, DerivedConfig):
+    ind = 0
     BalrogConfig['ngal'] = 0
-    BalrogConfig['image'] = DerivedConfig['images'][0]
-    BalrogConfig['psf'] = DerivedConfig['psfs'][0]
-
-    #BalrogConfig = DoBandStuff(BalrogConfig, RunConfig, DerivedConfig['bands'][0], DerivedConfig['images'])
-    BalrogConfig['band'] = DerivedConfig['bands'][0]
+    BalrogConfig['image'] = DerivedConfig['images'][ind]
+    BalrogConfig['psf'] = DerivedConfig['psfs'][ind]
+    BalrogConfig['band'] = DerivedConfig['bands'][ind]
     BalrogConfig['zeropoint'] = GetZeropoint(RunConfig, DerivedConfig, BalrogConfig)
-    if RunConfig['dualdetection']!=None:
-        BalrogConfig['detbands'] = DetBands(RunConfig)
-        BalrogConfig['detzeropoints'], BalrogConfig['detweights'], BalrogConfig['detfiles'] = GetDetZps(RunConfig, DerivedConfig)
-
-
     BalrogConfig['nonosim'] = False
-
     BalrogConfig['outdir'] = os.path.join(DerivedConfig['outdir'], BalrogConfig['band'])
     cmd = Dict2Cmd(BalrogConfig, RunConfig['balrog'])
     subprocess.call(cmd)
@@ -432,7 +440,6 @@ def RunOnlyCreate(RunConfig, BalrogConfig, DerivedConfig):
     fixband = BalrogConfig['band']
     for i in range(len(DerivedConfig['bands'])):
         cats, labels = GetRelevantCatalogs(BalrogConfig, RunConfig, DerivedConfig, band=fixband, create=True)
-        #BalrogConfig = DoBandStuff(BalrogConfig, RunConfig, DerivedConfig['bands'][i], DerivedConfig['images'])
         BalrogConfig['band'] = DerivedConfig['bands'][i]
         NewWrite2DB(cats, labels, RunConfig, BalrogConfig, DerivedConfig)
 
@@ -444,12 +451,13 @@ def RunDoDES(RunConfig, BalrogConfig, DerivedConfig):
     BalrogConfig['image'] = DerivedConfig['images'][ DerivedConfig['iteration'][1] ]
     BalrogConfig['psf'] = DerivedConfig['psfs'][ DerivedConfig['iteration'][1] ]
 
-    #BalrogConfig = DoBandStuff(BalrogConfig, RunConfig, DerivedConfig['bands'][DerivedConfig['iteration'][1]], DerivedConfig['images'])
     BalrogConfig['band'] = DerivedConfig['bands'][DerivedConfig['iteration'][1]]
     BalrogConfig['zeropoint'] = GetZeropoint(RunConfig, DerivedConfig, BalrogConfig)
+    '''
     if RunConfig['dualdetection']!=None:
         BalrogConfig['detbands'] = DetBands(RunConfig)
         BalrogConfig['detzeropoints'], BalrogConfig['detweights'], BalrogConfig['detfiles'] = GetDetZps(RunConfig, DerivedConfig)
+    '''
 
     BalrogConfig['outdir'] = os.path.join(DerivedConfig['outdir'], BalrogConfig['band'])
     if RunConfig['dualdetection']!=None:
@@ -471,37 +479,163 @@ def GetBalroggedDetImage(DerivedConfig):
     return file
 
 
+def SwarpConfig(imgs, RunConfig, DerivedConfig, BalrogConfig, iext=0, wext=1):
+    config = {'RESAMPLE': 'N',
+              'COMBINE': 'Y',
+              'COMBINE_TYPE': 'CHI-MEAN',
+              'SUBTRACT_BACK': 'N',
+              'DELETE_TMPFILES': 'Y',
+              'WEIGHT_TYPE': 'MAP_WEIGHT',
+              'PIXELSCALE_TYPE': 'MANUAL',
+              'PIXEL_SCALE': str(0.270),
+              'CENTER_TYPE': 'MANUAL',
+              'HEADER_ONLY': 'N',
+              'WRITE_XML': 'N'}
+
+    header = pyfits.open(imgs[0])[iext].header
+    xsize = header['NAXIS1']
+    ysize = header['NAXIS2']
+    config['IMAGE_SIZE'] = '%i,%i' %(xsize,ysize)
+    xc = header['CRVAL1']
+    yc = header['CRVAL2']
+    config['CENTER'] = '%f,%f' %(xc,yc)
+
+    ims = []
+    ws = []
+    for i in range(len(imgs)):
+        ims.append( '%s[%i]' %(imgs[i],iext) )
+        ws.append( '%s[%i]' %(imgs[i],wext) )
+    ims = ','.join(ims)
+    ws = ','.join(ws)
+
+    dir = os.path.join(DerivedConfig['outdir'], 'det')
+    Mkdir(dir)
+    imout = os.path.join(dir, '%s_det.fits'%(BalrogConfig['tile']))
+    wout = imout.replace('.fits', '_weight.fits')
+    config['IMAGEOUT_NAME'] = imout
+    config['WEIGHTOUT_NAME'] = wout
+    
+    call = [RunConfig['swarp'], ims, '-c', RunConfig['swarp-config'], '-WEIGHT_IMAGE', ws]
+    for key in config:
+        call.append( '-%s'%(key) )
+        call.append( config[key] )
+    return call, imout, wout
+
+
+
 # This will need to be changed to coadd the detection image
-def RunNormal(RunConfig, BalrogConfig, DerivedConfig):
-    coordfile = WriteCoords(DerivedConfig['pos'], DerivedConfig['outdir'])
-    detimage = GetBalroggedDetImage(DerivedConfig)
-    detpsf = DerivedConfig['psfs'][0]
+def RunNormal(RunConfig, BalrogConfig, DerivedConfig, kind='old'):
+    '''
+    if kind=='old':
+        coordfile = WriteCoords(DerivedConfig['pos'], DerivedConfig['outdir'])
+        detimage = GetBalroggedDetImage(DerivedConfig)
+        detpsf = DerivedConfig['psfs'][0]
 
-    if RunConfig['dualdetection']!=None:
-        BalrogConfig['detbands'] = DetBands(RunConfig)
-        BalrogConfig['detzeropoints'], BalrogConfig['detweights'], BalrogConfig['detfiles'] = GetDetZps(RunConfig, DerivedConfig)
+        if RunConfig['dualdetection']!=None:
+            BalrogConfig['detbands'] = DetBands(RunConfig)
+            BalrogConfig['detzeropoints'], BalrogConfig['detweights'], BalrogConfig['detfiles'] = GetDetZps(RunConfig, DerivedConfig)
 
-    #for i in range(len(DerivedConfig['bands'][0:1])):
-    for i in range(len(DerivedConfig['bands'])):
+        #for i in range(len(DerivedConfig['bands'][0:1])):
+        for i in range(len(DerivedConfig['bands'])):
+            BalrogConfig['poscat'] = coordfile
+            BalrogConfig['image'] = DerivedConfig['images'][i]
+            BalrogConfig['psf'] = DerivedConfig['psfs'][i]
+
+            #BalrogConfig = DoBandStuff(BalrogConfig, RunConfig, DerivedConfig['bands'][i], DerivedConfig['images'], doprint=False)
+            BalrogConfig['band'] = DerivedConfig['bands'][i]
+            BalrogConfig['zeropoint'] = GetZeropoint(RunConfig, DerivedConfig, BalrogConfig)
+
+            BalrogConfig['outdir'] = os.path.join(DerivedConfig['outdir'], BalrogConfig['band'])
+
+            if (RunConfig['dualdetection']!=None) and (i > 0):
+                BalrogConfig['detimage'] = detimage
+                BalrogConfig['detpsf'] = detpsf
+
+            cmd = Dict2Cmd(BalrogConfig, RunConfig['balrog'])
+            subprocess.call(cmd)
+
+            cats, labels = GetRelevantCatalogs(BalrogConfig, RunConfig, DerivedConfig)
+            NewWrite2DB(cats, labels, RunConfig, BalrogConfig, DerivedConfig)
+    '''
+
+    if kind=='new':
+        coordfile = WriteCoords(DerivedConfig['pos'], DerivedConfig['outdir'])
         BalrogConfig['poscat'] = coordfile
-        BalrogConfig['image'] = DerivedConfig['images'][i]
-        BalrogConfig['psf'] = DerivedConfig['psfs'][i]
+        if RunConfig['dualdetection']!=None:
+            BConfig = copy.copy(BalrogConfig)
+            BConfig['imageonly'] = True
+            detbands = DetBands(RunConfig)
+            dbands = detbands.split(',')
+            cimages = {}
+            cimgs = []
+            for i, band in zip(RunConfig['dualdetection'], dbands):
+                img = DerivedConfig['images'][i+1]
+                BConfig['image'] = img
+                BConfig['psf'] = DerivedConfig['psfs'][i+1]
+                BConfig['band'] = band
+                BConfig['zeropoint'] = GetZeropoint(RunConfig, DerivedConfig, BConfig)
+                BConfig['outdir'] = os.path.join(DerivedConfig['outdir'], BConfig['band'])
+                outimage = os.path.basename(img).replace('.fits', '.sim.fits')
+                outfile = os.path.join(BConfig['outdir'], 'balrog_image', outimage)
+                cimages[band] = outfile
+                cimgs.append(outfile)
+                cmd = Dict2Cmd(BConfig, RunConfig['balrog'])
+                subprocess.call(cmd)
 
-        #BalrogConfig = DoBandStuff(BalrogConfig, RunConfig, DerivedConfig['bands'][i], DerivedConfig['images'], doprint=False)
-        BalrogConfig['band'] = DerivedConfig['bands'][i]
-        BalrogConfig['zeropoint'] = GetZeropoint(RunConfig, DerivedConfig, BalrogConfig)
+                cats, labels = GetRelevantCatalogs(BConfig, RunConfig, DerivedConfig)
+                NewWrite2DB(cats, labels, RunConfig, BConfig, DerivedConfig)
 
-        BalrogConfig['outdir'] = os.path.join(DerivedConfig['outdir'], BalrogConfig['band'])
+            cmd, detimage, detwimage = SwarpConfig(cimgs, RunConfig, DerivedConfig, BConfig)
 
-        if (RunConfig['dualdetection']!=None) and (i > 0):
-            BalrogConfig['detimage'] = detimage
-            BalrogConfig['detpsf'] = detpsf
+            logger = logging.getLogger()
+            logger.setLevel(logging.INFO)
+            swarplog = logging.getLogger('swarp')
+            swarplogfile = detimage.replace('.fits', '.log')
+            fh = logging.FileHandler(swarplogfile, mode='w')
+            fh.setLevel(logging.INFO)
+            swarplog.addHandler(fh)
+            
+            with lock:
+                swarplog.info('# Exact command call')
+                swarplog.info(' '.join(cmd))
+                p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                stdout, stderr = p.communicate()
+                swarplog.info(stdout)
+                swarplog.info(stderr)
+                swarplog.info('\n')
 
-        cmd = Dict2Cmd(BalrogConfig, RunConfig['balrog'])
-        subprocess.call(cmd)
+        detpsf = DerivedConfig['psfs'][0]
+        for i in range(len(DerivedConfig['bands'])):
+            appendsim = False
+            BConfig = copy.copy(BalrogConfig)
+            BConfig['psf'] = DerivedConfig['psfs'][i]
+            BConfig['band'] = DerivedConfig['bands'][i]
+            BConfig['outdir'] = os.path.join(DerivedConfig['outdir'], BConfig['band'])
+            BConfig['image'] = DerivedConfig['images'][i]
+            BConfig['zeropoint'] = GetZeropoint(RunConfig, DerivedConfig, BConfig)
 
-        cats, labels = GetRelevantCatalogs(BalrogConfig, RunConfig, DerivedConfig)
-        NewWrite2DB(cats, labels, RunConfig, BalrogConfig, DerivedConfig)
+            if RunConfig['dualdetection']!=None:
+                BConfig['detimage'] = detimage
+                BConfig['detweight'] = detwimage
+                BConfig['detpsf'] = detpsf
+                
+                band = BConfig['band']
+                if band=='det':
+                    BConfig['nodraw'] = True
+                    BConfig['image'] = detimage
+                    BConfig['weight'] = detwimage
+
+                elif BConfig['band'] in detbands.split(','):
+                    BConfig['nodraw'] = True
+                    BConfig['image'] = cimages[band]
+                    appendsim = True
+
+
+            cmd = Dict2Cmd(BConfig, RunConfig['balrog'])
+            subprocess.call(cmd)
+
+            cats, labels = GetRelevantCatalogs(BConfig, RunConfig, DerivedConfig, appendsim=appendsim)
+            NewWrite2DB(cats, labels, RunConfig, BConfig, DerivedConfig)
 
 
 
@@ -517,13 +651,19 @@ def run_balrog(args):
         RunDoDES(RunConfig, BalrogConfig, DerivedConfig)
     else:
         # Actual Balrog realization
-        RunNormal(RunConfig, BalrogConfig, DerivedConfig)
+        RunNormal(RunConfig, BalrogConfig, DerivedConfig, kind='new')
 
     if RunConfig['intermediate-clean']:
-        subprocess.call( ['rm', '-r', BalrogConfig['outdir']] )
+        if it < 0:
+                subprocess.call( ['rm', '-r', BalrogConfig['outdir']] )
+        else:
+            for band in DerivedConfig['bands']:
+                dir = os.path.join(DerivedConfig['outdir'], band)
+                subprocess.call( ['rm', '-r', dir] )
 
 
 
+lock = Lock()
 # This is the main function each node runs.
 # It starts as many threads as cores on the nodes and uses them all with multiprocessing pool
 # RunConfig is NEVER changed.
@@ -550,7 +690,6 @@ def NewRunBalrog(RunConfig, BalrogConfig, DerivedConfig, write=None):
 
     args = []
     inc = 0
-    #print DerivedConfig['iterations']
     for it in DerivedConfig['iterations']:
         outdir = os.path.join(workingdir, 'output', '%i'%it)
         Mkdir(outdir)
@@ -588,7 +727,8 @@ def NewRunBalrog(RunConfig, BalrogConfig, DerivedConfig, write=None):
   
     # If you're going to be changing and debugging, debugging is a GIANT pain using pool.map
     # The commented out loop is the same thing without parallel threads.
-    nthreads = cpu_count()
+    #nthreads = cpu_count()
+    nthreads = 6
     pool = Pool(nthreads)
     pool.map(run_balrog, args, chunksize=1)
     '''
