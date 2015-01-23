@@ -36,7 +36,7 @@ def Mkdir(dir):
 
 
 # Download and uncompress images
-def DownloadImages(indir, images, psfs, skip=False):
+def DownloadImages(indir, images, psfs, RunConfig, skip=False):
     useimages = []
 
     for file in images:
@@ -47,7 +47,7 @@ def DownloadImages(indir, images, psfs, skip=False):
         ufile = infile.replace('.fits.fz', '.fits')
         if not skip:
             Remove(ufile) 
-            subprocess.call(['funpack', '-O', ufile, infile])
+            subprocess.call([RunConfig['funpack'], '-O', ufile, infile])
         useimages.append(ufile)
 
     usepsfs = []
@@ -430,6 +430,9 @@ def RunOnlyCreate(RunConfig, BalrogConfig, DerivedConfig):
     BalrogConfig['ngal'] = 0
     BalrogConfig['image'] = DerivedConfig['images'][ind]
     BalrogConfig['psf'] = DerivedConfig['psfs'][ind]
+
+    if RunConfig['dualdetection']==None:
+        ind += 1
     BalrogConfig['band'] = DerivedConfig['bands'][ind]
     BalrogConfig['zeropoint'] = GetZeropoint(RunConfig, DerivedConfig, BalrogConfig)
     BalrogConfig['nonosim'] = False
@@ -669,7 +672,7 @@ lock = Lock()
 # RunConfig is NEVER changed.
 # BalrogConfig will be given as command line arguments to Balrog
 # DerivedConfig is other stuff that will be useful to know down the line.
-def NewRunBalrog(RunConfig, BalrogConfig, DerivedConfig, write=None):
+def NewRunBalrog(RunConfig, BalrogConfig, DerivedConfig, write=None, nomulti=False):
     workingdir = os.path.join(RunConfig['outdir'], RunConfig['label'], DerivedConfig['tile'] )
     indir = os.path.join(workingdir, 'input')
     Mkdir(indir)
@@ -680,7 +683,7 @@ def NewRunBalrog(RunConfig, BalrogConfig, DerivedConfig, write=None):
         DerivedConfig['seedoffset'] = np.random.randint(10000)
 
 
-    DerivedConfig['images'], DerivedConfig['psfs'] = DownloadImages(indir, DerivedConfig['images'], DerivedConfig['psfs'], skip=False)
+    DerivedConfig['images'], DerivedConfig['psfs'] = DownloadImages(indir, DerivedConfig['images'], DerivedConfig['psfs'], RunConfig, skip=False)
     BalrogConfig['tile'] = DerivedConfig['tile']
 
     if write==None:
@@ -728,13 +731,13 @@ def NewRunBalrog(RunConfig, BalrogConfig, DerivedConfig, write=None):
     # If you're going to be changing and debugging, debugging is a GIANT pain using pool.map
     # The commented out loop is the same thing without parallel threads.
     #nthreads = cpu_count()
-    nthreads = 6
-    pool = Pool(nthreads)
-    pool.map(run_balrog, args, chunksize=1)
-    '''
-    for arg in args:
-        run_balrog(arg)
-    '''
+    if nomulti:
+        for arg in args:
+            run_balrog(arg)
+    else:
+        nthreads = 6
+        pool = Pool(nthreads)
+        pool.map(run_balrog, args, chunksize=1)
 
     if RunConfig['tile-clean']:
     #print BalrogConfig['image'], DerivedConfig['iteration'][1], DerivedConfig['images']

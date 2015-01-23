@@ -9,7 +9,8 @@ import copy
 from mpi4py import MPI
 import mpifunctions
 
-from RunConfigurations import *
+#from RunConfigurations import *
+import Configure
 import runbalrog
 
 
@@ -137,6 +138,7 @@ def DropTablesIfNeeded(RunConfig, BalrogConfig, allbands=['det','g','r','i','z',
     cur = desdb.connect()
     user = cur.username
 
+    '''
     tables = ['truth', 'sim']
     try:
         tmp = BalrogConfig['nonosim']
@@ -146,6 +148,7 @@ def DropTablesIfNeeded(RunConfig, BalrogConfig, allbands=['det','g','r','i','z',
         tables.append('des')
 
     bands = runbalrog.PrependDet(RunConfig)
+    '''
 
     write = allbands
     max = -1
@@ -210,7 +213,10 @@ def PrepareIterations(tiles, images, psfs, position, config, RunConfig, indexsta
 
 
 if __name__ == "__main__":
+    
+    RunConfig, config, SheldonConfig, DBConfig, tiles = Configure.GetConfig()
 
+    '''
     # These effect a whole run's behavior. That is they are higher level than a single Balrog call.
     RunConfig = RunConfigurations.default
 
@@ -226,6 +232,7 @@ if __name__ == "__main__":
 
     # Info for connecting to the DB. You probably don't need to touch this.
     DBConfig = DBInfo.default
+    '''
 
     # Call desdb to find the tiles we need to download and delete any existing DB tables which are the same as your run label.
     if MPI.COMM_WORLD.Get_rank()==0:
@@ -257,7 +264,7 @@ if __name__ == "__main__":
                              'iterations': [ScatterStuff[4][i]],
                              'pos': ScatterStuff[3],
                              'db': DBConfig}
-            runbalrog.NewRunBalrog(RunConfig, config, DerivedConfig, write=write)
+            runbalrog.NewRunBalrog(RunConfig, config, DerivedConfig, write=write, nomulti=False)
 
     
     # This is all the real Balrog realizations.
@@ -274,7 +281,7 @@ if __name__ == "__main__":
                          'iterations': ScatterStuff[4][i],
                          'pos': ScatterStuff[3][i],
                          'db':DBConfig}
-        runbalrog.NewRunBalrog(RunConfig, config, DerivedConfig)
+        runbalrog.NewRunBalrog(RunConfig, config, DerivedConfig, nomulti=False)
 
 
     # Send email when the run finishes

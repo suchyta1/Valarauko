@@ -5,6 +5,7 @@ import numpy as np
 class RunConfigurations:
 
         default = {
+            'funpack': '/astro/u/esuchyta/cfitsio/cfit3300-install/bin/funpack',
             'swarp': '/astro/u/esuchyta/svn_repos/swarp-2.36.1/install/bin/swarp', # swarp executable
             'swarp-config': os.path.join(os.environ['BALROG_MPI_ASTRO_CONFIG'], 'sva1', 'default.swarp'), # swarp configuration file
 
@@ -13,18 +14,16 @@ class RunConfigurations:
             'intermediate-clean': True,  # Delete an iteration's output Balrog images
             'tile-clean': True,  # Delete the entire outdir/run's contents
 
-            'label': 'debug',  # DB tables will look like <username>.balrog_<label>_<type>_<band>
+            'label': 'debug4',  # DB tables will look like <username>.balrog_<label>_<type>_<band>
             'DBload': 'cx_Oracle',  # ['cx_Oracle', 'sqlldr'] How to write to DB. Use 'cx_Oracle', sqlldr was just kept because that was implemented first
             'DBoverwrite': True,  # Overwrite DB tables with same names (if they exist). False means append into existing tables. Regardless, the tables will be created if they don't exist.
 
-            'tiletotal': 300000, # Approximate number of (truth) Balrog galaxies per tile.
-            #'tiletotal': 1000,   
+            'tiletotal': 100000, # Approximate number of (truth) Balrog galaxies per tile.
             'fixposseed': None,  # Fix this to an integer to get the same positions every time you run
             'fixwrapseed': None, # Fix this to an integer to get the same Balrog sampling realizations each time you run
 
             'doDES': True,  # Run sextractor without any Balrog galaxies.
-            #'bands': ['g','r','i','z','Y'], # Bands you'll get measurement catalogs for
-            'bands': ['g','r','i','z'], # Bands you'll get measurement catalogs for
+            'bands': ['g','r','i','z','Y'], # Bands you'll get measurement catalogs for
             'dualdetection': [1,2,3]  # Use None not to use detection image. Otherwise the indices in the array of bands.
             #'dualdetection': None
 
@@ -37,15 +36,13 @@ class BalrogConfigurations:
         default = {
             'fulltraceback': True,
             'ngal': 1000,
-            #'pyconfig': os.path.join(os.environ['BALROG_MPI_PYCONFIG'], 'default.py'),
-            #'pyconfig': os.path.join(os.environ['BALROG_MPI_PYCONFIG'], 'lessdefault.py'),
-            'pyconfig': os.path.join(os.environ['BALROG_MPI_PYCONFIG'], 'slr.py'),
+            'pyconfig': os.path.join(os.environ['BALROG_MPI_PYCONFIG'], 'slr2.py'),
 
             'catfitstype': 'ldac',
             'sexnnw': os.path.join(os.environ['BALROG_MPI_ASTRO_CONFIG'], 'sva1', 'sex.nnw'),
             'sexconv': os.path.join(os.environ['BALROG_MPI_ASTRO_CONFIG'], 'sva1', 'sex.conv'),
-            #'sexparam': os.path.join(os.environ['BALROG_MPI_ASTRO_CONFIG'], 'sva1', 'sex.param_diskonly'),
-            'sexparam': os.path.join(os.environ['BALROG_MPI_ASTRO_CONFIG'], 'sva1', 'sex.param'),
+            'sexparam': os.path.join(os.environ['BALROG_MPI_ASTRO_CONFIG'], 'sva1', 'sex.param_diskonly'),
+            #'sexparam': os.path.join(os.environ['BALROG_MPI_ASTRO_CONFIG'], 'sva1', 'sex.param'),
             'sexconfig': os.path.join(os.environ['BALROG_MPI_ASTRO_CONFIG'], 'sva1', 'sex.config'),
             'sexpath': '/direct/astro+u/esuchyta/svn_repos/sextractor-2.18.10/install/bin/sex',
         }
