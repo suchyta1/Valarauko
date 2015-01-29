@@ -5,27 +5,26 @@ import numpy as np
 class RunConfigurations:
 
         default = {
-            'funpack': '/astro/u/esuchyta/cfitsio/cfit3300-install/bin/funpack',
-            'swarp': '/astro/u/esuchyta/svn_repos/swarp-2.36.1/install/bin/swarp', # swarp executable
-            'swarp-config': os.path.join(os.environ['BALROG_MPI_ASTRO_CONFIG'], 'sva1', 'default.swarp'), # swarp configuration file
+            'funpack': '/astro/u/esuchyta/cfitsio/cfit3300-install/bin/funpack', # this one is the sva1 version, that's not really relevant though
+            'swarp': '/astro/u/esuchyta/svn_repos/swarp-2.36.1/install/bin/swarp', # swarp executable, only relevant if in multi-image detection mode
+            'swarp-config': os.path.join(os.environ['BALROG_MPI_ASTRO_CONFIG'], 'sva1', 'default.swarp'), # swarp configuration file, only relevant if in multi-image detection mode
 
             'balrog': '/astro/u/esuchyta/git_repos/balrog-testing/Balrog/balrog.py',  # The Balrog executable you'll use
             'outdir': os.environ['BALROG_MPI_DEFAULT_OUT'],  # The ouput directory for all intermediate work. This should be in the scratch area on the node.
             'intermediate-clean': True,  # Delete an iteration's output Balrog images
             'tile-clean': True,  # Delete the entire outdir/run's contents
 
-            'label': 'debug4',  # DB tables will look like <username>.balrog_<label>_<type>_<band>
-            'DBload': 'cx_Oracle',  # ['cx_Oracle', 'sqlldr'] How to write to DB. Use 'cx_Oracle', sqlldr was just kept because that was implemented first
-            'DBoverwrite': True,  # Overwrite DB tables with same names (if they exist). False means append into existing tables. Regardless, the tables will be created if they don't exist.
+            'label': 'debug',  # DB tables will look like <username>.balrog_<label>_<type>_<band>
+            'DBload': 'cx_Oracle',  # ['cx_Oracle', 'sqlldr'] How to write to DB. 
+            'DBoverwrite': False,  # Overwrite DB tables with same names (if they exist). False means append into existing tables. Regardless, the tables will be created if they don't exist.
 
             'tiletotal': 100000, # Approximate number of (truth) Balrog galaxies per tile.
             'fixposseed': None,  # Fix this to an integer to get the same positions every time you run
             'fixwrapseed': None, # Fix this to an integer to get the same Balrog sampling realizations each time you run
 
-            'doDES': True,  # Run sextractor without any Balrog galaxies.
+            'doDES': False,  # Run sextractor without any Balrog galaxies over full images
             'bands': ['g','r','i','z','Y'], # Bands you'll get measurement catalogs for
             'dualdetection': [1,2,3]  # Use None not to use detection image. Otherwise the indices in the array of bands.
-            #'dualdetection': None
 
         }
 
@@ -42,7 +41,6 @@ class BalrogConfigurations:
             'sexnnw': os.path.join(os.environ['BALROG_MPI_ASTRO_CONFIG'], 'sva1', 'sex.nnw'),
             'sexconv': os.path.join(os.environ['BALROG_MPI_ASTRO_CONFIG'], 'sva1', 'sex.conv'),
             'sexparam': os.path.join(os.environ['BALROG_MPI_ASTRO_CONFIG'], 'sva1', 'sex.param_diskonly'),
-            #'sexparam': os.path.join(os.environ['BALROG_MPI_ASTRO_CONFIG'], 'sva1', 'sex.param'),
             'sexconfig': os.path.join(os.environ['BALROG_MPI_ASTRO_CONFIG'], 'sva1', 'sex.config'),
             'sexpath': '/direct/astro+u/esuchyta/svn_repos/sextractor-2.18.10/install/bin/sex',
         }

@@ -264,7 +264,7 @@ if __name__ == "__main__":
                              'iterations': [ScatterStuff[4][i]],
                              'pos': ScatterStuff[3],
                              'db': DBConfig}
-            runbalrog.NewRunBalrog(RunConfig, config, DerivedConfig, write=write, nomulti=False)
+            runbalrog.NewRunBalrog(RunConfig, config, DerivedConfig, write=write, nomulti=True)
 
     
     # This is all the real Balrog realizations.
@@ -281,11 +281,10 @@ if __name__ == "__main__":
                          'iterations': ScatterStuff[4][i],
                          'pos': ScatterStuff[3][i],
                          'db':DBConfig}
-        runbalrog.NewRunBalrog(RunConfig, config, DerivedConfig, nomulti=False)
+        runbalrog.NewRunBalrog(RunConfig, config, DerivedConfig, nomulti=True)
 
 
     # Send email when the run finishes
-    """
+    MPI.COMM_WORLD.barrier()
     if MPI.COMM_WORLD.Get_rank()==0:
-        SendEmail(config)
-    """
+        SendEmail(RunConfig)
