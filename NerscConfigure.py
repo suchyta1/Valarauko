@@ -13,6 +13,7 @@ def GetConfig():
     run['bands'] = ['i']
     run['dualdetection'] = None
 
+
     #run['funpack'] = '/astro/u/esuchyta/cfitsio/cfitsio-3.370-install/bin/funpack'
     run['swarp'] = '/global/project/projectdirs/des/wl/desdata/users/esuchyta/software/carver/swarp-2.36.1/install-dir/bin/swarp'
     run['outdir']: os.path.join(os.environ['SCRATCH'], 'BalrogOutput')  # The ouput directory for all intermediate work. This should be in the scratch area on the node.
