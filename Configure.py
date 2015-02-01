@@ -6,17 +6,28 @@ def GetConfig():
 
     # These effect a whole run's behavior. That is they are higher level than a single Balrog call.
     run = RunConfigurations.RunConfigurations.default
-    run['label'] = 'des_sva1'
-    run['tiletotal'] = 100000
-    run['DBoverwrite'] = False
-    run['DBload'] = 'sqlldr'
+    run['label'] = 'debug-nersc'
+    run['tiletotal'] = 1000
+    run['DBoverwrite'] = True
+    run['DBload'] = 'cx_Oracle'
+    run['bands'] = ['i']
+    run['dualdetection'] = None
+
     #run['funpack'] = '/astro/u/esuchyta/cfitsio/cfitsio-3.370-install/bin/funpack'
-    #run['dualdetection'] = None
+    run['swarp'] = '/global/project/projectdirs/des/wl/desdata/users/esuchyta/software/carver/swarp-2.36.1/install-dir/bin/swarp'
+    run['outdir']: os.path.join(os.environ['SCRATCH'], 'BalrogOutput')  # The ouput directory for all intermediate work. This should be in the scratch area on the node.
 
 
     # These get passes as command line arguments to Balrog. If you add too much it could mess things up.
     balrog = RunConfigurations.BalrogConfigurations.default
     #balrog['sexparam'] = os.path.join(os.environ['BALROG_MPI_ASTRO_CONFIG'], 'sva1', 'sex.param')
+    run['pyconfig'] = os.path.join(os.environ['BALROG_MPI'], 'pyconfig', 'slr2.py'),
+    run['sexnnw'] = os.path.join(os.environ['BALROG_MPI'], 'astro_config', 'sva1', 'sex.nnw'),
+    run['sexconv'] = os.path.join(os.environ['BALROG_MPI'], 'astro_config', 'sva1', 'sex.conv'),
+    run['sexparam'] = os.path.join(os.environ['BALROG_MPI'], 'astro_config', 'sva1', 'sex.param_diskonly'),
+    run['sexconfig'] = os.path.join(os.environ['BALROG_MPI'], 'astro_config', 'sva1', 'sex.config'),
+
+    run['sexpath'] = '/direct/astro+u/esuchyta/svn_repos/sextractor-2.18.10/install/bin/sex',
 
 
     # This is configuring desdb to find the right files.
