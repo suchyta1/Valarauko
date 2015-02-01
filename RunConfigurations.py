@@ -8,10 +8,10 @@ class RunConfigurations:
             'nomulti': False,  # don't use the mulitprocessing module, useful for debugging
             'funpack': '/astro/u/esuchyta/cfitsio/cfit3300-install/bin/funpack', # this one is the sva1 version, that's not really relevant though
             'swarp': '/astro/u/esuchyta/svn_repos/swarp-2.36.1/install/bin/swarp', # swarp executable, only relevant if in multi-image detection mode
-            'swarp-config': os.path.join(os.environ['BALROG_MPI_ASTRO_CONFIG'], 'sva1', 'default.swarp'), # swarp configuration file, only relevant if in multi-image detection mode
+            'swarp-config': os.path.join(os.environ['BALROG_MPI'], 'astro_config', 'sva1', 'default.swarp'), # swarp configuration file, only relevant if in multi-image detection mode
 
             'balrog': '/astro/u/esuchyta/git_repos/balrog-testing/Balrog/balrog.py',  # The Balrog executable you'll use
-            'outdir': os.environ['BALROG_MPI_DEFAULT_OUT'],  # The ouput directory for all intermediate work. This should be in the scratch area on the node.
+            'outdir': os.path.join(os.environ['SCRATCH'],'BalrogOutput'),  # The ouput directory for all intermediate work. This should be in the scratch area on the node.
             'intermediate-clean': True,  # Delete an iteration's output Balrog images
             'tile-clean': True,  # Delete the entire outdir/run's contents
 
@@ -36,13 +36,13 @@ class BalrogConfigurations:
         default = {
             'fulltraceback': True,
             'ngal': 1000,
-            'pyconfig': os.path.join(os.environ['BALROG_MPI_PYCONFIG'], 'slr2.py'),
+            'pyconfig': os.path.join(os.environ['BALROG_MPI'], 'pyconfig', 'slr2.py'),
 
             'catfitstype': 'ldac',
-            'sexnnw': os.path.join(os.environ['BALROG_MPI_ASTRO_CONFIG'], 'sva1', 'sex.nnw'),
-            'sexconv': os.path.join(os.environ['BALROG_MPI_ASTRO_CONFIG'], 'sva1', 'sex.conv'),
-            'sexparam': os.path.join(os.environ['BALROG_MPI_ASTRO_CONFIG'], 'sva1', 'sex.param_diskonly'),
-            'sexconfig': os.path.join(os.environ['BALROG_MPI_ASTRO_CONFIG'], 'sva1', 'sex.config'),
+            'sexnnw': os.path.join(os.environ['BALROG_MPI'], 'astro_config', 'sva1', 'sex.nnw'),
+            'sexconv': os.path.join(os.environ['BALROG_MPI'], 'astro_config', 'sva1', 'sex.conv'),
+            'sexparam': os.path.join(os.environ['BALROG_MPI'], 'astro_config', 'sva1', 'sex.param_diskonly'),
+            'sexconfig': os.path.join(os.environ['BALROG_MPI'], 'astro_config', 'sva1', 'sex.config'),
             'sexpath': '/direct/astro+u/esuchyta/svn_repos/sextractor-2.18.10/install/bin/sex',
         }
 
