@@ -264,7 +264,7 @@ if __name__ == "__main__":
                              'iterations': [ScatterStuff[4][i]],
                              'pos': ScatterStuff[3],
                              'db': DBConfig}
-            runbalrog.NewRunBalrog(RunConfig, config, DerivedConfig, write=write, nomulti=True)
+            runbalrog.NewRunBalrog(RunConfig, config, DerivedConfig, write=write, nomulti=RunConfig['nomulti'])
 
     
     # This is all the real Balrog realizations.
@@ -281,7 +281,7 @@ if __name__ == "__main__":
                          'iterations': ScatterStuff[4][i],
                          'pos': ScatterStuff[3][i],
                          'db':DBConfig}
-        runbalrog.NewRunBalrog(RunConfig, config, DerivedConfig, nomulti=True)
+        runbalrog.NewRunBalrog(RunConfig, config, DerivedConfig, nomulti=RunConfig['nomulti'])
 
 
     # Send email when the run finishes
