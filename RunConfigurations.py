@@ -5,6 +5,7 @@ import numpy as np
 class RunConfigurations:
 
         default = {
+            'nomulti': False,  # don't use the mulitprocessing module, useful for debugging
             'funpack': '/astro/u/esuchyta/cfitsio/cfit3300-install/bin/funpack', # this one is the sva1 version, that's not really relevant though
             'swarp': '/astro/u/esuchyta/svn_repos/swarp-2.36.1/install/bin/swarp', # swarp executable, only relevant if in multi-image detection mode
             'swarp-config': os.path.join(os.environ['BALROG_MPI_ASTRO_CONFIG'], 'sva1', 'default.swarp'), # swarp configuration file, only relevant if in multi-image detection mode

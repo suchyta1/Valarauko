@@ -8,21 +8,14 @@ import esutil
 import scipy.special
 from model_class import *
 
-usemorph = True
-
 
 def CustomArgs(parser):
-    parser.add_argument( "-cs", "--catalog", help="Catalog used to sample simulated galaxy parameter distriubtions from", type=str, default=None)
-    parser.add_argument( "-ext", "--ext", help="Index of the data extension for sampling catalog", type=int, default=1)
+    parser.add_argument( "-om", "--oldmorph", help="use CMC + morphology catalog", action="store_true")
     
-    if usemorph:
-        parser.add_argument( "-reff", "--reff", help="Column name when drawing half light radius from catalog", type=str, default="halflightradius")
-        parser.add_argument( "-nsersic", "--sersicindex", help="Column name when drawing sersic index catalog", type=str, default="sersicindex")
-        parser.add_argument( "-ax", "--axisratio", help="Axis ratio column", type=str, default="axisratio")
-        parser.add_argument( "-beta", "--beta", help="Beta column", type=str, default="beta")
-    else:
-        parser.add_argument( "-reff", "--reff", help="Column name when drawing half light radius from catalog", type=str, default="HALF_LIGHT_RADIUS")
-        parser.add_argument( "-nsersic", "--sersicindex", help="Column name when drawing sersic index catalog", type=str, default="SERSIC_INDEX")
+    parser.add_argument( "-reff", "--reff", help="Column name when drawing half light radius from catalog", type=str, default="halflightradius")
+    parser.add_argument( "-nsersic", "--sersicindex", help="Column name when drawing sersic index catalog", type=str, default="sersicindex")
+    parser.add_argument( "-ax", "--axisratio", help="Axis ratio column", type=str, default="axisratio")
+    parser.add_argument( "-beta", "--beta", help="Beta column", type=str, default="beta")
 
     parser.add_argument( "-tl", "--tile", help="Tilename", type=str, required=True)
     parser.add_argument( "-b", "--band", help="Which filter band to choose from COSMOS catalog. Only relevant if --mag is not given and using COSMOS catlalog.", type=str, default='i', choices=['det','g','r','i','z','Y'])
@@ -34,30 +27,28 @@ def CustomArgs(parser):
     parser.add_argument( "-deckey", "--deckey", help='dec col', type=str, default='dec')
 
 
-def ByBand(band):
+def ByBand(band, args):
     if band=='det':
         mag = 'det'
     elif band=='Y':
         mag = 'Mapp_HSC_y'
-        if not usemorph:
+        if args.oldmorph:
             mag = mag.upper()
     else:
         mag = 'Mapp_%s_subaru' %(band)
-        if not usemorph:
+        if args.oldmorph:
             mag = mag.upper()
     return mag
 
 
 def CustomParseArgs(args):
-    thisdir = os.path.dirname( os.path.realpath(__file__) )
-    if args.catalog==None:
-        if usemorph:
-            args.catalog = '/direct/astro+u/esuchyta/git_repos/BalrogSetupBNL/input_cats/CMC_allband_upsample.fits'
-        else:
-            args.catalog = '/astro/u/esuchyta/git_repos/balrog-testing/Balrog/cosmos.fits'
+    args.ext = 1
+    if args.oldmorph:
+        args.catalog = '/astro/u/esuchyta/git_repos/balrog-testing/Balrog/cosmos.fits'
+    else:
+        args.catalog = '/direct/astro+u/esuchyta/git_repos/BalrogSetupBNL/input_cats/CMC_allband_upsample.fits'
 
-    args.mag = ByBand(args.band)
-
+    args.mag = ByBand(args.band, args)
     if args.ngal > 0:
         coords = np.array( pyfits.open(args.poscat)[args.posext].data[args.posstart:(args.posstart+args.ngal)] )
         args.ra = coords[args.rakey]
@@ -122,18 +113,18 @@ def SimulationRules(args, rules, sampled, TruthCat):
                 m = tab.Column(args.mag)
                 rules.magnitude = Function(function=SLRMag, args=[args,m])
     
-    if usemorph:
+    if args.oldmorph:
+        TruthCat.AddColumn(tab.Column('ID'), name='id')
+        TruthCat.AddColumn(tab.Column('_MOD'), name='mod')
+        TruthCat.AddColumn(tab.Column('TYPE'), name='objtype')
+        TruthCat.AddColumn(tab.Column('Z'), name='z')
+    else:
         rules.beta = tab.Column(args.beta)
         rules.axisratio = tab.Column(args.axisratio)
-        TruthCat.AddColumn(tab.Column('Id'))
-        TruthCat.AddColumn(tab.Column('Mod'))
-        TruthCat.AddColumn(tab.Column('type'), name='OBJTYPE')
-        TruthCat.AddColumn(tab.Column('z'))
-    else:
-        TruthCat.AddColumn(tab.Column('ID'), name='CMCID')
-        TruthCat.AddColumn(tab.Column('_MOD'), name='CMCMOD')
-        TruthCat.AddColumn(tab.Column('TYPE'), name='CMCTYPE')
-        TruthCat.AddColumn(tab.Column('Z'))
+        TruthCat.AddColumn(tab.Column('Id'), name='id')
+        TruthCat.AddColumn(tab.Column('Mod'), name='mod')
+        TruthCat.AddColumn(tab.Column('type'), name='objtype')
+        TruthCat.AddColumn(tab.Column('z'), name='z')
 
     TruthCat.AddColumn(args.seed, name='SEED', fmt='J')
     TruthCat.AddColumn(args.zeropoint, name='ZEROPOINT', fmt='E')
@@ -142,7 +133,7 @@ def SimulationRules(args, rules, sampled, TruthCat):
 
     b = args.mag
     if b=='det':
-        b = ByBand('r')
+        b = ByBand('r', args)
     TruthCat.AddColumn(tab.Column(b), name='MAG')
 
 

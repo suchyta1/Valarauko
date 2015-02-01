@@ -1,8 +1,7 @@
 command: |
-   mpirun -npernode 1 -np 10 -hostfile %hostfile% ./WrapBalrog.py
+   mpirun -npernode 1 -np 1 -hostfile %hostfile% ./WrapBalrog.py
 
 mode: bynode
-N: 10
+N: 1
 hostfile: auto
-#group: ['a43']
-group: ['gen6']
+group: ['a44']

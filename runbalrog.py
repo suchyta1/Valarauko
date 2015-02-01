@@ -426,14 +426,14 @@ def WriteCoords(coords, outdir):
 
 
 def RunOnlyCreate(RunConfig, BalrogConfig, DerivedConfig):
-    ind = 0
     BalrogConfig['ngal'] = 0
-    BalrogConfig['image'] = DerivedConfig['images'][ind]
-    BalrogConfig['psf'] = DerivedConfig['psfs'][ind]
+    BalrogConfig['image'] = DerivedConfig['images'][0]
+    BalrogConfig['psf'] = DerivedConfig['psfs'][0]
 
+    BalrogConfig['band'] = DerivedConfig['bands'][0]
     if RunConfig['dualdetection']==None:
-        ind += 1
-    BalrogConfig['band'] = DerivedConfig['bands'][ind]
+        BalrogConfig['band'] = RunConfig['bands'][0]
+
     BalrogConfig['zeropoint'] = GetZeropoint(RunConfig, DerivedConfig, BalrogConfig)
     BalrogConfig['nonosim'] = False
     BalrogConfig['outdir'] = os.path.join(DerivedConfig['outdir'], BalrogConfig['band'])
