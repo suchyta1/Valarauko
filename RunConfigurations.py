@@ -6,8 +6,8 @@ class RunConfigurations:
 
         default = {
             'nomulti': False,  # don't use the mulitprocessing module, useful for debugging
-            'funpack': '/astro/u/esuchyta/cfitsio/cfit3300-install/bin/funpack', # this one is the sva1 version, that's not really relevant though
-            'swarp': '/astro/u/esuchyta/svn_repos/swarp-2.36.1/install/bin/swarp', # swarp executable, only relevant if in multi-image detection mode
+            'funpack': os.path.join(os.environ['BALROG_MPI'], 'software','cfitsio-3.300','funpack'), # this one is the sva1 version, that's not really relevant though
+            'swarp': os.path.join(os.environ['BALROG_MPI', 'software','swarp-2.36.1','install-dir','bin','swarp'), # swarp executable, only relevant if in multi-image detection mode
             'swarp-config': os.path.join(os.environ['BALROG_MPI'], 'astro_config', 'sva1', 'default.swarp'), # swarp configuration file, only relevant if in multi-image detection mode
 
             'balrog': '/astro/u/esuchyta/git_repos/balrog-testing/Balrog/balrog.py',  # The Balrog executable you'll use
