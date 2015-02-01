@@ -10,7 +10,7 @@ from mpi4py import MPI
 import mpifunctions
 
 #from RunConfigurations import *
-import Configure
+import ConfigureFunction
 import runbalrog
 
 
@@ -214,7 +214,7 @@ def PrepareIterations(tiles, images, psfs, position, config, RunConfig, indexsta
 
 if __name__ == "__main__":
     
-    RunConfig, config, SheldonConfig, DBConfig, tiles = Configure.GetConfig()
+    RunConfig, config, SheldonConfig, DBConfig, tiles = ConfigureFunction.GetConfig()
 
     '''
     # These effect a whole run's behavior. That is they are higher level than a single Balrog call.

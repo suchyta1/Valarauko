@@ -3,6 +3,44 @@ import os
 import esutil
 
 
+# change the defaults if you want
+def NerscConfig(run, balrog, desdb, db, tiles):
+    run['label'] = 'debug_nersc'
+    run['tiletotal'] = 1000
+    run['DBoverwrite'] = True
+    run['DBload'] = 'cx_Oracle'
+    run['bands'] = ['i']
+    run['dualdetection'] = None
+
+    balrog = pyconfig(balrog)
+    tiles = tiles[0:1]
+    return run, balrog, DESdb, db, tiles
+
+
+# change the defaults if you want
+def BNLConfig(run, balrog, desdb, db, tiles):
+    run['label'] = 'debug_bnl'
+    #run['label'] = 'des_sva1'
+    #run['tiletotal'] = 100000
+    run['tiletotal'] = 20000
+    run['DBoverwrite'] = True
+    #run['DBload'] = 'cx_Oracle'
+    run['DBload'] = 'sqlldr'
+
+    balrog = pyconfig(balrog)
+    tiles = tileinfo['tilename'][0:1]
+
+    return run, balrog, DESdb, db, tiles
+
+
+def pyconfig(balrog):
+    #balrog['sexparam'] = os.path.join(os.environ['BALROG_MPI_ASTRO_CONFIG'], 'sva1', 'sex.param')
+    balrog['oldmorph'] = False
+    if balrog['oldmorph']:
+        balrog["reff"] = "HALF_LIGHT_RADIUS"
+        balrog["sersicindex"] = "SERSIC_INDEX"
+
+
 # get a default config object
 def GetConfig():
 
@@ -27,19 +65,6 @@ def GetConfig():
     return run, balrog, DESdb, db, tiles
 
 
-# change the defaults if you want
-def NerscConfig(run, balrog, desdb, db, tiles)
-
-    run['label'] = 'debug-nersc'
-    run['tiletotal'] = 1000
-    run['DBoverwrite'] = True
-    run['DBload'] = 'cx_Oracle'
-    run['bands'] = ['i']
-    run['dualdetection'] = None
-
-    tiles = tiles[0:1]
-
-    return run, balrog, DESdb, db, tiles
 
 
     #tiles = cur.quick("SELECT tile.tilename, tile.urall, tile.uraur, tile.udecll, tile.udecur from coaddtile tile   JOIN (select distinct(tilename) as tilename from sva1_coadd_spte) sva1 ON sva1.tilename=tile.tilename  ORDER BY tile.udecll DESC, tile.urall ASC", array=True)
