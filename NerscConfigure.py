@@ -18,7 +18,6 @@ def GetConfig():
     run['swarp'] = '/global/project/projectdirs/des/wl/desdata/users/esuchyta/software/carver/swarp-2.36.1/install-dir/bin/swarp'
     run['outdir']: os.path.join(os.environ['SCRATCH'], 'BalrogOutput')  # The ouput directory for all intermediate work. This should be in the scratch area on the node.
 
-
     # These get passes as command line arguments to Balrog. If you add too much it could mess things up.
     balrog = RunConfigurations.BalrogConfigurations.default
     #balrog['sexparam'] = os.path.join(os.environ['BALROG_MPI_ASTRO_CONFIG'], 'sva1', 'sex.param')
