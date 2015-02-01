@@ -3,7 +3,7 @@ Installation requirements:
 
 * I slightly hacked desdb to get an extra function that wasn't callable. Add this line to the try block in desdb/__init__.py:
     from .desdb import get_tabledef
-* 
+* add this directory to your enviorment variables as BALROG_MPI
 
 
 Some quick notes about some of the files:
