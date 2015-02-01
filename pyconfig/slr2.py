@@ -5,7 +5,7 @@ import sys
 import numpy as np
 import pywcs
 import esutil
-import scipy.special
+#import scipy.special
 from model_class import *
 
 
@@ -44,9 +44,9 @@ def ByBand(band, args):
 def CustomParseArgs(args):
     args.ext = 1
     if args.oldmorph:
-        args.catalog = '/astro/u/esuchyta/git_repos/balrog-testing/Balrog/cosmos.fits'
+        args.catalog = os.path.join(os.environ['BALROG_MPI'], 'software', 'Balrog', 'cosmos.fits')
     else:
-        args.catalog = '/direct/astro+u/esuchyta/git_repos/BalrogSetupBNL/input_cats/CMC_allband_upsample.fits'
+        args.catalog = os.path.join(os.environ['BALROG_MPI'], 'catalogs', 'CMC_allband_upsample.fits')
 
     args.mag = ByBand(args.band, args)
     if args.ngal > 0:
@@ -76,9 +76,9 @@ def GetYCoords(args):
 
 
 def SLRMag(args, mag):
-    sys.path.insert(0, '/astro/u/esuchyta/git_repos/BalrogMPI/')
+    sys.path.insert(0, os.environ['BALROG_MPI'])
     import slr_zeropoint_shiftmap as slr
-    slrfile = '/astro/u/esuchyta/git_repos/BalrogMPI/slr_zeropoint_shiftmap_v6_splice_cosmos_griz_EQUATORIAL_NSIDE_256_RING.fits'
+    slrfile = os.path.join(os.environ['BALROG_MPI'], 'slr_zeropoint_shiftmap_v6_splice_cosmos_griz_EQUATORIAL_NSIDE_256_RING.fits')
     slr_map = slr.SLRZeropointShiftmap(slrfile, args.band)
     slr_shift, slr_quality = slr_map.GetZeropointShift(args.band, args.ra, args.dec, mag, interpolate=True) 
     m = mag - slr_shift

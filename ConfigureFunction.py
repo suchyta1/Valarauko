@@ -4,7 +4,7 @@ import esutil
 
 
 # change the defaults if you want
-def NerscConfig(run, balrog, desdb, db, tiles):
+def NerscConfig(run, balrog, DESdb, db, tiles):
     run['label'] = 'debug_nersc'
     run['tiletotal'] = 1000
     run['DBoverwrite'] = True
@@ -18,7 +18,7 @@ def NerscConfig(run, balrog, desdb, db, tiles):
 
 
 # change the defaults if you want
-def BNLConfig(run, balrog, desdb, db, tiles):
+def BNLConfig(run, balrog, DESdb, db, tiles):
     run['label'] = 'debug_bnl'
     #run['label'] = 'des_sva1'
     #run['tiletotal'] = 100000
@@ -39,6 +39,7 @@ def pyconfig(balrog):
     if balrog['oldmorph']:
         balrog["reff"] = "HALF_LIGHT_RADIUS"
         balrog["sersicindex"] = "SERSIC_INDEX"
+    return balrog
 
 
 # get a default config object
@@ -50,7 +51,7 @@ def GetConfig():
     # will get passed as command line arguments to balrog
     balrog = RunConfigurations.BalrogConfigurations.default
 
-    # stuff for talking to the desdb module for finding file
+    # stuff for talking to the DESdb module for finding file
     DESdb = RunConfigurations.desdbInfo.sva1_coadd
 
     # DB connection info
@@ -60,8 +61,8 @@ def GetConfig():
     tileinfo = esutil.io.read('spte-tiles.fits')
     tiles = tileinfo['tilename']
 
-    run, balrog, DESdb, db, tiles = NerscConfig(run, balrog, desdb, db, tiles)
-    #run, balrog, DESdb, db, tiles = BNLConfig(run, balrog, desdb, db, tiles)
+    run, balrog, DESdb, db, tiles = NerscConfig(run, balrog, DESdb, db, tiles)
+    #run, balrog, DESdb, db, tiles = BNLConfig(run, balrog, DESdb, db, tiles)
     return run, balrog, DESdb, db, tiles
 
 

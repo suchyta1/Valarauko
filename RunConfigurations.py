@@ -7,10 +7,10 @@ class RunConfigurations:
         default = {
             'nomulti': False,  # don't use the mulitprocessing module, useful for debugging
             'funpack': os.path.join(os.environ['BALROG_MPI'], 'software','cfitsio-3.300','funpack'), # this one is the sva1 version, that's not really relevant though
-            'swarp': os.path.join(os.environ['BALROG_MPI', 'software','swarp-2.36.1','install-dir','bin','swarp'), # swarp executable, only relevant if in multi-image detection mode
+            'swarp': os.path.join(os.environ['BALROG_MPI'], 'software','swarp-2.36.1','install-dir','bin','swarp'), # swarp executable, only relevant if in multi-image detection mode
             'swarp-config': os.path.join(os.environ['BALROG_MPI'], 'astro_config', 'sva1', 'default.swarp'), # swarp configuration file, only relevant if in multi-image detection mode
 
-            'balrog': os.path.join(os.environ['BALROG_MPI', 'software','Balrog','balrog.py'),  # The Balrog executable you'll use
+            'balrog': os.path.join(os.environ['BALROG_MPI'], 'software','Balrog','balrog.py'),  # The Balrog executable you'll use
             'outdir': os.path.join(os.environ['SCRATCH'],'BalrogOutput'),  # The ouput directory for all intermediate work. This should be in the scratch area on the node.
             'intermediate-clean': True,  # Delete an iteration's output Balrog images
             'tile-clean': True,  # Delete the entire outdir/run's contents
