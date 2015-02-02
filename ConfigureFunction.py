@@ -6,29 +6,29 @@ import esutil
 # change the defaults if you want
 def NerscConfig(run, balrog, DESdb, db, tiles):
     run['label'] = 'debug_nersc'
-    run['tiletotal'] = 1000
+    run['tiletotal'] = 2000
     run['DBoverwrite'] = True
     run['DBload'] = 'cx_Oracle'
     run['bands'] = ['i']
     run['dualdetection'] = None
 
     balrog = pyconfig(balrog)
-    tiles = tiles[0:1]
+    tiles = tiles[0:2]
     return run, balrog, DESdb, db, tiles
 
 
 # change the defaults if you want
 def BNLConfig(run, balrog, DESdb, db, tiles):
-    run['label'] = 'debug_bnl'
+    #run['label'] = 'debug_bnl'
     #run['label'] = 'des_sva1'
-    #run['tiletotal'] = 100000
-    run['tiletotal'] = 20000
+    run['label'] = 'sva1_des'
+    run['tiletotal'] = 100000
     run['DBoverwrite'] = True
-    #run['DBload'] = 'cx_Oracle'
-    run['DBload'] = 'sqlldr'
+    run['DBload'] = 'cx_Oracle'
+    #run['DBload'] = 'sqlldr'
 
     balrog = pyconfig(balrog)
-    tiles = tileinfo['tilename'][0:1]
+    tiles = tileinfo['tilename'][0:30]
 
     return run, balrog, DESdb, db, tiles
 
@@ -61,8 +61,8 @@ def GetConfig():
     tileinfo = esutil.io.read('spte-tiles.fits')
     tiles = tileinfo['tilename']
 
-    run, balrog, DESdb, db, tiles = NerscConfig(run, balrog, DESdb, db, tiles)
-    #run, balrog, DESdb, db, tiles = BNLConfig(run, balrog, DESdb, db, tiles)
+    #run, balrog, DESdb, db, tiles = NerscConfig(run, balrog, DESdb, db, tiles)
+    run, balrog, DESdb, db, tiles = BNLConfig(run, balrog, DESdb, db, tiles)
     return run, balrog, DESdb, db, tiles
 
 
