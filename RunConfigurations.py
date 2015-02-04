@@ -5,6 +5,12 @@ import numpy as np
 class RunConfigurations:
 
         default = {
+            'queue': 'regular', # NERSC queues, irrelevant at BNL
+            'joblabel': 'test',
+            'nodes': 10,
+            'ppn': 6,
+            'walltime': '24:00:00', # irrelevant at BNL
+
             'nomulti': False,  # don't use the mulitprocessing module, useful for debugging
             'funpack': os.path.join(os.environ['BALROG_MPI'], 'software','cfitsio-3.300','funpack'), # this one is the sva1 version, that's not really relevant though
             'swarp': os.path.join(os.environ['BALROG_MPI'], 'software','swarp-2.36.1','install-dir','bin','swarp'), # swarp executable, only relevant if in multi-image detection mode
@@ -22,6 +28,7 @@ class RunConfigurations:
             'tiletotal': 100000, # Approximate number of (truth) Balrog galaxies per tile.
             'fixposseed': None,  # Fix this to an integer to get the same positions every time you run
             'fixwrapseed': None, # Fix this to an integer to get the same Balrog sampling realizations each time you run
+            'inc': 500, 
 
             'doDES': False,  # Run sextractor without any Balrog galaxies over full images
             'bands': ['g','r','i','z','Y'], # Bands you'll get measurement catalogs for
@@ -114,6 +121,5 @@ class TileLists:
              'DES0506-4706']
 
     suchyta27 = np.append( np.array(suchyta13), np.array(suchyta14) )
-
 
 

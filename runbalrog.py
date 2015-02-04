@@ -5,6 +5,8 @@ import copy
 import time
 import datetime
 import StringIO
+import socket
+import logging
 
 import sys
 #import pickle
@@ -350,10 +352,16 @@ def NewWrite2DB(cats, labels, RunConfig, BalrogConfig, DerivedConfig):
                 istr, newarr = GetOracleStructure(arr, tablename, noarr=noarr)
                 cxcur, con = get_cx_oracle_cursor(DerivedConfig['db'])
                 cxcur.prepare(istr)
-                cxcur.executemany(None, newarr)
+                try:
+                    cxcur.executemany(None, newarr)
+                except:
+                    print istr
+                    print newarr
+                    print cats[i]
+                    print socket.gethostname
+                    sys.exit()
                 con.commit()
                 cxcur.close()
-                #cxcur.executemany(istr, newarr)
 
         if create:
             cur.quick("GRANT SELECT ON %s TO DES_READER" %tablename)
@@ -560,11 +568,13 @@ def RunNormal(RunConfig, BalrogConfig, DerivedConfig, kind='old'):
             cats, labels = GetRelevantCatalogs(BalrogConfig, RunConfig, DerivedConfig)
             NewWrite2DB(cats, labels, RunConfig, BalrogConfig, DerivedConfig)
     '''
-
+    
+    #global runlog
     if kind=='new':
         coordfile = WriteCoords(DerivedConfig['pos'], DerivedConfig['outdir'])
         BalrogConfig['poscat'] = coordfile
         if RunConfig['dualdetection']!=None:
+            #runlog.info('%s %s %s' %('a', DerivedConfig['iteration'], socket.gethostname()))
             BConfig = copy.copy(BalrogConfig)
             BConfig['imageonly'] = True
             detbands = DetBands(RunConfig)
@@ -572,6 +582,7 @@ def RunNormal(RunConfig, BalrogConfig, DerivedConfig, kind='old'):
             cimages = {}
             cimgs = []
             for i, band in zip(RunConfig['dualdetection'], dbands):
+                #runlog.info('%s %s %s' %('b', DerivedConfig['iteration'], socket.gethostname()))
                 img = DerivedConfig['images'][i+1]
                 BConfig['image'] = img
                 BConfig['psf'] = DerivedConfig['psfs'][i+1]
@@ -583,10 +594,13 @@ def RunNormal(RunConfig, BalrogConfig, DerivedConfig, kind='old'):
                 cimages[band] = outfile
                 cimgs.append(outfile)
                 cmd = Dict2Cmd(BConfig, RunConfig['balrog'])
+                #runlog.info('%s %s %s %s' %('c', BConfig['band'], DerivedConfig['iteration'], socket.gethostname()))
                 subprocess.call(cmd)
+                #runlog.info('%s %s %s %s' %('d', BConfig['band'], DerivedConfig['iteration'], socket.gethostname()))
 
                 cats, labels = GetRelevantCatalogs(BConfig, RunConfig, DerivedConfig)
                 NewWrite2DB(cats, labels, RunConfig, BConfig, DerivedConfig)
+                #runlog.info('%s %s %s %s' %('e', BConfig['band'], DerivedConfig['iteration'], socket.gethostname()))
 
             cmd, detimage, detwimage = SwarpConfig(cimgs, RunConfig, DerivedConfig, BConfig)
 
@@ -598,7 +612,9 @@ def RunNormal(RunConfig, BalrogConfig, DerivedConfig, kind='old'):
             fh.setLevel(logging.INFO)
             swarplog.addHandler(fh)
             
+            #runlog.info('%s %s %s' %('f', DerivedConfig['iteration'], socket.gethostname()))
             with lock:
+
                 swarplog.info('# Exact command call')
                 swarplog.info(' '.join(cmd))
                 p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -606,6 +622,8 @@ def RunNormal(RunConfig, BalrogConfig, DerivedConfig, kind='old'):
                 swarplog.info(stdout)
                 swarplog.info(stderr)
                 swarplog.info('\n')
+
+            #runlog.info('%s %s %s' %('g', DerivedConfig['iteration'], socket.gethostname()))
 
         detpsf = DerivedConfig['psfs'][0]
         for i in range(len(DerivedConfig['bands'])):
@@ -634,15 +652,20 @@ def RunNormal(RunConfig, BalrogConfig, DerivedConfig, kind='old'):
                     appendsim = True
 
 
+            #runlog.info('%s %s %s %s' %('h', BConfig['band'], DerivedConfig['iteration'], socket.gethostname()))
             cmd = Dict2Cmd(BConfig, RunConfig['balrog'])
             subprocess.call(cmd)
+            #runlog.info('%s %s %s %s' %('j', BConfig['band'], DerivedConfig['iteration'], socket.gethostname()))
 
             cats, labels = GetRelevantCatalogs(BConfig, RunConfig, DerivedConfig, appendsim=appendsim)
             NewWrite2DB(cats, labels, RunConfig, BConfig, DerivedConfig)
+            #runlog.info('%s %s %s %s' %('k', BConfig['band'], DerivedConfig['iteration'], socket.gethostname()))
 
 
 
 def run_balrog(args):
+    #global runlog
+    #runlog.info('enter')
     RunConfig, BalrogConfig, DerivedConfig = args
     it = EnsureInt(DerivedConfig)
 
@@ -654,8 +677,11 @@ def run_balrog(args):
         RunDoDES(RunConfig, BalrogConfig, DerivedConfig)
     else:
         # Actual Balrog realization
+        #runlog.info('%s %s %s' %('before', DerivedConfig['iteration'], socket.gethostname()))
         RunNormal(RunConfig, BalrogConfig, DerivedConfig, kind='new')
+        #runlog.info('%s %s %s' %('after', DerivedConfig['iteration'], socket.gethostname()))
 
+    #runlog.info('before clean')
     if RunConfig['intermediate-clean']:
         if it < 0:
                 subprocess.call( ['rm', '-r', BalrogConfig['outdir']] )
@@ -663,16 +689,37 @@ def run_balrog(args):
             for band in DerivedConfig['bands']:
                 dir = os.path.join(DerivedConfig['outdir'], band)
                 subprocess.call( ['rm', '-r', dir] )
+    #runlog.info('leave')
 
 
 
 lock = Lock()
+#runlog = None
+
+
+
+
+
 # This is the main function each node runs.
 # It starts as many threads as cores on the nodes and uses them all with multiprocessing pool
 # RunConfig is NEVER changed.
 # BalrogConfig will be given as command line arguments to Balrog
 # DerivedConfig is other stuff that will be useful to know down the line.
 def NewRunBalrog(RunConfig, BalrogConfig, DerivedConfig, write=None, nomulti=False):
+    '''
+    host = socket.gethostname()
+    logfile = 'mlogs/%s-%s' %(RunConfig['label'], host)
+    log = logging.getLogger()
+    log.setLevel(logging.DEBUG)
+    global runlog
+    runlog = logging.getLogger('run')
+    formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+    fh = logging.FileHandler(logfile, mode='w')
+    fh.setFormatter(formatter)
+    fh.setLevel(logging.DEBUG)
+    runlog.addHandler(fh)
+    '''
+
     workingdir = os.path.join(RunConfig['outdir'], RunConfig['label'], DerivedConfig['tile'] )
     indir = os.path.join(workingdir, 'input')
     Mkdir(indir)
@@ -727,18 +774,32 @@ def NewRunBalrog(RunConfig, BalrogConfig, DerivedConfig, write=None, nomulti=Fal
             args.append(arg)
 
         inc += 1
-  
+ 
+
     # If you're going to be changing and debugging, debugging is a GIANT pain using pool.map
     # The commented out loop is the same thing without parallel threads.
     #nthreads = cpu_count()
+
     if nomulti:
         for arg in args:
             run_balrog(arg)
     else:
         nthreads = 6
         pool = Pool(nthreads)
+        #runlog.info('start map')
         pool.map(run_balrog, args, chunksize=1)
+        #runlog.info('end map')
+
 
     if RunConfig['tile-clean']:
     #print BalrogConfig['image'], DerivedConfig['iteration'][1], DerivedConfig['images']
         subprocess.call( ['rm', '-r', workingdir] )
+
+
+
+def MPIRunBalrog(RunConfig, BalrogConfig, DerivedConfig):
+    Mkdir(DerivedConfig['indir'])
+    DerivedConfig['images'], DerivedConfig['psfs'] = DownloadImages(Derived['indir'], DerivedConfig['images'], DerivedConfig['psfs'], RunConfig, skip=DerivedConfig['initialized'])
+    Mkdir(Derived['outdir'])
+
+    run_balrog( [RunConfig, BalrogConfig, DerivedConfig] )

@@ -175,7 +175,7 @@ def PrepareCreateOnly(tiles, images, psfs, position, config):
     return [tiles[0:1], images[0:1], psfs[0:1], [ [] ], [-2], [0]]
 
 
-def PrepareIterations(tiles, images, psfs, position, config, RunConfig, indexstart):
+def PrepareIterations(tiles, images, psfs, pos, config, RunConfig, indexstart):
     #sendpos = copy.copy(position)
     sendpos = []
     senditerations = []
@@ -214,25 +214,8 @@ def PrepareIterations(tiles, images, psfs, position, config, RunConfig, indexsta
 
 if __name__ == "__main__":
     
-    RunConfig, config, SheldonConfig, DBConfig, tiles = ConfigureFunction.GetConfig()
+    RunConfig, config, SheldonConfig, DBConfig, tiles = ConfigureFunction.GetConfig(sys.argv[1])
 
-    '''
-    # These effect a whole run's behavior. That is they are higher level than a single Balrog call.
-    RunConfig = RunConfigurations.default
-
-    # This is configuring desdb to find the right files.
-    SheldonConfig = desdbInfo.sva1_coadd
-
-    # What tiles you want to Balrog
-    tiles = TileLists.suchyta13[1:2]
-    #tiles = TileLists.suchyta27
-
-    # These get passes as command line arguments to Balrog. If you add too much it could mess things up.
-    config = BalrogConfigurations.default
-
-    # Info for connecting to the DB. You probably don't need to touch this.
-    DBConfig = DBInfo.default
-    '''
 
     # Call desdb to find the tiles we need to download and delete any existing DB tables which are the same as your run label.
     if MPI.COMM_WORLD.Get_rank()==0:
