@@ -107,7 +107,8 @@ def RandomPositions(RunConfiguration, BalrogConfiguration, tiles, seed=None):
     inc = RunConfiguration['inc']
     
     if RunConfiguration['fixposseed']!=None:
-        np.random.seed(RunConfiguration['fixposseed'])
+        rank = MPI.COMM_WORLD.Get_rank()
+        np.random.seed(RunConfiguration['fixposseed'] + rank)
 
     # Loop until we've kept at least as many galaxies as we wanted, we'll generate inc at a time and see which of those lie in our tiles
     numfound = 0
@@ -212,10 +213,12 @@ def Shutdown(hostinfo, host, rank, done, RunConfig, ServerLog):
     return done
 
 
-def Cleanup(workingdir, RunConfig):
-    if RunConfig['tile-clean']:
-        if os.path.lexists(workingdir):
-            subprocess.call( ['rm', '-r', workingdir] )
+def Cleanup(RunConfig, rank, host, ServerLog, hostinfo):
+    workingdir = hostinfo[host]['derived']['workingdir']
+    job = ['cleanup', RunConfig['tile-clean'], workingdir]
+    ServerLog.Log('Sending signal to do any cleanup for tile = %s' %(hostinfo[host]['balrog']['tile']) )
+    MPI.COMM_WORLD.sendrecv(job, dest=rank, source=rank)
+    ServerLog.Log('Done doing any cleanup for tile = %s' %(hostinfo[host]['balrog']['tile']) )
 
 
 class ServerLogger(object):
@@ -228,7 +231,7 @@ class ServerLogger(object):
         self.log.info(self.startstr + msg)
 
 
-def ServeProcesses(queue, RunConfig, logdir):
+def ServeProcesses(queue, RunConfig, logdir, desdblogdir):
     size = RunConfig['nodes'] * RunConfig['ppn'] - 1
     done = 0
     hostinfo = {}
@@ -273,11 +276,12 @@ def ServeProcesses(queue, RunConfig, logdir):
         if hostinfo[host]['it'].qsize()==0:
             ServerLog.Log( 'Received signal from empty queue, tile = %s' %(hostinfo[host]['balrog']['tile']) )
             if TileDone(hostinfo, host):
-                Cleanup(hostinfo[host]['derived']['workingdir'], RunConfig)
+                Cleanup(RunConfig, rank, host, ServerLog, hostinfo)
+                ResumeWaiting(hostinfo, host, ServerLog)
                 if queue.qsize() > 0:
                     hostinfo = GetQueueItem(queue, hostinfo, host, rank)
                     ServerLog.Log( 'Got new queue for tile = %s' %(hostinfo[host]['balrog']['tile']) )
-                    ResumeWaiting(hostinfo, host, ServerLog)
+                    #ResumeWaiting(hostinfo, host, ServerLog)
                 else:
                     ServerLog.Log( 'tile = %s has empty queue' %(hostinfo[host]['balrog']['tile']) )
                     log.info('Sending signal to shut down')
@@ -300,12 +304,12 @@ def ServeProcesses(queue, RunConfig, logdir):
         derived = copy.copy(hostinfo[host]['derived'])
 
         derived['iteration'] = hostinfo[host]['it'].get()
+        it = runbalrog.EnsureInt(derived)
         derived['pos'] = hostinfo[host]['pos'].get()
         derived['initialized'] = bool( hostinfo[host]['initialized'] )
-        derived['outdir'] = os.path.join(derived['workingdir'], 'output', '%i'%derived['iteration'])
+        derived['outdir'] = os.path.join(derived['workingdir'], 'output', '%i'%it)
 
-        print derived['iteration'], hostinfo[host]['tileits'], hostinfo[host]['initialized'], balrog['tile']
-        it = runbalrog.EnsureInt(derived)
+        #print derived['iteration'], hostinfo[host]['tileits'], hostinfo[host]['initialized'], balrog['tile']
         balrog['indexstart'] = derived['indexstart']
         if it > 0:
             balrog['indexstart'] += it*balrog['ngal']
@@ -340,15 +344,16 @@ def SetupLog(logdir, host, rank):
     return log
 
 
-def DoProcesses(logdir):
+def DoProcesses(logdir, desdblogdir):
 
     rank = MPI.COMM_WORLD.Get_rank()
     host = socket.gethostname()
+
     log = SetupLog(logdir, host, rank)
     log.info('Started listener')
-  
+    dlog = os.path.join(desdblogdir, '%i.log'%(rank))
 
-    send = -6
+    send = -7
     while True:
         log.info('Ready for job')
         job = MPI.COMM_WORLD.sendrecv( [rank,host,send], dest=0, source=0)
@@ -359,6 +364,17 @@ def DoProcesses(logdir):
             MPI.COMM_WORLD.send(send, dest=0)
             log.info('Shut down')
             break
+        elif job[0]=='cleanup':
+            send = -6
+            clean = job[1]
+            workingdir = job[2]
+            if clean and os.path.lexists(workingdir):
+                log.info('cleaning up')
+                #subprocess.call( ['rm', '-r', workingdir] )
+                oscmd = ['rm', '-r', workingdir]
+                runbalrog.SystemCall(oscmd)
+                log.info('removed %s' %(workingdir) )
+            #MPI.COMM_WORLD.send(send, dest=0)
         elif job[0]=='wait':
             send = -4
             log.info('Waiting for tile = %s to %s' %(job[1], job[2]) )
@@ -367,7 +383,8 @@ def DoProcesses(logdir):
 
         else:
             run, balrog, derived = job
-            send = derived['iteration']
+            derived['desdblog'] = dlog
+            send = runbalrog.EnsureInt(derived)
             log.info('Running iteration = %s of tile = %s' %(str(derived['iteration']),balrog['tile']) )
             runbalrog.MPIRunBalrog(run, balrog, derived)
             if derived['iteration']==-2:
@@ -386,7 +403,12 @@ def BuildQueue(tiles, images, psfs, pos, BalrogConfig, RunConfig, dbConfig, inde
         derived['workingdir'] = workingdir
         derived['indir'] = os.path.join(workingdir, 'input')
 
-        iterations = np.ceil( len(pos[i]) / float(balrog['ngal']))
+        #iterations = (len(pos[i]) / balrog['ngal']) + (len(pos[i]) % balrog['ngal'])
+        #iterations = np.ceil( len(pos[i]) / float(balrog['ngal']))
+        iterations = len(pos[i]) / balrog['ngal']
+        if ( len(pos[i]) % balrog['ngal'] ) != 0:
+            iterations += 1
+
         size = iterations
 
         if i==0 and write:
@@ -415,7 +437,7 @@ def BuildQueue(tiles, images, psfs, pos, BalrogConfig, RunConfig, dbConfig, inde
                 stop = start + balrog['ngal']
             itQ.put(j)
             posQ.put(pos[i][start:stop])
-            
+    
         d = {'derived': derived,
              'balrog': balrog,
              'pos': posQ,
@@ -447,10 +469,10 @@ def InitCommonToTile(images, psfs, indexstart, RunConfig, BalrogConfig, dbConfig
 if __name__ == "__main__":
     
     RunConfig, BalrogConfig, desdbConfig, dbConfig, tiles = ConfigureFunction.GetConfig(sys.argv[1])
-    logdir = 'communicationlog-%s-%s' %(RunConfig['label'], RunConfig['joblabel'])
-    if not os.path.lexists(logdir):
-        runbalrog.Mkdir(logdir)
 
+    runlogdir = 'runlog-%s-%s' %(RunConfig['label'], RunConfig['joblabel'])
+    commlogdir = os.path.join(runlogdir, 'communication')
+    desdblogdir = os.path.join(runlogdir, 'desdb')
 
     # Call desdb to find the tiles we need to download and delete any existing DB tables which are the same as your run label.
     if MPI.COMM_WORLD.Get_rank()==0:
@@ -463,12 +485,19 @@ if __name__ == "__main__":
     # Generate positions for the simulated objects
     pos = RandomPositions(RunConfig, BalrogConfig, tiles)
 
+    if MPI.COMM_WORLD.Get_rank()==0:
+        if os.path.exists(runlogdir):
+            oscmd = ['rm', '-r', runlogdir]
+            runbalrog.SystemCall(oscmd)
+        runbalrog.Mkdir(commlogdir)
+        runbalrog.Mkdir(desdblogdir)
+    MPI.COMM_WORLD.barrier()
     
     if MPI.COMM_WORLD.Get_rank()==0:
         q = BuildQueue(tiles, images, psfs, pos, BalrogConfig, RunConfig, dbConfig, indexstart, write)
-        ServeProcesses(q, RunConfig, logdir)
+        ServeProcesses(q, RunConfig, commlogdir, desdblogdir)
     else:
-        DoProcesses(logdir) 
+        DoProcesses(commlogdir, desdblogdir) 
 
 
     # Send email when the run finishes

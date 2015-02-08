@@ -7,6 +7,7 @@ import datetime
 import StringIO
 import socket
 import logging
+import traceback
 
 import sys
 #import pickle
@@ -354,12 +355,16 @@ def NewWrite2DB(cats, labels, RunConfig, BalrogConfig, DerivedConfig):
                 cxcur.prepare(istr)
                 try:
                     cxcur.executemany(None, newarr)
-                except:
+                except Exception, err:
                     print istr
                     print newarr
                     print cats[i]
-                    print socket.gethostname
-                    sys.exit()
+                    print socket.gethostname()
+                    print traceback.format_exc()
+                    #sys.exit()
+                    out = os.path.join('problemcats', os.path.dirname(cats[i]))
+                    Mkdir(out)
+                    subprocess.call( ['mv', cats[i], out] )
                 con.commit()
                 cxcur.close()
 

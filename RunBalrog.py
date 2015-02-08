@@ -2,31 +2,21 @@
 
 import cx_Oracle
 import copy
-import time
-import datetime
 import StringIO
 import socket
 import logging
+import datetime
 
 import sys
-#import pickle
-#sys.modules['cPickle'] = pickle
-
 import os
 import re
 import subprocess
-from multiprocessing import Pool, cpu_count, Lock
-import argparse
-import logging
-import threading
-#import pyfits
+
 import astropy.io.fits as pyfits
 import desdb
 import numpy as np
 import numpy.lib.recfunctions as recfunctions
 from mpi4py import MPI
-
-
 
 
 def Remove(file):
@@ -37,6 +27,10 @@ def Mkdir(dir):
     if not os.path.lexists(dir):
         os.makedirs(dir)
 
+def SystemCall(cmd):
+    oscmd = subprocess.list2cmdline(cmd)
+    os.system(oscmd)
+
 
 # Download and uncompress images
 def DownloadImages(indir, images, psfs, RunConfig, skip=False):
@@ -46,11 +40,15 @@ def DownloadImages(indir, images, psfs, RunConfig, skip=False):
         infile = os.path.join(indir, os.path.basename(file))
         if not skip:
             Remove(infile)
-            subprocess.call( ['wget', '-q', '--no-check-certificate', file, '-O', infile] )
+            #subprocess.call( ['wget', '-q', '--no-check-certificate', file, '-O', infile] )
+            oscmd = ['wget', '-q', '--no-check-certificate', file, '-O', infile]
+            SystemCall(oscmd)
         ufile = infile.replace('.fits.fz', '.fits')
         if not skip:
             Remove(ufile) 
-            subprocess.call([RunConfig['funpack'], '-O', ufile, infile])
+            #subprocess.call([RunConfig['funpack'], '-O', ufile, infile])
+            oscmd = [RunConfig['funpack'], '-O', ufile, infile]
+            SystemCall(oscmd)
         useimages.append(ufile)
 
     usepsfs = []
@@ -58,7 +56,9 @@ def DownloadImages(indir, images, psfs, RunConfig, skip=False):
         pfile = os.path.join(indir, os.path.basename(psf))
         if not skip:
             Remove(pfile)
-            subprocess.call( ['wget', '-q', '--no-check-certificate', psf, '-O', pfile] )
+            #subprocess.call( ['wget', '-q', '--no-check-certificate', psf, '-O', pfile] )
+            oscmd = ['wget', '-q', '--no-check-certificate', psf, '-O', pfile]
+            SystemCall(oscmd)
         usepsfs.append(pfile)
 
     return [useimages, usepsfs]
@@ -74,6 +74,8 @@ def Dict2Cmd(d, cmd):
         else:
             l.append('--%s' %key)
             l.append(str(d[key]))
+
+    #l = ' '.join(l)
     return l
 
 
@@ -305,7 +307,8 @@ def NewMakeOracleFriendly(file, ext, BalrogConfig, DerivedConfig, label):
 # How to connect sqlldr to the DB
 def get_sqlldr_connection_info(db_specs):
     cur = desdb.connect()
-    return '%s/%s@"(DESCRIPTION=(ADDRESS=(PROTOCOL=%s)(HOST=%s)(PORT=%s))(CONNECT_DATA=(SERVER=%s)(SERVICE_NAME=%s)))"' %(cur.username,cur.password,db_specs['protocol'],db_specs['db_host'],db_specs['port'],db_specs['server'],db_specs['service_name'])
+    #return '%s/%s@"(DESCRIPTION=(ADDRESS=(PROTOCOL=%s)(HOST=%s)(PORT=%s))(CONNECT_DATA=(SERVER=%s)(SERVICE_NAME=%s)))"' %(cur.username,cur.password,db_specs['protocol'],db_specs['db_host'],db_specs['port'],db_specs['server'],db_specs['service_name'])
+    return '%s/%s@"\(DESCRIPTION=\(ADDRESS=\(PROTOCOL=%s\)\(HOST=%s\)\(PORT=%s\)\)\(CONNECT_DATA=\(SERVER=%s\)\(SERVICE_NAME=%s\)\)\)"' %(cur.username,cur.password,db_specs['protocol'],db_specs['db_host'],db_specs['port'],db_specs['server'],db_specs['service_name'])
 
 
 # Write Balrog catalogs to DB
@@ -327,6 +330,13 @@ def NewWrite2DB(cats, labels, RunConfig, BalrogConfig, DerivedConfig):
 
 
         if RunConfig['DBload']=='sqlldr':
+            s = sys.stdout
+            e = sys.stderr
+            log = open(DerivedConfig['desdblog'], 'a')
+            sys.stdout = log
+            sys.stderr = log
+
+            print 'redirect print start time: %s' %(str(datetime.datetime.now()))
             controlfile = cat.replace('.fits', '')
             csvfile = cat.replace('.fits', '.csv')
             desdb.array2table(arr, tablename, controlfile, create=create)
@@ -338,7 +348,22 @@ def NewWrite2DB(cats, labels, RunConfig, BalrogConfig, DerivedConfig):
             else:
                 connstr = get_sqlldr_connection_info(DerivedConfig['db'])
                 logfile = controlfile + '.sqlldr.log'
-                subprocess.call(['sqlldr', '%s' %(connstr), 'control=%s' %(controlfile), 'log=%s' %(logfile), 'silent=(header, feedback)'])
+
+                #subprocess.call(['sqlldr', '%s' %(connstr), 'control=%s' %(controlfile), 'log=%s' %(logfile), 'silent=(header, feedback)'])
+                #os.system( 'sqlldr %s control=%s log=%s silent=(header, feedback)' %(connstr,controlfile,logfile) )
+                
+                #cmd = ['sqlldr', '%s' %(connstr), 'control=%s' %(controlfile), 'log=%s' %(logfile), 'silent=(header, feedback)']
+                #cmd = subprocess.list2cmdline(cmd)
+                #print cmd
+                #os.system(cmd)
+
+                oscmd = ['sqlldr', '%s' %(connstr), 'control=%s' %(controlfile), 'log=%s' %(logfile), 'silent=(header, feedback)']
+                SystemCall(oscmd)
+
+            print 'redirect print end time: %s' %(str(datetime.datetime.now()))
+            log.close()
+            sys.stdout = s
+            sys.seterr = e
 
 
         elif RunConfig['DBload']=='cx_Oracle':
@@ -441,7 +466,8 @@ def RunOnlyCreate(RunConfig, BalrogConfig, DerivedConfig):
     BalrogConfig['nonosim'] = False
     BalrogConfig['outdir'] = os.path.join(DerivedConfig['outdir'], BalrogConfig['band'])
     cmd = Dict2Cmd(BalrogConfig, RunConfig['balrog'])
-    subprocess.call(cmd)
+    #subprocess.call(cmd)
+    SystemCall(cmd)
 
     fixband = BalrogConfig['band']
     for i in range(len(DerivedConfig['bands'])):
@@ -471,7 +497,8 @@ def RunDoDES(RunConfig, BalrogConfig, DerivedConfig):
         BalrogConfig['detpsf'] = DerivedConfig['psfs'][0]
 
     cmd = Dict2Cmd(BalrogConfig, RunConfig['balrog'])
-    subprocess.call(cmd)
+    #subprocess.call(cmd)
+    SystemCall(cmd)
 
     cats, labels = GetRelevantCatalogs(BalrogConfig, RunConfig, DerivedConfig)
     NewWrite2DB(cats, labels, RunConfig, BalrogConfig, DerivedConfig)
@@ -525,19 +552,16 @@ def SwarpConfig(imgs, RunConfig, DerivedConfig, BalrogConfig, iext=0, wext=1):
     for key in config:
         call.append( '-%s'%(key) )
         call.append( config[key] )
+    #call = ' '.join(call)
     return call, imout, wout
 
 
 
-# This will need to be changed to coadd the detection image
 def RunNormal(RunConfig, BalrogConfig, DerivedConfig):
     
-    #global runlog
-
     coordfile = WriteCoords(DerivedConfig['pos'], DerivedConfig['outdir'])
     BalrogConfig['poscat'] = coordfile
     if RunConfig['dualdetection']!=None:
-        #runlog.info('%s %s %s' %('a', DerivedConfig['iteration'], socket.gethostname()))
         BConfig = copy.copy(BalrogConfig)
         BConfig['imageonly'] = True
         detbands = DetBands(RunConfig)
@@ -545,7 +569,6 @@ def RunNormal(RunConfig, BalrogConfig, DerivedConfig):
         cimages = {}
         cimgs = []
         for i, band in zip(RunConfig['dualdetection'], dbands):
-            #runlog.info('%s %s %s' %('b', DerivedConfig['iteration'], socket.gethostname()))
             img = DerivedConfig['images'][i+1]
             BConfig['image'] = img
             BConfig['psf'] = DerivedConfig['psfs'][i+1]
@@ -557,34 +580,22 @@ def RunNormal(RunConfig, BalrogConfig, DerivedConfig):
             cimages[band] = outfile
             cimgs.append(outfile)
             cmd = Dict2Cmd(BConfig, RunConfig['balrog'])
-            #runlog.info('%s %s %s %s' %('c', BConfig['band'], DerivedConfig['iteration'], socket.gethostname()))
-            subprocess.call(cmd)
-            #runlog.info('%s %s %s %s' %('d', BConfig['band'], DerivedConfig['iteration'], socket.gethostname()))
+            #subprocess.call(cmd)
+            SystemCall(cmd)
 
             cats, labels = GetRelevantCatalogs(BConfig, RunConfig, DerivedConfig)
             NewWrite2DB(cats, labels, RunConfig, BConfig, DerivedConfig)
-            #runlog.info('%s %s %s %s' %('e', BConfig['band'], DerivedConfig['iteration'], socket.gethostname()))
 
         cmd, detimage, detwimage = SwarpConfig(cimgs, RunConfig, DerivedConfig, BConfig)
 
-        logger = logging.getLogger()
-        logger.setLevel(logging.INFO)
-        swarplog = logging.getLogger('swarp')
+        oscmd = subprocess.list2cmdline(cmd)
         swarplogfile = detimage.replace('.fits', '.log')
-        fh = logging.FileHandler(swarplogfile, mode='w')
-        fh.setLevel(logging.INFO)
-        swarplog.addHandler(fh)
-        
-        #runlog.info('%s %s %s' %('f', DerivedConfig['iteration'], socket.gethostname()))
-        with lock:
-            swarplog.info('# Exact command call')
-            swarplog.info(' '.join(cmd))
-            p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            stdout, stderr = p.communicate()
-            swarplog.info(stdout)
-            swarplog.info(stderr)
-            swarplog.info('\n')
-        #runlog.info('%s %s %s' %('g', DerivedConfig['iteration'], socket.gethostname()))
+        swarplog = open(swarplogfile, 'w')
+        swarplog.write('# Exact command call\n')
+        swarplog.write('%s\n' %(oscmd))
+        swarplog.close()
+        os.system('%s >> %s 2>&1' %(oscmd, swarplogfile))
+
 
     detpsf = DerivedConfig['psfs'][0]
     for i in range(len(DerivedConfig['bands'])):
@@ -615,7 +626,8 @@ def RunNormal(RunConfig, BalrogConfig, DerivedConfig):
 
         #runlog.info('%s %s %s %s' %('h', BConfig['band'], DerivedConfig['iteration'], socket.gethostname()))
         cmd = Dict2Cmd(BConfig, RunConfig['balrog'])
-        subprocess.call(cmd)
+        #subprocess.call(cmd)
+        SystemCall(cmd)
         #runlog.info('%s %s %s %s' %('j', BConfig['band'], DerivedConfig['iteration'], socket.gethostname()))
 
         cats, labels = GetRelevantCatalogs(BConfig, RunConfig, DerivedConfig, appendsim=appendsim)
@@ -640,35 +652,22 @@ def run_balrog(args):
 
     if RunConfig['intermediate-clean']:
         if it < 0:
-                subprocess.call( ['rm', '-r', BalrogConfig['outdir']] )
+            #subprocess.call( ['rm', '-r', BalrogConfig['outdir']] )
+            oscmd = ['rm', '-r', BalrogConfig['outdir']]
+            SystemCall(oscmd)
         else:
             for band in DerivedConfig['bands']:
                 dir = os.path.join(DerivedConfig['outdir'], band)
-                subprocess.call( ['rm', '-r', dir] )
+                #subprocess.call( ['rm', '-r', dir] )
+                oscmd = ['rm', '-r', dir]
+                SystemCall(oscmd)
 
 
 
-lock = Lock()
-#runlog = None
-
-
+#lock = Lock()
 
 
 def MPIRunBalrog(RunConfig, BalrogConfig, DerivedConfig):
-    '''
-    host = socket.gethostname()
-    logfile = '%s-%s' %(RunConfig['label'], host)
-    log = logging.getLogger()
-    log.setLevel(logging.DEBUG)
-    global runlog
-    runlog = logging.getLogger('run')
-    formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
-    fh = logging.FileHandler(logfile, mode='w')
-    fh.setFormatter(formatter)
-    fh.setLevel(logging.DEBUG)
-    runlog.addHandler(fh)
-    '''
-
     Mkdir(DerivedConfig['indir'])
     DerivedConfig['images'], DerivedConfig['psfs'] = DownloadImages(DerivedConfig['indir'], DerivedConfig['images'], DerivedConfig['psfs'], RunConfig, skip=DerivedConfig['initialized'])
     Mkdir(DerivedConfig['outdir'])

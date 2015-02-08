@@ -46,16 +46,14 @@ def CustomParseArgs(args):
     if args.oldmorph:
         args.catalog = os.path.join(os.environ['BALROG_MPI'], 'software', 'Balrog', 'cosmos.fits')
     else:
-        args.catalog = os.path.join(os.environ['BALROG_MPI'], 'catalogs', 'CMC_allband_upsample.fits')
+        #args.catalog = os.path.join(os.environ['BALROG_MPI'], 'catalogs', 'CMC_allband_upsample.fits')
+        args.catalog = os.path.join(os.environ['BALROG_MPI'], 'catalogs', 'CMC_allband_upsample_with_blanks.fits')
 
     args.mag = ByBand(args.band, args)
     if args.ngal > 0:
         coords = np.array( pyfits.open(args.poscat)[args.posext].data[args.posstart:(args.posstart+args.ngal)] )
         args.ra = coords[args.rakey]
         args.dec = coords[args.deckey]
-    else:
-        args.ra = []
-        args.dec = []
 
 
 def GetImageCoords(args):
@@ -105,6 +103,9 @@ def SimulationRules(args, rules, sampled, TruthCat):
     if args.ngal > 0:
         rules.x = Function(function=GetXCoords, args=[args])
         rules.y = Function(function=GetYCoords, args=[args])
+
+        TruthCat.AddColumn(args.ra, name='RA', fmt='E')
+        TruthCat.AddColumn(args.dec, name='DEC', fmt='E')
         
         if args.band!='det':
             if args.band.upper()=='Y':
@@ -112,6 +113,9 @@ def SimulationRules(args, rules, sampled, TruthCat):
             else:
                 m = tab.Column(args.mag)
                 rules.magnitude = Function(function=SLRMag, args=[args,m])
+    else:
+        TruthCat.AddColumn(0, name='RA', fmt='E')
+        TruthCat.AddColumn(0, name='DEC', fmt='E')
     
     if args.oldmorph:
         TruthCat.AddColumn(tab.Column('ID'), name='id')
@@ -128,8 +132,6 @@ def SimulationRules(args, rules, sampled, TruthCat):
 
     TruthCat.AddColumn(args.seed, name='SEED', fmt='J')
     TruthCat.AddColumn(args.zeropoint, name='ZEROPOINT', fmt='E')
-    TruthCat.AddColumn(args.ra, name='RA', fmt='E')
-    TruthCat.AddColumn(args.dec, name='DEC', fmt='E')
 
     b = args.mag
     if b=='det':
