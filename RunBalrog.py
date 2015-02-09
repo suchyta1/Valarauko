@@ -128,73 +128,9 @@ def GetDetZps(RunConfig, DerivedConfig, ext=0, zpkey='SEXMGZPT'):
     return [','.join(zps), ','.join(ws), ','.join(fs)]
 
 
-"""
-def GetDetStuff(BalrogConfig, RunConfig, images, ext=0, zpkey='SEXMGZPT', doprint=False):
-    index = np.array( RunConfig['dualdetection'] )
-    bands =  np.array(RunConfig['bands'])
-    BalrogConfig['detbands'] = ','.join(bands[index] )
-    
-    zps = []
-    inc = 0
-    for i in index:
-        num = i + 1
-        header = pyfits.open(images[num])[ext].header
-        zp = header[zpkey]
-
-        #zps.append(str(zp))
-        zps.append(zp)
-
-        '''
-        if inc==0:
-            zpnew = zp
-        else:
-            zpnew += 2.5 * np.log10(1 + np.power(10.0, (zp-zpnew)/2.5))
-        inc += 1
-
-        if doprint:
-            print num, images[num], zp
-        '''
-
-    if BalrogConfig['band']=='det':
-        #BalrogConfig['zeropoint'] = np.average(zps)
-        BalrogConfig['zeropoint'] = np.amin(zps)
-    else:
-        header = pyfits.open(BalrogConfig['image'])[ext].header
-        BalrogConfig['zeropoint'] = header[zpkey]
-
-    for i in range(len(zps)):
-        zps[i] = str(zps[i])
-
-    BalrogConfig['detzeropoints'] = ','.join(zps)
-    if doprint:
-        print BalrogConfig['detzeropoints'], BalrogConfig['detbands'], BalrogConfig['zeropoint'], BalrogConfig['band']
-
-    return BalrogConfig
-
-
-def DoBandStuff(BalrogConfig, RunConfig, band, images, ext=0, zpkey='SEXMGZPT', doprint=False):
-    #BalrogConfig['band'] = band
-    '''
-    if band=='det':
-        BalrogConfig = GetDetStuff(BalrogConfig, RunConfig, images, ext=ext, zpkey=zpkey, doprint=doprint)
-    '''
-    '''
-    if RunConfig['dualdetection']!=None:
-        BalrogConfig = GetDetStuff(BalrogConfig, RunConfig, images, ext=ext, zpkey=zpkey, doprint=doprint)
-    '''
-
-    return BalrogConfig
-
-
-def GetSeed(BalrogConfig, DerivedConfig):
-
-    BalrogConfig['seed'] = BalrogConfig['indexstart'] + DerivedConfig['seedoffset']
-    return BalrogConfig
-"""
-
 
 # Figure out which catalogs get writting to which DB tables
-def GetRelevantCatalogs(BalrogConfig, RunConfig, DerivedConfig, band=None, create=False, appendsim=False):
+def GetRelevantCatalogs(BalrogConfig, RunConfig, DerivedConfig, band=None, create=False, appendsim=False, sim2nosim=False):
     it = EnsureInt(DerivedConfig)
     if band==None:
         band = BalrogConfig['band']
@@ -235,7 +171,10 @@ def GetRelevantCatalogs(BalrogConfig, RunConfig, DerivedConfig, band=None, creat
         labels.append('nosim')
     if relevant['sim']:
         files.append(out_sim)
-        labels.append('sim')
+        if sim2nosim:
+            labels.append('nosim')
+        else:
+            labels.append('sim')
 
     if it==-1:
         labels[-1] = 'des'
@@ -289,10 +228,20 @@ def VecAssoc2BalrogIndex(header, ndata, label, index_key='balrog_index'):
 
 
 # Change some protected Oracle keywords and add the tilename to all tables
-def NewMakeOracleFriendly(file, ext, BalrogConfig, DerivedConfig, label):
+def NewMakeOracleFriendly(file, ext, BalrogConfig, DerivedConfig, label, RunConfig):
     hdu = pyfits.open(file)[ext]
     header = hdu.header
     ndata = np.array(hdu.data)
+
+    descr = ndata.dtype.descr
+    for d in descr:
+        name = d[0]
+        cut = np.isnan(ndata[name])
+        ndata[name][cut] = RunConfig['DBnull']
+        '''
+        if np.sum(cut) > 0:
+            print 'replaced nan in %s' %(name)
+        '''
 
     if label in ['nosim', 'sim', 'des']:
         ndata = Number2NumberSex(ndata)
@@ -326,7 +275,7 @@ def NewWrite2DB(cats, labels, RunConfig, BalrogConfig, DerivedConfig):
 
         cat = cats[i]
         tablename = '%s.balrog_%s_%s_%s' %(cur.username, RunConfig['label'], labels[i], BalrogConfig['band'])
-        arr = NewMakeOracleFriendly(cats[i], ext, BalrogConfig, DerivedConfig, labels[i])
+        arr = NewMakeOracleFriendly(cats[i], ext, BalrogConfig, DerivedConfig, labels[i], RunConfig)
 
 
         if RunConfig['DBload']=='sqlldr':
@@ -562,6 +511,22 @@ def RunNormal(RunConfig, BalrogConfig, DerivedConfig):
     coordfile = WriteCoords(DerivedConfig['pos'], DerivedConfig['outdir'])
     BalrogConfig['poscat'] = coordfile
     if RunConfig['dualdetection']!=None:
+
+        BConfig = copy.copy(BalrogConfig)
+        BConfig['imageonly'] = False
+        BConfig['image'] = DerivedConfig['images'][0]
+        BConfig['psf'] = DerivedConfig['psfs'][0]
+        BConfig['band'] = DerivedConfig['bands'][0]
+        BConfig['zeropoint'] = GetZeropoint(RunConfig, DerivedConfig, BConfig)
+        BConfig['outdir'] = os.path.join(DerivedConfig['outdir'], BConfig['band'])
+        BConfig['nodraw'] = True
+        BConfig['nonosim'] = True
+        cmd = Dict2Cmd(BConfig, RunConfig['balrog'])
+        SystemCall(cmd)
+        cats, labels = GetRelevantCatalogs(BConfig, RunConfig, DerivedConfig, sim2nosim=True)
+        print cats, labels
+        NewWrite2DB(cats, labels, RunConfig, BConfig, DerivedConfig)
+
         BConfig = copy.copy(BalrogConfig)
         BConfig['imageonly'] = True
         detbands = DetBands(RunConfig)
@@ -611,6 +576,7 @@ def RunNormal(RunConfig, BalrogConfig, DerivedConfig):
             BConfig['detimage'] = detimage
             BConfig['detweight'] = detwimage
             BConfig['detpsf'] = detpsf
+            BConfig['nonosim'] = True
             
             band = BConfig['band']
             if band=='det':
