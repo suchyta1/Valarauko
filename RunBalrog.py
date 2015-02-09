@@ -524,7 +524,6 @@ def RunNormal(RunConfig, BalrogConfig, DerivedConfig):
         cmd = Dict2Cmd(BConfig, RunConfig['balrog'])
         SystemCall(cmd)
         cats, labels = GetRelevantCatalogs(BConfig, RunConfig, DerivedConfig, sim2nosim=True)
-        print cats, labels
         NewWrite2DB(cats, labels, RunConfig, BConfig, DerivedConfig)
 
         BConfig = copy.copy(BalrogConfig)

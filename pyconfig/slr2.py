@@ -131,6 +131,7 @@ def SimulationRules(args, rules, sampled, TruthCat):
         TruthCat.AddColumn(tab.Column('z'), name='z')
 
     TruthCat.AddColumn(args.seed, name='SEED', fmt='J')
+    TruthCat.AddColumn(args.indexstart, name='INDEXSTART', fmt='J')
     TruthCat.AddColumn(args.zeropoint, name='ZEROPOINT', fmt='E')
 
     b = args.mag
