@@ -7,8 +7,9 @@ Installation requirements:
 
 
 Some quick notes about some of the files:
-* job-debug is the queue submit file for wq (queue installed at BNL)
-* RunConfigurations.py sets up things you want to do in your run
-* WrapBalrog.py reads RunConfiguations.py and does all the MPI stuff
-* runbalrog.py runs the balrog realizations on a node
+* default settings are in RunConfigurations, modify CustomConfig.py to change the run
+* GenerateJob.py parses your setup, and writes the job file for your number of nodes and processes per node. It takes either BNL or NERSC as an argument, and writes the wq or pbs job file. BNL is the default
+
+* AllMpi.py has the MPI server communication
+* RunBalrog.py has the functions for running Balrog on the worker CPUs.
 * mpifunctions.py has some functions I wrote to make life easier working with MPI4py
