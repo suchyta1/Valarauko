@@ -104,7 +104,7 @@ def Generate_Job(run, where):
         descr = descr + '#PBS -e %s.$PBS_JOBID.err\n' %(filename)
         descr = descr + '#PBS -o %s.$PBS_JOBID.out\n\n' %(filename)
         #cmd = 'cd $PBS_O_WORKDIR\nmpirun -np %i ./WrapBalrog.py %s %i' %(run['nodes'], where, run['ppn'])
-        cmd = 'module_setup\ncd $PBS_O_WORKDIR\nmpirun -np %i ./AllMpi.py %s' %(num, where)
+        cmd = '%s\ncd $PBS_O_WORKDIR\nmpirun -np %i ./AllMpi.py %s' %(run['module_setup'], num, where)
         out = '%s%s' %(descr, cmd)
 
     job = open(filename, 'w')
