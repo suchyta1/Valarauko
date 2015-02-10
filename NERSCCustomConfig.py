@@ -18,7 +18,7 @@ def CustomConfig(run, balrog, DESdb, db, tiles, where):
     run['tile-clean'] = True
 
     run['bands'] = ['r', 'i', 'z']
-    run['dualdetection'] = [1,2,3]
+    run['dualdetection'] = [0,1,2]
 
     balrog['oldmorph'] = True
     if balrog['oldmorph']:
@@ -29,7 +29,7 @@ def CustomConfig(run, balrog, DESdb, db, tiles, where):
     #run['joblabel'] = 'test'
 
     run['label'] = 'ndbg'
-    run['joblabel'] = 'test'
+    run['joblabel'] = 'test-regular2'
     run['ppn'] = 8
     run['walltime'] = '01:00:00'
 
