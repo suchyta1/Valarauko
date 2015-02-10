@@ -3,7 +3,6 @@
 import RunConfigurations
 import os
 import esutil
-import CustomConfig
 
 
 # change the defaults if you want
@@ -72,6 +71,11 @@ def GetConfig(where):
     elif run['where']=='BNL':
         run, balrog, DESdb, db, tiles = BNLConfig(run, balrog, DESdb, db, tiles)
     '''
+
+    if where=='BNL':
+        import BNLCustomConfig as CustomConfig
+    if where=='NERSC':
+        import NERSCCustomConfig as CustomConfig
     run, balrog, DESdb, db, tiles = CustomConfig.CustomConfig(run, balrog, DESdb, db, tiles, where)
 
     #q = SubmitQueue(run)
