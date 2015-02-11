@@ -48,7 +48,7 @@ def SystemCall(cmd, redirect=None):
 
 
 # Download and uncompress images
-def DownloadImages(indir, images, psfs, RunConfig, skip=False):
+def DownloadImages(indir, images, psfs, RunConfig, DerivedConfig, skip=False):
     useimages = []
 
     for file in images:
@@ -322,7 +322,8 @@ def NewWrite2DB(cats, labels, RunConfig, BalrogConfig, DerivedConfig):
                 #os.system(cmd)
 
                 oscmd = ['sqlldr', '%s' %(connstr), 'control=%s' %(controlfile), 'log=%s' %(logfile), 'silent=(header, feedback)']
-                SystemCall(oscmd, redirect=DerivedConfig['itlog'])
+                #SystemCall(oscmd, redirect=DerivedConfig['itlog'])
+                SystemCall(oscmd)
 
             print 'redirect print end time: %s' %(str(datetime.datetime.now()))
             log.close()
@@ -462,7 +463,7 @@ def RunDoDES(RunConfig, BalrogConfig, DerivedConfig):
 
     cmd = Dict2Cmd(BalrogConfig, RunConfig['balrog'])
     #subprocess.call(cmd)
-    SystemCall(cmd), redirect=DerivedConfig['itlog']
+    SystemCall(cmd, redirect=DerivedConfig['itlog'])
 
     cats, labels = GetRelevantCatalogs(BalrogConfig, RunConfig, DerivedConfig)
     NewWrite2DB(cats, labels, RunConfig, BalrogConfig, DerivedConfig)
@@ -537,7 +538,7 @@ def RunNormal(RunConfig, BalrogConfig, DerivedConfig):
         BConfig['nodraw'] = True
         BConfig['nonosim'] = True
         cmd = Dict2Cmd(BConfig, RunConfig['balrog'])
-        SystemCall(cmd), redirect=DerivedConfig['itlog']
+        SystemCall(cmd, redirect=DerivedConfig['itlog'])
         cats, labels = GetRelevantCatalogs(BConfig, RunConfig, DerivedConfig, sim2nosim=True)
         NewWrite2DB(cats, labels, RunConfig, BConfig, DerivedConfig)
 
@@ -560,7 +561,7 @@ def RunNormal(RunConfig, BalrogConfig, DerivedConfig):
             cimgs.append(outfile)
             cmd = Dict2Cmd(BConfig, RunConfig['balrog'])
             #subprocess.call(cmd)
-            SystemCall(cmd), redirect=DerivedConfig['itlog']
+            SystemCall(cmd, redirect=DerivedConfig['itlog'])
 
             cats, labels = GetRelevantCatalogs(BConfig, RunConfig, DerivedConfig)
             NewWrite2DB(cats, labels, RunConfig, BConfig, DerivedConfig)
@@ -610,7 +611,7 @@ def RunNormal(RunConfig, BalrogConfig, DerivedConfig):
         #runlog.info('%s %s %s %s' %('h', BConfig['band'], DerivedConfig['iteration'], socket.gethostname()))
         cmd = Dict2Cmd(BConfig, RunConfig['balrog'])
         #subprocess.call(cmd)
-        SystemCall(cmd), redirect=DerivedConfig['itlog']
+        SystemCall(cmd, redirect=DerivedConfig['itlog'])
         #runlog.info('%s %s %s %s' %('j', BConfig['band'], DerivedConfig['iteration'], socket.gethostname()))
 
         cats, labels = GetRelevantCatalogs(BConfig, RunConfig, DerivedConfig, appendsim=appendsim)
@@ -643,11 +644,25 @@ def run_balrog(args):
                 dir = os.path.join(DerivedConfig['outdir'], band)
                 #subprocess.call( ['rm', '-r', dir] )
                 oscmd = ['rm', '-r', dir]
-                SystemCall(oscmd), redirect=DerivedConfig['itlog']
+                SystemCall(oscmd, redirect=DerivedConfig['itlog'])
 
 
 
 #lock = Lock()
+
+def SetupLog(logfile, host, rank):
+    log = logging.getLogger('rank')
+    log.setLevel(logging.DEBUG)
+    formatter = logging.Formatter('%(asctime)s - %(levelname)s -  %(hostname)s , %(ranknumber)s - %(message)s')
+    fh = logging.FileHandler(logfile, mode='w')
+    fh.setFormatter(formatter)
+    fh.setLevel(logging.DEBUG)
+    log.addHandler(fh)
+
+    extra = {'hostname': 'host = %s'%host,
+             'ranknumber': 'rank = %i'%rank}
+    log = logging.LoggerAdapter(log, extra)
+    return log
 
 
 def MPIRunBalrog(RunConfig, BalrogConfig, DerivedConfig):
@@ -656,9 +671,9 @@ def MPIRunBalrog(RunConfig, BalrogConfig, DerivedConfig):
 
     host = socket.gethostname()
     rank = MPI.COMM_WORLD.Get_rank()
-    DerivedConfig['itlog'] = AllMpi.SetupLogger(DerivedConfig['outdir'], host, rank)
+    DerivedConfig['itlog'] = SetupLog(DerivedConfig['itlogfile'], host, rank)
 
-    DerivedConfig['images'], DerivedConfig['psfs'] = DownloadImages(DerivedConfig['indir'], DerivedConfig['images'], DerivedConfig['psfs'], RunConfig, skip=DerivedConfig['initialized'])
+    DerivedConfig['images'], DerivedConfig['psfs'] = DownloadImages(DerivedConfig['indir'], DerivedConfig['images'], DerivedConfig['psfs'], RunConfig, DerivedConfig, skip=DerivedConfig['initialized'])
 
 
     if (DerivedConfig['iteration']!=-2) and (DerivedConfig['initialized']==False):

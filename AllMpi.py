@@ -231,7 +231,7 @@ class ServerLogger(object):
         self.log.info(self.startstr + msg)
 
 
-def ServeProcesses(queue, RunConfig, logdir, desdblogdir):
+def ServeProcesses(queue, RunConfig, logdir, desdblogdir, itlogdir):
     size = RunConfig['nodes'] * RunConfig['ppn'] - 1
     done = 0
     hostinfo = {}
@@ -308,7 +308,10 @@ def ServeProcesses(queue, RunConfig, logdir, desdblogdir):
         derived['pos'] = hostinfo[host]['pos'].get()
         derived['initialized'] = bool( hostinfo[host]['initialized'] )
         derived['outdir'] = os.path.join(derived['workingdir'], 'output', '%i'%it)
-        #derived['itlogfile'] = os.path.join(derived['outdir'], 'it.log')
+
+        ild = os.path.join(itlogdir, balrog['tile'])
+        runbalrog.Mkdir(ild)
+        derived['itlogfile'] = os.path.join(ild, '%i'%it)
 
         #print derived['iteration'], hostinfo[host]['tileits'], hostinfo[host]['initialized'], balrog['tile']
         balrog['indexstart'] = derived['indexstart']
@@ -474,6 +477,7 @@ if __name__ == "__main__":
     runlogdir = 'runlog-%s-%s' %(RunConfig['label'], RunConfig['joblabel'])
     commlogdir = os.path.join(runlogdir, 'communication')
     desdblogdir = os.path.join(runlogdir, 'desdb')
+    itlogdir = os.path.join(runlogdir, 'iterations')
 
     # Call desdb to find the tiles we need to download and delete any existing DB tables which are the same as your run label.
     if MPI.COMM_WORLD.Get_rank()==0:
@@ -496,7 +500,7 @@ if __name__ == "__main__":
     
     if MPI.COMM_WORLD.Get_rank()==0:
         q = BuildQueue(tiles, images, psfs, pos, BalrogConfig, RunConfig, dbConfig, indexstart, write)
-        ServeProcesses(q, RunConfig, commlogdir, desdblogdir)
+        ServeProcesses(q, RunConfig, commlogdir, desdblogdir, itlogdir)
     else:
         DoProcesses(commlogdir, desdblogdir) 
 
