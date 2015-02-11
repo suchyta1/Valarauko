@@ -567,6 +567,7 @@ def RunNormal(RunConfig, BalrogConfig, DerivedConfig):
 
         cmd, detimage, detwimage = SwarpConfig(cimgs, RunConfig, DerivedConfig, BConfig)
 
+        '''
         oscmd = subprocess.list2cmdline(cmd)
         swarplogfile = detimage.replace('.fits', '.log')
         swarplog = open(swarplogfile, 'w')
@@ -574,6 +575,8 @@ def RunNormal(RunConfig, BalrogConfig, DerivedConfig):
         swarplog.write('%s\n' %(oscmd))
         swarplog.close()
         os.system('%s >> %s 2>&1' %(oscmd, swarplogfile))
+        '''
+        SystemCall(cmd, redirect=DerivedConfig['itlog'])
 
 
     detpsf = DerivedConfig['psfs'][0]
