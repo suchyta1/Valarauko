@@ -6,12 +6,12 @@ def CustomConfig(run, balrog, DESdb, db, tiles, where):
 
     # Always check these
     run['label'] = 'sva1v2'
-    run['joblabel'] = '0-29'
+    run['joblabel'] = '30-39'
     run['ppn'] = 8
     run['nodes'] = 10
     run['walltime'] = '24:00:00'
     run['queue'] = 'regular'
-    tiles = tiles[0:30]
+    tiles = tiles[30:40]
 
 
     # If you're not debugging these should be pretty stable not to need to change. 100,000 for the tiletotal gets you to about observed DES number density.
