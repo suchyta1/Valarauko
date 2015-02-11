@@ -17,6 +17,7 @@ import desdb
 import numpy as np
 import numpy.lib.recfunctions as recfunctions
 from mpi4py import MPI
+import AllMpi
 
 
 def Remove(file):
@@ -27,9 +28,23 @@ def Mkdir(dir):
     if not os.path.lexists(dir):
         os.makedirs(dir)
 
-def SystemCall(cmd):
-    oscmd = subprocess.list2cmdline(cmd)
-    os.system(oscmd)
+def SystemCall(cmd, redirect=None):
+    #oscmd = subprocess.list2cmdline(cmd)
+    oscmd = cmd
+
+    if redirect==None:
+        #os.system(oscmd)
+        subprocess.call(oscmd)
+    else:
+        redirect.info( 'Running subprocess.Popen:' )
+        redirect.info( subprocess.list2cmdline(oscmd) )
+        p = subprocess.Popen(oscmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        stdout, stderr = p.communicate()
+        redirect.info( 'Printing stdout:' )
+        redirect.info(stdout)
+        redirect.info( 'Printing stderr:' )
+        redirect.info(stderr)
+        redirect.info('\n')
 
 
 # Download and uncompress images
@@ -42,13 +57,13 @@ def DownloadImages(indir, images, psfs, RunConfig, skip=False):
             Remove(infile)
             #subprocess.call( ['wget', '-q', '--no-check-certificate', file, '-O', infile] )
             oscmd = ['wget', '-q', '--no-check-certificate', file, '-O', infile]
-            SystemCall(oscmd)
+            SystemCall(oscmd, redirect=DerivedConfig['itlog'])
         ufile = infile.replace('.fits.fz', '.fits')
         if not skip:
             Remove(ufile) 
             #subprocess.call([RunConfig['funpack'], '-O', ufile, infile])
             oscmd = [RunConfig['funpack'], '-O', ufile, infile]
-            SystemCall(oscmd)
+            SystemCall(oscmd, redirect=DerivedConfig['itlog'])
         useimages.append(ufile)
 
     usepsfs = []
@@ -58,7 +73,7 @@ def DownloadImages(indir, images, psfs, RunConfig, skip=False):
             Remove(pfile)
             #subprocess.call( ['wget', '-q', '--no-check-certificate', psf, '-O', pfile] )
             oscmd = ['wget', '-q', '--no-check-certificate', psf, '-O', pfile]
-            SystemCall(oscmd)
+            SystemCall(oscmd, redirect=DerivedConfig['itlog'])
         usepsfs.append(pfile)
 
     return [useimages, usepsfs]
@@ -307,7 +322,7 @@ def NewWrite2DB(cats, labels, RunConfig, BalrogConfig, DerivedConfig):
                 #os.system(cmd)
 
                 oscmd = ['sqlldr', '%s' %(connstr), 'control=%s' %(controlfile), 'log=%s' %(logfile), 'silent=(header, feedback)']
-                SystemCall(oscmd)
+                SystemCall(oscmd, redirect=DerivedConfig['itlog'])
 
             print 'redirect print end time: %s' %(str(datetime.datetime.now()))
             log.close()
@@ -416,7 +431,7 @@ def RunOnlyCreate(RunConfig, BalrogConfig, DerivedConfig):
     BalrogConfig['outdir'] = os.path.join(DerivedConfig['outdir'], BalrogConfig['band'])
     cmd = Dict2Cmd(BalrogConfig, RunConfig['balrog'])
     #subprocess.call(cmd)
-    SystemCall(cmd)
+    SystemCall(cmd, redirect=DerivedConfig['itlog'])
 
     fixband = BalrogConfig['band']
     for i in range(len(DerivedConfig['bands'])):
@@ -447,7 +462,7 @@ def RunDoDES(RunConfig, BalrogConfig, DerivedConfig):
 
     cmd = Dict2Cmd(BalrogConfig, RunConfig['balrog'])
     #subprocess.call(cmd)
-    SystemCall(cmd)
+    SystemCall(cmd), redirect=DerivedConfig['itlog']
 
     cats, labels = GetRelevantCatalogs(BalrogConfig, RunConfig, DerivedConfig)
     NewWrite2DB(cats, labels, RunConfig, BalrogConfig, DerivedConfig)
@@ -522,7 +537,7 @@ def RunNormal(RunConfig, BalrogConfig, DerivedConfig):
         BConfig['nodraw'] = True
         BConfig['nonosim'] = True
         cmd = Dict2Cmd(BConfig, RunConfig['balrog'])
-        SystemCall(cmd)
+        SystemCall(cmd), redirect=DerivedConfig['itlog']
         cats, labels = GetRelevantCatalogs(BConfig, RunConfig, DerivedConfig, sim2nosim=True)
         NewWrite2DB(cats, labels, RunConfig, BConfig, DerivedConfig)
 
@@ -545,7 +560,7 @@ def RunNormal(RunConfig, BalrogConfig, DerivedConfig):
             cimgs.append(outfile)
             cmd = Dict2Cmd(BConfig, RunConfig['balrog'])
             #subprocess.call(cmd)
-            SystemCall(cmd)
+            SystemCall(cmd), redirect=DerivedConfig['itlog']
 
             cats, labels = GetRelevantCatalogs(BConfig, RunConfig, DerivedConfig)
             NewWrite2DB(cats, labels, RunConfig, BConfig, DerivedConfig)
@@ -592,7 +607,7 @@ def RunNormal(RunConfig, BalrogConfig, DerivedConfig):
         #runlog.info('%s %s %s %s' %('h', BConfig['band'], DerivedConfig['iteration'], socket.gethostname()))
         cmd = Dict2Cmd(BConfig, RunConfig['balrog'])
         #subprocess.call(cmd)
-        SystemCall(cmd)
+        SystemCall(cmd), redirect=DerivedConfig['itlog']
         #runlog.info('%s %s %s %s' %('j', BConfig['band'], DerivedConfig['iteration'], socket.gethostname()))
 
         cats, labels = GetRelevantCatalogs(BConfig, RunConfig, DerivedConfig, appendsim=appendsim)
@@ -619,13 +634,13 @@ def run_balrog(args):
         if it < 0:
             #subprocess.call( ['rm', '-r', BalrogConfig['outdir']] )
             oscmd = ['rm', '-r', BalrogConfig['outdir']]
-            SystemCall(oscmd)
+            SystemCall(oscmd, redirect=DerivedConfig['itlog'])
         else:
             for band in DerivedConfig['bands']:
                 dir = os.path.join(DerivedConfig['outdir'], band)
                 #subprocess.call( ['rm', '-r', dir] )
                 oscmd = ['rm', '-r', dir]
-                SystemCall(oscmd)
+                SystemCall(oscmd), redirect=DerivedConfig['itlog']
 
 
 
@@ -634,12 +649,16 @@ def run_balrog(args):
 
 def MPIRunBalrog(RunConfig, BalrogConfig, DerivedConfig):
     Mkdir(DerivedConfig['indir'])
-    DerivedConfig['images'], DerivedConfig['psfs'] = DownloadImages(DerivedConfig['indir'], DerivedConfig['images'], DerivedConfig['psfs'], RunConfig, skip=DerivedConfig['initialized'])
     Mkdir(DerivedConfig['outdir'])
 
+    host = socket.gethostname()
+    rank = MPI.COMM_WORLD.Get_rank()
+    DerivedConfig['itlog'] = AllMpi.SetupLogger(DerivedConfig['outdir'], host, rank)
+
+    DerivedConfig['images'], DerivedConfig['psfs'] = DownloadImages(DerivedConfig['indir'], DerivedConfig['images'], DerivedConfig['psfs'], RunConfig, skip=DerivedConfig['initialized'])
+
+
     if (DerivedConfig['iteration']!=-2) and (DerivedConfig['initialized']==False):
-        host = socket.gethostname()
-        rank = MPI.COMM_WORLD.Get_rank()
         send = -3
         MPI.COMM_WORLD.sendrecv([rank,host,send], dest=0, source=0)
 

@@ -308,6 +308,7 @@ def ServeProcesses(queue, RunConfig, logdir, desdblogdir):
         derived['pos'] = hostinfo[host]['pos'].get()
         derived['initialized'] = bool( hostinfo[host]['initialized'] )
         derived['outdir'] = os.path.join(derived['workingdir'], 'output', '%i'%it)
+        #derived['itlogfile'] = os.path.join(derived['outdir'], 'it.log')
 
         #print derived['iteration'], hostinfo[host]['tileits'], hostinfo[host]['initialized'], balrog['tile']
         balrog['indexstart'] = derived['indexstart']
