@@ -311,7 +311,7 @@ def ServeProcesses(queue, RunConfig, logdir, desdblogdir, itlogdir):
 
         ild = os.path.join(itlogdir, balrog['tile'])
         runbalrog.Mkdir(ild)
-        derived['itlogfile'] = os.path.join(ild, '%i'%it)
+        derived['itlogfile'] = os.path.join(ild, '%i.log'%it)
 
         #print derived['iteration'], hostinfo[host]['tileits'], hostinfo[host]['initialized'], balrog['tile']
         balrog['indexstart'] = derived['indexstart']
