@@ -11,6 +11,7 @@ class RunConfigurations:
             'queue': 'regular', # NERSC queues, irrelevant at BNL
             'walltime': '24:00:00', # irrelevant at BNL
             'module_setup': 'module_setup',
+            'command': 'system', #['system', 'popen']
 
             #'nomulti': False,  # don't use the mulitprocessing module, useful for debugging
             'funpack': os.path.join(os.environ['BALROG_MPI'], 'software','cfitsio-3.300','funpack'), # this one is the sva1 version, that's not really relevant though

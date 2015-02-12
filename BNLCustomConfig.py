@@ -41,7 +41,7 @@ def CustomConfig(run, balrog, DESdb, db, tiles, where):
 
     run['tiletotal'] = 5000
     run['DBoverwrite'] = True
-    run['DBload'] = 'cx_Oracle'
+    run['DBload'] = 'sqlldr'
     run['inc'] = 100
     run['outdir'] = os.path.join(os.environ['SCRATCH'], 'BalrogScratch')
     run['intermediate-clean'] = True

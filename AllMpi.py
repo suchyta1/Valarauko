@@ -312,6 +312,10 @@ def ServeProcesses(queue, RunConfig, logdir, desdblogdir, itlogdir):
         ild = os.path.join(itlogdir, balrog['tile'])
         runbalrog.Mkdir(ild)
         derived['itlogfile'] = os.path.join(ild, '%i.log'%it)
+        
+        sld = os.path.join(desdblogdir, balrog['tile'])
+        runbalrog.Mkdir(sld)
+        derived['desdblog'] = os.path.join(sld, '%i.log'%it)
 
         #print derived['iteration'], hostinfo[host]['tileits'], hostinfo[host]['initialized'], balrog['tile']
         balrog['indexstart'] = derived['indexstart']
@@ -348,14 +352,13 @@ def SetupLog(logdir, host, rank):
     return log
 
 
-def DoProcesses(logdir, desdblogdir):
+def DoProcesses(logdir, RunConfig):
 
     rank = MPI.COMM_WORLD.Get_rank()
     host = socket.gethostname()
 
     log = SetupLog(logdir, host, rank)
     log.info('Started listener')
-    dlog = os.path.join(desdblogdir, '%i.log'%(rank))
 
     send = -7
     while True:
@@ -376,7 +379,7 @@ def DoProcesses(logdir, desdblogdir):
                 log.info('cleaning up')
                 #subprocess.call( ['rm', '-r', workingdir] )
                 oscmd = ['rm', '-r', workingdir]
-                runbalrog.SystemCall(oscmd)
+                runbalrog.SystemCall(oscmd, kind=RunConfig['command'])
                 log.info('removed %s' %(workingdir) )
             #MPI.COMM_WORLD.send(send, dest=0)
         elif job[0]=='wait':
@@ -387,7 +390,6 @@ def DoProcesses(logdir, desdblogdir):
 
         else:
             run, balrog, derived = job
-            derived['desdblog'] = dlog
             send = runbalrog.EnsureInt(derived)
             log.info('Running iteration = %s of tile = %s' %(str(derived['iteration']),balrog['tile']) )
             runbalrog.MPIRunBalrog(run, balrog, derived)
@@ -476,7 +478,7 @@ if __name__ == "__main__":
 
     runlogdir = 'runlog-%s-%s' %(RunConfig['label'], RunConfig['joblabel'])
     commlogdir = os.path.join(runlogdir, 'communication')
-    desdblogdir = os.path.join(runlogdir, 'desdb')
+    desdblogdir = os.path.join(runlogdir, 'sqlldr')
     itlogdir = os.path.join(runlogdir, 'iterations')
 
     # Call desdb to find the tiles we need to download and delete any existing DB tables which are the same as your run label.
@@ -493,16 +495,15 @@ if __name__ == "__main__":
     if MPI.COMM_WORLD.Get_rank()==0:
         if os.path.exists(runlogdir):
             oscmd = ['rm', '-r', runlogdir]
-            runbalrog.SystemCall(oscmd)
+            runbalrog.SystemCall(oscmd, kind=RunConfig['command'])
         runbalrog.Mkdir(commlogdir)
-        runbalrog.Mkdir(desdblogdir)
     MPI.COMM_WORLD.barrier()
     
     if MPI.COMM_WORLD.Get_rank()==0:
         q = BuildQueue(tiles, images, psfs, pos, BalrogConfig, RunConfig, dbConfig, indexstart, write)
         ServeProcesses(q, RunConfig, commlogdir, desdblogdir, itlogdir)
     else:
-        DoProcesses(commlogdir, desdblogdir) 
+        DoProcesses(commlogdir, RunConfig) 
 
 
     # Send email when the run finishes
