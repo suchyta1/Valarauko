@@ -650,8 +650,8 @@ def run_balrog(args):
 
 #lock = Lock()
 
-def SetupLog(logfile, host, rank):
-    log = logging.getLogger('rank')
+def SetupLog(logfile, host, rank, tile, iteration):
+    log = logging.getLogger('tile = %s, it = %s' %(tile, str(iteration) ))
     log.setLevel(logging.DEBUG)
     formatter = logging.Formatter('%(asctime)s - %(levelname)s -  %(hostname)s , %(ranknumber)s - %(message)s')
     fh = logging.FileHandler(logfile, mode='w')
@@ -671,7 +671,7 @@ def MPIRunBalrog(RunConfig, BalrogConfig, DerivedConfig):
 
     host = socket.gethostname()
     rank = MPI.COMM_WORLD.Get_rank()
-    DerivedConfig['itlog'] = SetupLog(DerivedConfig['itlogfile'], host, rank)
+    DerivedConfig['itlog'] = SetupLog(DerivedConfig['itlogfile'], host, rank, BalrogConfig['tile'], DerivedConfig['iteration'])
 
     DerivedConfig['images'], DerivedConfig['psfs'] = DownloadImages(DerivedConfig['indir'], DerivedConfig['images'], DerivedConfig['psfs'], RunConfig, DerivedConfig, skip=DerivedConfig['initialized'])
 
