@@ -29,7 +29,6 @@ def Mkdir(dir):
         os.makedirs(dir)
 
 def SystemCall(cmd, redirect=None, kind='system'):
-    print 'in SystemCall'
 
     if kind=='system':
         oscmd = subprocess.list2cmdline(cmd)
@@ -43,12 +42,9 @@ def SystemCall(cmd, redirect=None, kind='system'):
             subprocess.Popen(oscmd)
 
     else:
-        print 'found redirect'
         if kind=='system':
             host = socket.gethostname()
             rank = MPI.COMM_WORLD.Get_rank()
-
-            print 'do I ever get here'
 
             log = open(redirect, 'a')
             log.write('\nrank = %i, host = %s, system time = %s\n' %(rank, host, datetime.datetime.now()) )
@@ -62,7 +58,6 @@ def SystemCall(cmd, redirect=None, kind='system'):
             log.close()
         
         elif kind=='popen':
-            print 'using popen'
             redirect.info( 'Running subprocess.Popen:' )
             redirect.info( subprocess.list2cmdline(oscmd) )
             p = subprocess.Popen(oscmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
