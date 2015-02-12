@@ -34,4 +34,6 @@ def CustomConfig(run, balrog, DESdb, db, tiles, where):
         balrog["sersicindex"] = "SERSIC_INDEX"
 
 
+    print 'is anything even happening?'
+
     return run, balrog, DESdb, db, tiles
