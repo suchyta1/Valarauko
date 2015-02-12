@@ -45,7 +45,7 @@ def SystemCall(cmd, redirect=None, kind='system'):
             host = socket.gethostname()
             rank = MPI.COMM_WORLD.Get_rank()
 
-            print 'do I ever get here"
+            print 'do I ever get here'
 
             log = open(redirect, 'a')
             log.write('\nrank = %i, host = %s, system time = %s\n' %(rank, host, datetime.datetime.now()) )
