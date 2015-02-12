@@ -18,7 +18,7 @@ def CustomConfig(run, balrog, DESdb, db, tiles, where):
     # Warning: if you make the cleaning parameters False you will use LOTS of disk space
     run['tiletotal'] = 50000
     run['DBoverwrite'] = True
-    fun['command'] = 'system'
+    run['command'] = 'system'
     run['DBload'] = 'cx_Oracle'
     run['inc'] = 100
     run['outdir'] = os.path.join(os.environ['SCRATCH'], 'BalrogScratch')
