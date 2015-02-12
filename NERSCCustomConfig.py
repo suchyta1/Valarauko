@@ -4,6 +4,7 @@ import os
 
 def CustomConfig(run, balrog, DESdb, db, tiles, where):
 
+    '''
     # Always check these
     run['label'] = 'ndbg'
     run['joblabel'] = 'test'
@@ -19,6 +20,30 @@ def CustomConfig(run, balrog, DESdb, db, tiles, where):
     run['tiletotal'] = 5000
     run['DBoverwrite'] = True
     run['command'] = 'system'
+    run['DBload'] = 'cx_Oracle'
+    run['inc'] = 100
+    run['outdir'] = os.path.join(os.environ['SCRATCH'], 'BalrogScratch')
+    run['intermediate-clean'] = True
+    run['tile-clean'] = True
+    run['bands'] = ['g', 'r', 'i', 'z', 'Y']
+    run['dualdetection'] = [1,2,3]
+    balrog['oldmorph'] = True
+
+
+    if balrog['oldmorph']:
+        balrog["reff"] = "HALF_LIGHT_RADIUS"
+        balrog["sersicindex"] = "SERSIC_INDEX"
+    '''
+
+    run['label'] = 'ndbg'
+    run['joblabel'] = 'test'
+    run['ppn'] = 8
+    run['nodes'] = 1
+    tiles = tiles[30:31]
+
+    run['tiletotal'] = 5000
+    run['DBoverwrite'] = True
+    run['command'] = 'popen'
     run['DBload'] = 'cx_Oracle'
     run['inc'] = 100
     run['outdir'] = os.path.join(os.environ['SCRATCH'], 'BalrogScratch')
