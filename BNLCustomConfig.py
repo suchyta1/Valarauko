@@ -77,8 +77,8 @@ def CustomConfig(run, balrog, DESdb, db, tiles, where):
     run['outdir'] = os.path.join(os.environ['SCRATCH'], 'BalrogScratch')
     run['intermediate-clean'] = True
     run['tile-clean'] = True
-    run['bands'] = ['g', 'r', 'i', 'z', 'Y']
-    run['dualdetection'] = [1,2,3]
+    run['bands'] = ['i']
+    run['dualdetection'] = None
     balrog['oldmorph'] = True
 
 

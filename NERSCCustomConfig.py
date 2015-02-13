@@ -38,10 +38,10 @@ def CustomConfig(run, balrog, DESdb, db, tiles, where):
     run['label'] = 'ndbg3'
     run['joblabel'] = 'test'
     run['ppn'] = 8
-    run['nodes'] = 1
-    tiles = tiles[30:31]
+    run['nodes'] = 10
+    tiles = tiles[30:40]
 
-    run['tiletotal'] = 3000
+    run['tiletotal'] = 50000
     run['DBoverwrite'] = True
     run['command'] = 'popen'
     run['DBload'] = 'cx_Oracle'
@@ -49,9 +49,9 @@ def CustomConfig(run, balrog, DESdb, db, tiles, where):
     run['outdir'] = os.path.join(os.environ['SCRATCH'], 'BalrogScratch')
     run['intermediate-clean'] = True
     run['tile-clean'] = True
-    run['bands'] = ['i']
-    run['dualdetection'] = None
-    balrog['oldmorph'] = True
+    run['bands'] = ['g','r','i','z','Y']
+    run['dualdetection'] = [1,2,3]
+    balrog['oldmorph'] = False
 
 
     if balrog['oldmorph']:

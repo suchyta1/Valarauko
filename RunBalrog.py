@@ -63,7 +63,13 @@ def SystemCall(cmd, redirect=None, kind='system'):
         
         elif kind=='popen':
             gb = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / (1024. * 1024.)
-            redirect.info( 'CPU memory usage: %f GB' %gb)
+            redirect.info( 'CPU memory usage (resource): %f GB' %gb)
+
+            p = subprocess.Popen( ['ps', '-p', '%i' %os.getpid(), '-o', 'rss'], stdout=subprocess.PIPE, stderr=subprocess.PIPE )
+            stdout, stderr = p.communicate()
+            gb = float( stdout.split('\n')[1] ) / (1024. * 1024)
+            redirect.info( 'CPU memory usage (ps): %f GB' %gb)
+
             redirect.info( 'Running subprocess.Popen:' )
             redirect.info( subprocess.list2cmdline(oscmd) )
             p = subprocess.Popen(oscmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -73,10 +79,6 @@ def SystemCall(cmd, redirect=None, kind='system'):
             redirect.info( 'Printing stderr:' )
             redirect.info(stderr)
 
-            p = subprocess.Popen( ['ps', '-p', '%i' %os.getpid(), '-o', 'rss'], stdout=subprocess.PIPE, stderr=subprocess.PIPE )
-            stdout, stderr = p.communicate()
-            redirect.info(stdout)
-            redirect.info(stderr)
 
             redirect.info('\n')
 
