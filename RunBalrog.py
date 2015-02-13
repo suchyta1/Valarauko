@@ -40,7 +40,8 @@ def SystemCall(cmd, redirect=None, kind='system'):
         if kind=='system':
             os.system(oscmd)
         elif kind=='popen':
-            subprocess.Popen(oscmd)
+            p = subprocess.Popen(oscmd)
+            p.wait()
 
     else:
         if kind=='system':
