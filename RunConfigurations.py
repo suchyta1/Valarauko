@@ -32,7 +32,7 @@ class RunConfigurations:
             'tiletotal': 100000, # Approximate number of (truth) Balrog galaxies per tile.
             'fixposseed': None,  # Fix this to an integer to get the same positions every time you run
             'fixwrapseed': None, # Fix this to an integer to get the same Balrog sampling realizations each time you run
-            'inc': 500, 
+            'inc': 500,  # irrelevant in equal number per tile version, but haven't deleted it just yet
 
             'doDES': False,  # Run sextractor without any Balrog galaxies over full images
             'bands': ['g','r','i','z','Y'], # Bands you'll get measurement catalogs for

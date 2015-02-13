@@ -75,6 +75,49 @@ def GetFiles(RunConfig, SheldonConfig, tiles):
     return [keepimages, keeppsfs, keeptiles]    
 
 
+def RandomInTile(tile, dcoords, RunConfiguration):
+    tilecut = (dcoords['tilename']==tile)
+    c = dcoords[tilecut][0]
+    ramin = c['urall']
+    ramax = c['uraur']
+    decmin = c['udecll']
+    decmax = c['udecur']
+
+    if decmin < 0:
+        decmin = 90 - decmin
+    if decmax < 0:
+        decmax = 90 - decmax
+
+    ra = np.random.uniform(ramin,ramax, RunConfiguration['tiletotal'])
+
+    dmin = np.cos(np.radians(decmin))
+    dmax = np.cos(np.radians(decmax))
+    dec = np.degrees( np.arccos( np.random.uniform(dmin,dmax, RunConfiguration['tiletotal']) ) )
+    neg = (dec > 90.0)
+    dec[neg] = 90.0 - dec[neg]
+    
+    return ra, dec
+
+
+def EqualRandomPerTile(RunConfiguration, tiles):
+    if RunConfiguration['fixposseed']!=None:
+        np.random.seed(RunConfiguration['fixposseed'])
+
+    cur = desdb.connect()
+    q = "select urall, uraur, udecll, udecur, tilename from coaddtile"
+    all = cur.quick(q, array=True)
+    cut = np.in1d(all['tilename'], tiles)
+    dcoords = all[cut]
+
+    wcoords = np.empty( (len(tiles),RunConfiguration['tiletotal'],2) )
+    for i in range(len(tiles)):
+        ra, dec = RandomInTile(tiles[i], dcoords, RunConfiguration)
+        wcoords[i][:,0] = ra
+        wcoords[i][:,1] = dec
+
+    return wcoords
+
+
 # Generate random, unclustered object positions
 def RandomPositions(RunConfiguration, BalrogConfiguration, tiles, seed=None):
 
@@ -487,6 +530,9 @@ if __name__ == "__main__":
     if MPI.COMM_WORLD.Get_rank()==0:
         images, psfs, tiles = GetFiles(RunConfig, desdbConfig, tiles)
         indexstart, write = DropTablesIfNeeded(RunConfig, BalrogConfig)
+        pos = EqualRandomPerTile(RunConfig, tiles)
+
+        '''
     else:
         tiles = None
     tiles = MPI.COMM_WORLD.allgather(tiles)[0]
@@ -495,12 +541,14 @@ if __name__ == "__main__":
     pos = RandomPositions(RunConfig, BalrogConfig, tiles)
 
     if MPI.COMM_WORLD.Get_rank()==0:
+        '''
+
         if os.path.exists(runlogdir):
             oscmd = ['rm', '-r', runlogdir]
             runbalrog.SystemCall(oscmd, kind=RunConfig['command'])
         runbalrog.Mkdir(commlogdir)
+
     MPI.COMM_WORLD.barrier()
-    
     if MPI.COMM_WORLD.Get_rank()==0:
         q = BuildQueue(tiles, images, psfs, pos, BalrogConfig, RunConfig, dbConfig, indexstart, write)
         ServeProcesses(q, RunConfig, commlogdir, desdblogdir, itlogdir)

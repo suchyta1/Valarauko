@@ -4,6 +4,7 @@ import os
 
 def CustomConfig(run, balrog, DESdb, db, tiles, where):
 
+    '''
     # Always check these
     run['label'] = 'sva1v2'
     run['joblabel'] = '50-79'
@@ -29,6 +30,7 @@ def CustomConfig(run, balrog, DESdb, db, tiles, where):
     if balrog['oldmorph']:
         balrog["reff"] = "HALF_LIGHT_RADIUS"
         balrog["sersicindex"] = "SERSIC_INDEX"
+    '''
 
 
     '''
@@ -55,7 +57,6 @@ def CustomConfig(run, balrog, DESdb, db, tiles, where):
         balrog["sersicindex"] = "SERSIC_INDEX"
     '''
 
-    '''
     # Always check these
     run['label'] = 'ndbg3'
     run['joblabel'] = 'test'
@@ -72,7 +73,6 @@ def CustomConfig(run, balrog, DESdb, db, tiles, where):
     run['DBoverwrite'] = True
     run['command'] = 'popen'
     run['DBload'] = 'cx_Oracle'
-    run['inc'] = 100
     run['outdir'] = os.path.join(os.environ['SCRATCH'], 'BalrogScratch')
     run['intermediate-clean'] = True
     run['tile-clean'] = True
@@ -84,6 +84,5 @@ def CustomConfig(run, balrog, DESdb, db, tiles, where):
     if balrog['oldmorph']:
         balrog["reff"] = "HALF_LIGHT_RADIUS"
         balrog["sersicindex"] = "SERSIC_INDEX"
-    '''
 
     return run, balrog, DESdb, db, tiles
