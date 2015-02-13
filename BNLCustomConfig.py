@@ -58,7 +58,7 @@ def CustomConfig(run, balrog, DESdb, db, tiles, where):
     '''
 
     # Always check these
-    run['label'] = 'ndbg'
+    run['label'] = 'ndbg3'
     run['joblabel'] = 'test'
     run['ppn'] = 6
     run['nodes'] = 2
@@ -71,7 +71,7 @@ def CustomConfig(run, balrog, DESdb, db, tiles, where):
     # Warning: if you make the cleaning parameters False you will use LOTS of disk space
     run['tiletotal'] = 5000
     run['DBoverwrite'] = True
-    run['command'] = 'system'
+    run['command'] = 'popen'
     run['DBload'] = 'cx_Oracle'
     run['inc'] = 100
     run['outdir'] = os.path.join(os.environ['SCRATCH'], 'BalrogScratch')
@@ -86,7 +86,5 @@ def CustomConfig(run, balrog, DESdb, db, tiles, where):
         balrog["reff"] = "HALF_LIGHT_RADIUS"
         balrog["sersicindex"] = "SERSIC_INDEX"
 
-
-    print 'is anything even happening?'
 
     return run, balrog, DESdb, db, tiles

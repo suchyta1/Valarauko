@@ -6,6 +6,7 @@ import StringIO
 import socket
 import logging
 import datetime
+import resource
 
 import sys
 import os
@@ -48,6 +49,8 @@ def SystemCall(cmd, redirect=None, kind='system'):
 
             log = open(redirect, 'a')
             log.write('\nrank = %i, host = %s, system time = %s\n' %(rank, host, datetime.datetime.now()) )
+            gb = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / (1024. * 1024.)
+            log.write( 'CPU memory usage: %f GB\n' %gb)
             log.write('# Running os.system\n')
             log.write('%s\n' %(oscmd))
             log.close()
@@ -58,6 +61,8 @@ def SystemCall(cmd, redirect=None, kind='system'):
             log.close()
         
         elif kind=='popen':
+            gb = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / (1024. * 1024.)
+            redirect.info( 'CPU memory usage: %f GB' %gb)
             redirect.info( 'Running subprocess.Popen:' )
             redirect.info( subprocess.list2cmdline(oscmd) )
             p = subprocess.Popen(oscmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -66,6 +71,12 @@ def SystemCall(cmd, redirect=None, kind='system'):
             redirect.info(stdout)
             redirect.info( 'Printing stderr:' )
             redirect.info(stderr)
+
+            p = subprocess.Popen( ['ps', '-p', '%i' %os.getpid(), '-o', 'rss'], stdout=subprocess.PIPE, stderr=subprocess.PIPE )
+            stdout, stderr = p.communicate()
+            redirect.info(stdout)
+            redirect.info(stderr)
+
             redirect.info('\n')
 
 
@@ -593,7 +604,6 @@ def RunNormal(RunConfig, BalrogConfig, DerivedConfig):
         os.system('%s >> %s 2>&1' %(oscmd, swarplogfile))
         '''
         SystemCall(cmd, redirect=DerivedConfig['itlog'], kind=RunConfig['command'])
-
 
     detpsf = DerivedConfig['psfs'][0]
     for i in range(len(DerivedConfig['bands'])):

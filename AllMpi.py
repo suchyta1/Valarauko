@@ -375,7 +375,9 @@ def DoProcesses(logdir, RunConfig):
             send = -6
             clean = job[1]
             workingdir = job[2]
-            if clean and os.path.lexists(workingdir):
+            #if clean and os.path.lexists(workingdir):
+            log.info(workingdir)
+            if clean and os.path.exists(workingdir):
                 log.info('cleaning up')
                 #subprocess.call( ['rm', '-r', workingdir] )
                 oscmd = ['rm', '-r', workingdir]
