@@ -4,13 +4,12 @@ import os
 
 def CustomConfig(run, balrog, DESdb, db, tiles, where):
 
-    '''
     # Always check these
     run['label'] = 'sva1v2'
-    run['joblabel'] = '30-49'
+    run['joblabel'] = '50-79'
     run['ppn'] = 6
     run['nodes'] = 10
-    tiles = tiles[30:50]
+    tiles = tiles[50:80]
 
 
     # If you're not debugging these should be pretty stable not to need to change. 100,000 for the tiletotal gets you to about observed DES number density.
@@ -30,7 +29,6 @@ def CustomConfig(run, balrog, DESdb, db, tiles, where):
     if balrog['oldmorph']:
         balrog["reff"] = "HALF_LIGHT_RADIUS"
         balrog["sersicindex"] = "SERSIC_INDEX"
-    '''
 
 
     '''
@@ -57,6 +55,7 @@ def CustomConfig(run, balrog, DESdb, db, tiles, where):
         balrog["sersicindex"] = "SERSIC_INDEX"
     '''
 
+    '''
     # Always check these
     run['label'] = 'ndbg3'
     run['joblabel'] = 'test'
@@ -85,6 +84,6 @@ def CustomConfig(run, balrog, DESdb, db, tiles, where):
     if balrog['oldmorph']:
         balrog["reff"] = "HALF_LIGHT_RADIUS"
         balrog["sersicindex"] = "SERSIC_INDEX"
-
+    '''
 
     return run, balrog, DESdb, db, tiles
