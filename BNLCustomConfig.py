@@ -4,33 +4,30 @@ import os
 
 def CustomConfig(run, balrog, DESdb, db, tiles, where):
 
-    '''
     # Always check these
-    run['label'] = 'sva1v2'
-    run['joblabel'] = '50-79'
-    run['ppn'] = 6
+    run['label'] = 'sva1v3'
+    run['joblabel'] = '80-109'
     run['nodes'] = 10
-    tiles = tiles[50:80]
+    run['ppn'] = 6
+    tiles = tiles[80:110]
 
 
     # If you're not debugging these should be pretty stable not to need to change. 100,000 for the tiletotal gets you to about observed DES number density.
     # Warning: if you make the cleaning parameters False you will use LOTS of disk space
     run['tiletotal'] = 100000
     run['DBoverwrite'] = False
+    run['command'] = 'popen'
     run['DBload'] = 'cx_Oracle'
-    run['inc'] = 100
     run['outdir'] = os.path.join(os.environ['SCRATCH'], 'BalrogScratch')
     run['intermediate-clean'] = True
     run['tile-clean'] = True
     run['bands'] = ['g', 'r', 'i', 'z', 'Y']
     run['dualdetection'] = [1,2,3]
+
     balrog['oldmorph'] = False
-
-
     if balrog['oldmorph']:
         balrog["reff"] = "HALF_LIGHT_RADIUS"
         balrog["sersicindex"] = "SERSIC_INDEX"
-    '''
 
 
     '''
@@ -57,6 +54,7 @@ def CustomConfig(run, balrog, DESdb, db, tiles, where):
         balrog["sersicindex"] = "SERSIC_INDEX"
     '''
 
+    '''
     # Always check these
     run['label'] = 'ndbg3'
     run['joblabel'] = 'test'
@@ -84,5 +82,7 @@ def CustomConfig(run, balrog, DESdb, db, tiles, where):
     if balrog['oldmorph']:
         balrog["reff"] = "HALF_LIGHT_RADIUS"
         balrog["sersicindex"] = "SERSIC_INDEX"
+    '''
 
     return run, balrog, DESdb, db, tiles
+

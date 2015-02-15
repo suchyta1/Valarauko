@@ -92,7 +92,8 @@ def DownloadImages(indir, images, psfs, RunConfig, DerivedConfig, skip=False):
         if not skip:
             Remove(infile)
             #subprocess.call( ['wget', '-q', '--no-check-certificate', file, '-O', infile] )
-            oscmd = ['wget', '-q', '--no-check-certificate', file, '-O', infile]
+            #oscmd = ['wget', '-q', '--no-check-certificate', file, '-O', infile]
+            oscmd = ['wget', '--no-check-certificate', file, '-O', infile]
             SystemCall(oscmd, redirect=DerivedConfig['itlog'], kind=RunConfig['command'])
         ufile = infile.replace('.fits.fz', '.fits')
         if not skip:
@@ -108,7 +109,8 @@ def DownloadImages(indir, images, psfs, RunConfig, DerivedConfig, skip=False):
         if not skip:
             Remove(pfile)
             #subprocess.call( ['wget', '-q', '--no-check-certificate', psf, '-O', pfile] )
-            oscmd = ['wget', '-q', '--no-check-certificate', psf, '-O', pfile]
+            #oscmd = ['wget', '-q', '--no-check-certificate', psf, '-O', pfile]
+            oscmd = ['wget', '--no-check-certificate', psf, '-O', pfile]
             SystemCall(oscmd, redirect=DerivedConfig['itlog'], kind=RunConfig['command'])
         usepsfs.append(pfile)
 
