@@ -38,7 +38,7 @@ def CustomConfig(run, balrog, DESdb, db, tiles, where):
     run['joblabel'] = '110-139'
     run['ppn'] = 8
     run['nodes'] = 30
-    tiles = tiles[100:140]
+    tiles = tiles[110:140]
 
     run['tiletotal'] = 100000
     run['DBoverwrite'] = False
