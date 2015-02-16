@@ -4,9 +4,8 @@ import os
 
 def CustomConfig(run, balrog, DESdb, db, tiles, where):
 
-    '''
     # Always check these
-    run['label'] = 'ndbg'
+    run['label'] = 'pdbg'
     run['joblabel'] = 'test'
     run['ppn'] = 8
     run['nodes'] = 2
@@ -19,7 +18,7 @@ def CustomConfig(run, balrog, DESdb, db, tiles, where):
     # Warning: if you make the cleaning parameters False you will use LOTS of disk space
     run['tiletotal'] = 5000
     run['DBoverwrite'] = True
-    run['command'] = 'system'
+    run['command'] = 'popen'
     run['DBload'] = 'cx_Oracle'
     run['inc'] = 100
     run['outdir'] = os.path.join(os.environ['SCRATCH'], 'BalrogScratch')
@@ -33,8 +32,8 @@ def CustomConfig(run, balrog, DESdb, db, tiles, where):
     if balrog['oldmorph']:
         balrog["reff"] = "HALF_LIGHT_RADIUS"
         balrog["sersicindex"] = "SERSIC_INDEX"
-    '''
 
+    '''
     run['label'] = 'sva1v3'
     run['joblabel'] = '110-139'
     run['ppn'] = 8
@@ -55,6 +54,7 @@ def CustomConfig(run, balrog, DESdb, db, tiles, where):
     if balrog['oldmorph']:
         balrog["reff"] = "HALF_LIGHT_RADIUS"
         balrog["sersicindex"] = "SERSIC_INDEX"
+    '''
 
 
     return run, balrog, DESdb, db, tiles
