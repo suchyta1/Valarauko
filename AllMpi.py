@@ -75,6 +75,20 @@ def GetFiles(RunConfig, SheldonConfig, tiles):
     return [keepimages, keeppsfs, keeptiles]    
 
 
+'''
+def UniformRandom(ramin, ramax, decmin, decmax, size=1e6, rakey='ra', deckey='dec'):
+
+    ra = np.random.uniform(ramin,ramax, size)
+
+    tmin = np.cos( np.radians(90.0 - decmax) )
+    tmax = np.cos( np.radians(90.0 - decmin) )
+    theta = np.degrees( np.arccos( np.random.uniform(tmin,tmax, size) ) )
+    dec = 90.0 - theta
+
+    return ra, dec
+'''
+
+
 def RandomInTile(tile, dcoords, RunConfiguration):
     tilecut = (dcoords['tilename']==tile)
     c = dcoords[tilecut][0]
@@ -83,6 +97,10 @@ def RandomInTile(tile, dcoords, RunConfiguration):
     decmin = c['udecll']
     decmax = c['udecur']
 
+    # The next line should basically work, but I haven't tested it
+    #ra, dec = UniformRandom(ramin, ramax, decmin, decmax, RunConfiguration['tiletotal'])
+
+    # Going to want to remove what's below here eveuntually
     if decmin < 0:
         decmin = 90 - decmin
     if decmax < 0:
@@ -95,6 +113,7 @@ def RandomInTile(tile, dcoords, RunConfiguration):
     dec = np.degrees( np.arccos( np.random.uniform(dmin,dmax, RunConfiguration['tiletotal']) ) )
     neg = (dec > 90.0)
     dec[neg] = 90.0 - dec[neg]
+    #########
     
     return ra, dec
 
