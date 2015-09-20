@@ -36,6 +36,39 @@ def SendEmail(config):
     obj.sendmail(sender, receivers, msg.as_string())
 
 
+def GetFiles2(RunConfig, SheldonConfig, tiles, runs=None):
+    conn = desdb.connect()
+    images = []
+    psfs = []
+
+    for i in range(len(tiles)):
+        
+        psfs.append([])
+        images.append([])
+
+        for j in range(len(RunConfig['bands'])):
+
+            if runs is not None:
+                coadd = desdb.files.Coadd(coadd_run=runs[i], band=RunConfig['bands'][j], conn=conn, fs='net')
+            else:
+                d = conn.quick("SELECT id from %s where tilename='%s' and band='%s'" %(SheldonConfig['release'], tiles[i], RunConfig['bands'][j]) )
+                id = d[0]['id']
+                coadd = desdb.files.Coadd(id=id, conn=conn, fs='net')
+
+            coadd.load()
+            images[-1].append(coadd['image_url'])
+            psfs[-1].append(coadd['image_url'].replace('.fits.fz', '_psfcat.psf'))
+
+        if RunConfig['dualdetection'] is not None:
+            im = images[-1][-1][:-10]
+            images[-1].insert(0, '%s_det.fits.fz' %(im) )
+            psfs[-1].insert(0, '%s_det_psfcat.psf' %(im) )
+
+    print images
+    return [images, psfs, tiles]
+            
+
+
 # Find the files from the DES server we need to download
 def GetFiles(RunConfig, SheldonConfig, tiles):
 
@@ -75,18 +108,25 @@ def GetFiles(RunConfig, SheldonConfig, tiles):
     return [keepimages, keeppsfs, keeptiles]    
 
 
-'''
-def UniformRandom(ramin, ramax, decmin, decmax, size=1e6, rakey='ra', deckey='dec'):
-
+def UniformRandom(ramin, ramax, decmin, decmax, size=1e6):
     ra = np.random.uniform(ramin,ramax, size)
-
     tmin = np.cos( np.radians(90.0 - decmax) )
     tmax = np.cos( np.radians(90.0 - decmin) )
     theta = np.degrees( np.arccos( np.random.uniform(tmin,tmax, size) ) )
     dec = 90.0 - theta
 
     return ra, dec
-'''
+
+
+def GetMinMax(tile, dcoords):
+    tilecut = (dcoords['tilename']==tile)
+    c = dcoords[tilecut][0]
+    ramin = c['urall']
+    ramax = c['uraur']
+    decmin = c['udecll']
+    decmax = c['udecur']
+    return ramin, ramax, decmin, decmax
+
 
 
 def RandomInTile(tile, dcoords, RunConfiguration):
@@ -98,8 +138,9 @@ def RandomInTile(tile, dcoords, RunConfiguration):
     decmax = c['udecur']
 
     # The next line should basically work, but I haven't tested it
-    #ra, dec = UniformRandom(ramin, ramax, decmin, decmax, RunConfiguration['tiletotal'])
+    ra, dec = UniformRandom(ramin, ramax, decmin, decmax, RunConfiguration['tiletotal'])
 
+    """
     # Going to want to remove what's below here eveuntually
     if decmin < 0:
         decmin = 90 - decmin
@@ -114,6 +155,7 @@ def RandomInTile(tile, dcoords, RunConfiguration):
     neg = (dec > 90.0)
     dec[neg] = 90.0 - dec[neg]
     #########
+    """
     
     return ra, dec
 
@@ -131,12 +173,15 @@ def EqualRandomPerTile(RunConfiguration, tiles):
     wcoords = np.empty( (len(tiles),RunConfiguration['tiletotal'],2) )
     for i in range(len(tiles)):
         ra, dec = RandomInTile(tiles[i], dcoords, RunConfiguration)
+        #ramin, ramax, decmin, decmax = GetMinMax(tiles[i], dcoords)
+        #ra, dec = UniformRandom(ramin, ramax, decmin, decmax, size=RunConfiguration['tiletotal'])
         wcoords[i][:,0] = ra
         wcoords[i][:,1] = dec
 
     return wcoords
 
 
+"""
 # Generate random, unclustered object positions
 def RandomPositions(RunConfiguration, BalrogConfiguration, tiles, seed=None):
 
@@ -196,6 +241,7 @@ def RandomPositions(RunConfiguration, BalrogConfiguration, tiles, seed=None):
         wcoords[i] = mpifunctions.Gather(wcoords[i])
 
     return wcoords
+"""
 
 
 def GetAllBands():
@@ -547,7 +593,7 @@ if __name__ == "__main__":
 
     # Call desdb to find the tiles we need to download and delete any existing DB tables which are the same as your run label.
     if MPI.COMM_WORLD.Get_rank()==0:
-        images, psfs, tiles = GetFiles(RunConfig, desdbConfig, tiles)
+        images, psfs, tiles = GetFiles2(RunConfig, desdbConfig, tiles)
         indexstart, write = DropTablesIfNeeded(RunConfig, BalrogConfig)
         pos = EqualRandomPerTile(RunConfig, tiles)
 

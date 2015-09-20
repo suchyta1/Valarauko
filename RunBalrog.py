@@ -426,7 +426,7 @@ def MakeNewArray(alldefs, arr, tablename, noarr=False):
 # Convert numpy array to something can be written to the DB by cx_Oracle
 def GetOracleStructure(arr, tablename, noarr=False, create=False):
     a = arr.view(np.ndarray)
-    cs, alldefs = desdb.get_tabledef(a.dtype.descr, tablename)
+    cs, alldefs = desdb.desdb.get_tabledef(a.dtype.descr, tablename)
 
     if create:
         return cs
