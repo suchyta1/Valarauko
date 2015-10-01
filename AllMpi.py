@@ -36,36 +36,49 @@ def SendEmail(config):
     obj.sendmail(sender, receivers, msg.as_string())
 
 
-def GetFiles2(RunConfig, SheldonConfig, tiles, runs=None):
+def GetFiles2(RunConfig, SheldonConfig, tiles):
+    df = desdb.files.DESFiles(fs='net')
+    bands = runbalrog.PrependDet(RunConfig)
     conn = desdb.connect()
+
     images = []
     psfs = []
+    bs = []
+    skipped = []
 
     for i in range(len(tiles)):
-        
-        psfs.append([])
-        images.append([])
+        for j in range(len(bands)):
 
-        for j in range(len(RunConfig['bands'])):
+            #d = conn.quick("SELECT id from %s where tilename='%s' and band='%s'" %(SheldonConfig['release'], tiles[i], RunConfig['bands'][j]) )
+            band = bands[j]
 
-            if runs is not None:
-                coadd = desdb.files.Coadd(coadd_run=runs[i], band=RunConfig['bands'][j], conn=conn, fs='net')
+            if band=='det':
+                d = conn.quick("SELECT c.run from coadd c, runtag rt where rt.run=c.run and c.tilename='%s' and rt.tag='%s' and c.band is null" %(tiles[i], SheldonConfig['release'].upper()), array=True )
             else:
-                d = conn.quick("SELECT id from %s where tilename='%s' and band='%s'" %(SheldonConfig['release'], tiles[i], RunConfig['bands'][j]) )
-                id = d[0]['id']
-                coadd = desdb.files.Coadd(id=id, conn=conn, fs='net')
+                d = conn.quick("SELECT c.run from coadd c, runtag rt where rt.run=c.run and c.tilename='%s' and rt.tag='%s' and c.band='%s'" %(tiles[i], SheldonConfig['release'].upper(), band), array=True )
+           
+            if len(d)==0:
+                if band=='det':
+                    skipped.append(tiles[i])
+                    break
+                else:
+                    continue
 
-            coadd.load()
-            images[-1].append(coadd['image_url'])
-            psfs[-1].append(coadd['image_url'].replace('.fits.fz', '_psfcat.psf'))
+            if j==0:
+                psfs.append([])
+                images.append([])
+                bs.append([])
 
-        if RunConfig['dualdetection'] is not None:
-            im = images[-1][-1][:-10]
-            images[-1].insert(0, '%s_det.fits.fz' %(im) )
-            psfs[-1].insert(0, '%s_det_psfcat.psf' %(im) )
+            run = d[0]['run']
+            img = df.url('coadd_image', coadd_run=run, tilename=tiles[i], band=band)
+            images[-1].append(img)
+            psfs[-1].append(img.replace('.fits.fz', '_psfcat.psf'))
+            bs[-1].append(band)
 
-    print images
-    return [images, psfs, tiles]
+
+    print images, bs
+    #print skipped
+    return [images, psfs, tiles, bs, skipped]
             
 
 
@@ -593,7 +606,8 @@ if __name__ == "__main__":
 
     # Call desdb to find the tiles we need to download and delete any existing DB tables which are the same as your run label.
     if MPI.COMM_WORLD.Get_rank()==0:
-        images, psfs, tiles = GetFiles2(RunConfig, desdbConfig, tiles)
+        images, psfs, tiles, bands, skipped = GetFiles2(RunConfig, desdbConfig, tiles)
+        """
         indexstart, write = DropTablesIfNeeded(RunConfig, BalrogConfig)
         pos = EqualRandomPerTile(RunConfig, tiles)
 
@@ -625,3 +639,4 @@ if __name__ == "__main__":
     MPI.COMM_WORLD.barrier()
     if MPI.COMM_WORLD.Get_rank()==0:
         SendEmail(RunConfig)
+        """
