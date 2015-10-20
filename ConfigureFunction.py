@@ -5,46 +5,6 @@ import os
 import esutil
 
 
-# change the defaults if you want
-def NerscConfig(run, balrog, DESdb, db, tiles):
-    run['label'] = 'debug_nersc'
-    run['tiletotal'] = 2000
-    run['DBoverwrite'] = True
-    run['DBload'] = 'cx_Oracle'
-    run['bands'] = ['i']
-    run['dualdetection'] = None
-
-    balrog = pyconfig(balrog)
-    tiles = tiles[0:2]
-    return run, balrog, DESdb, db, tiles
-
-
-# change the defaults if you want
-def BNLConfig(run, balrog, DESdb, db, tiles):
-    #run['label'] = 'debug_bnl'
-    #run['label'] = 'des_sva1'
-    run['label'] = 'sva1_des'
-    run['tiletotal'] = 100000
-    run['DBoverwrite'] = True
-    run['DBload'] = 'cx_Oracle'
-    #run['DBload'] = 'sqlldr'
-    run['nomulti'] = False
-
-    balrog = pyconfig(balrog)
-    tiles = tiles[0:30]
-
-    return run, balrog, DESdb, db, tiles
-
-
-def pyconfig(balrog):
-    #balrog['sexparam'] = os.path.join(os.environ['BALROG_MPI_ASTRO_CONFIG'], 'sva1', 'sex.param')
-    balrog['oldmorph'] = False
-    if balrog['oldmorph']:
-        balrog["reff"] = "HALF_LIGHT_RADIUS"
-        balrog["sersicindex"] = "SERSIC_INDEX"
-    return balrog
-
-
 # get a default config object
 def GetConfig(where):
 
@@ -54,7 +14,6 @@ def GetConfig(where):
     #hide these from user
     run['command'] = 'popen' #['system', 'popen']
     run['DBload'] = 'cx_Oracle'  # ['cx_Oracle', 'sqlldr'] How to write to DB. 
-    run['DBnull'] = -999 # value to replace nan with
     run['doDES'] = False  # Run sextractor without any Balrog galaxies over full images
     run['bands'] = ['g','r','i','z','Y'] # Bands you'll get measurement catalogs for
     run['dualdetection'] = [1,2,3]  # Use None not to use detection image. Otherwise the indices in the array of bands.
@@ -109,10 +68,4 @@ def Generate_Job(run, where):
     job = open(filename, 'w')
     job.write(out)
     return filename
-
-    #tiles = cur.quick("SELECT tile.tilename, tile.urall, tile.uraur, tile.udecll, tile.udecur from coaddtile tile   JOIN (select distinct(tilename) as tilename from sva1_coadd_spte) sva1 ON sva1.tilename=tile.tilename  ORDER BY tile.udecll DESC, tile.urall ASC", array=True)
-
-
-# Runs
-# 0-30
 

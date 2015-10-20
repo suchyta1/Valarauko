@@ -2,7 +2,7 @@ import os
 
 # change the defaults if you want
 
-def CustomConfig(run, balrog, DESdb, db, tiles, where):
+def CustomConfig(run, balrog, db, tiles, where):
 
     # Always check these
     run['label'] = 'pdbg'
@@ -57,4 +57,4 @@ def CustomConfig(run, balrog, DESdb, db, tiles, where):
     '''
 
 
-    return run, balrog, DESdb, db, tiles
+    return run, balrog, db, tiles
