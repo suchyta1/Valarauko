@@ -11,14 +11,13 @@ class RunConfigurations:
             'queue': 'regular', # NERSC queues, irrelevant at BNL
             'walltime': '24:00:00', # irrelevant at BNL
             'module_setup': 'module_setup',
-            'command': 'system', #['system', 'popen']
 
-            #'nomulti': False,  # don't use the mulitprocessing module, useful for debugging
             'funpack': os.path.join(os.environ['BALROG_MPI'], 'software','cfitsio-3.300','funpack'), # this one is the sva1 version, that's not really relevant though
             'swarp': os.path.join(os.environ['BALROG_MPI'], 'software','swarp-2.36.1','install-dir','bin','swarp'), # swarp executable, only relevant if in multi-image detection mode
             'swarp-config': os.path.join(os.environ['BALROG_MPI'], 'astro_config', 'sva1', 'default.swarp'), # swarp configuration file, only relevant if in multi-image detection mode
-
             'balrog': os.path.join(os.environ['BALROG_MPI'], 'software','Balrog','balrog.py'),  # The Balrog executable you'll use
+
+            'release': 'sva1_coadd',
             'outdir': os.path.join(os.environ['SCRATCH'],'BalrogOutput'),  # The ouput directory for all intermediate work. This should be in the scratch area on the node.
             'intermediate-clean': True,  # Delete an iteration's output Balrog images
             'tile-clean': True,  # Delete the entire outdir/run's contents
@@ -26,18 +25,9 @@ class RunConfigurations:
             'label': 'debug',  # DB tables will look like <username>.balrog_<label>_<type>_<band>
             'DBoverwrite': False,  # Overwrite DB tables with same names (if they exist). False means append into existing tables. Regardless, the tables will be created if they don't exist.
 
-            'DBload': 'cx_Oracle',  # ['cx_Oracle', 'sqlldr'] How to write to DB. 
-            'DBnull': -999, # value to replace nan with
-
             'tiletotal': 100000, # Approximate number of (truth) Balrog galaxies per tile.
             'fixposseed': None,  # Fix this to an integer to get the same positions every time you run
-            'fixwrapseed': None, # Fix this to an integer to get the same Balrog sampling realizations each time you run
-            'inc': 100,  # irrelevant in equal number per tile version, but haven't deleted it just yet
-
-            'doDES': False,  # Run sextractor without any Balrog galaxies over full images
-            'bands': ['g','r','i','z','Y'], # Bands you'll get measurement catalogs for
-            'dualdetection': [1,2,3]  # Use None not to use detection image. Otherwise the indices in the array of bands.
-
+            'fixwrapseed': None # Fix this to an integer to get the same Balrog sampling realizations each time you run
         }
 
 
@@ -59,15 +49,6 @@ class BalrogConfigurations:
         }
 
 
-class desdbInfo:
-
-    sva1_coadd = {
-        'release': 'sva1_coadd',
-        'filetype': 'coadd_image',
-        'runkey': 'coadd_run',
-    }
-
-
 class DBInfo:
 
     default = {
@@ -77,54 +58,5 @@ class DBInfo:
         'server' : 'dedicated',
         'service_name' : 'dessci',
     }
-
-
-class TileLists:
-
-    suchyta13 = ['DES0415-4831',
-                 'DES0419-4831',
-                 'DES0423-4831',
-                 'DES0427-4831',
-                 'DES0432-4831',
-                 'DES0436-4831',
-                 'DES0440-4831',
-                 'DES0445-4831',
-                 'DES0449-4831',
-                 'DES0453-4831',
-                 'DES0458-4831',
-                 'DES0502-4831',
-                 'DES0506-4831']
-
-    suchyta14 = ['DES0411-4748',
-                 'DES0415-4748',
-                 'DES0419-4748',
-                 'DES0423-4748',
-                 'DES0428-4748',
-                 'DES0432-4748',
-                 'DES0436-4748',
-                 'DES0440-4748',
-                 'DES0445-4748',
-                 'DES0449-4748',
-                 'DES0453-4748',
-                 'DES0457-4748',
-                 'DES0502-4748',
-                 'DES0506-4748']
-
-    spte3 = ['DES0411-4706',
-             'DES0415-4706',
-             'DES0419-4706',
-             'DES0424-4706',
-             'DES0428-4706',
-             'DES0432-4706',
-             'DES0436-4706',
-             'DES0440-4706',
-             'DES0445-4706',
-             'DES0449-4706',
-             'DES0453-4706',
-             'DES0457-4706',
-             'DES0501-4706',
-             'DES0506-4706']
-
-    suchyta27 = np.append( np.array(suchyta13), np.array(suchyta14) )
 
 

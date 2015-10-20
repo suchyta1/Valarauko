@@ -10,7 +10,7 @@ import AutoJob
 
 def GenJob(argv):
     where = AutoJob.GetWhere(argv)
-    run, balrog, DESdb, db, tiles = ConfigureFunction.GetConfig(where)
+    run, balrog, db, tiles = ConfigureFunction.GetConfig(where)
     job = ConfigureFunction.Generate_Job(run, where)
     return job, where
 

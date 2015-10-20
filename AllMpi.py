@@ -36,7 +36,7 @@ def SendEmail(config):
     obj.sendmail(sender, receivers, msg.as_string())
 
 
-def GetFiles2(RunConfig, SheldonConfig, tiles):
+def GetFiles2(RunConfig, tiles):
     df = desdb.files.DESFiles(fs='net')
     bands = runbalrog.PrependDet(RunConfig)
     conn = desdb.connect()
@@ -49,13 +49,12 @@ def GetFiles2(RunConfig, SheldonConfig, tiles):
     for i in range(len(tiles)):
         for j in range(len(bands)):
 
-            #d = conn.quick("SELECT id from %s where tilename='%s' and band='%s'" %(SheldonConfig['release'], tiles[i], RunConfig['bands'][j]) )
             band = bands[j]
 
             if band=='det':
-                d = conn.quick("SELECT c.run from coadd c, runtag rt where rt.run=c.run and c.tilename='%s' and rt.tag='%s' and c.band is null" %(tiles[i], SheldonConfig['release'].upper()), array=True )
+                d = conn.quick("SELECT c.run from coadd c, runtag rt where rt.run=c.run and c.tilename='%s' and rt.tag='%s' and c.band is null" %(tiles[i], RunConfig['release'].upper()), array=True )
             else:
-                d = conn.quick("SELECT c.run from coadd c, runtag rt where rt.run=c.run and c.tilename='%s' and rt.tag='%s' and c.band='%s'" %(tiles[i], SheldonConfig['release'].upper(), band), array=True )
+                d = conn.quick("SELECT c.run from coadd c, runtag rt where rt.run=c.run and c.tilename='%s' and rt.tag='%s' and c.band='%s'" %(tiles[i], RunConfig['release'].upper(), band), array=True )
            
             if len(d)==0:
                 if band=='det':
@@ -75,50 +74,9 @@ def GetFiles2(RunConfig, SheldonConfig, tiles):
             psfs[-1].append(img.replace('.fits.fz', '_psfcat.psf'))
             bs[-1].append(band)
 
-
-    print images, bs
-    #print skipped
     return [images, psfs, tiles, bs, skipped]
             
 
-
-# Find the files from the DES server we need to download
-def GetFiles(RunConfig, SheldonConfig, tiles):
-
-    #First get all runs
-    bands = RunConfig['bands']
-    runs = np.array( desdb.files.get_release_runs(SheldonConfig['release'], withbands=bands) )
-    bands = runbalrog.PrependDet(RunConfig)
-    kwargs = {}
-    kwargs['type'] = SheldonConfig['filetype']
-    kwargs['fs'] = 'net'
-
-    keepruns = []
-    keepimages = []
-    keeppsfs = []
-    keeptiles = []
-
-    # Pick out only the tiles we wanted
-    for i in range(len(runs)):
-        run = runs[i]
-        tile = run[-12:]
-        if tile in tiles:
-            keeptiles.append(tile)
-            keepruns.append(run)
-            keepimages.append( [] )
-            keeppsfs.append( [] )
-            kwargs[SheldonConfig['runkey']] = run
-            kwargs['tilename'] = tile
-
-            for band in bands:
-                kwargs['band'] = band
-                image = desdb.files.get_url(**kwargs)
-                image = image.replace('7443','')
-                psf = image.replace('.fits.fz', '_psfcat.psf')
-                keepimages[-1].append(image)
-                keeppsfs[-1].append(psf)
-
-    return [keepimages, keeppsfs, keeptiles]    
 
 
 def UniformRandom(ramin, ramax, decmin, decmax, size=1e6):
@@ -127,19 +85,7 @@ def UniformRandom(ramin, ramax, decmin, decmax, size=1e6):
     tmax = np.cos( np.radians(90.0 - decmin) )
     theta = np.degrees( np.arccos( np.random.uniform(tmin,tmax, size) ) )
     dec = 90.0 - theta
-
     return ra, dec
-
-
-def GetMinMax(tile, dcoords):
-    tilecut = (dcoords['tilename']==tile)
-    c = dcoords[tilecut][0]
-    ramin = c['urall']
-    ramax = c['uraur']
-    decmin = c['udecll']
-    decmax = c['udecur']
-    return ramin, ramax, decmin, decmax
-
 
 
 def RandomInTile(tile, dcoords, RunConfiguration):
@@ -150,26 +96,7 @@ def RandomInTile(tile, dcoords, RunConfiguration):
     decmin = c['udecll']
     decmax = c['udecur']
 
-    # The next line should basically work, but I haven't tested it
     ra, dec = UniformRandom(ramin, ramax, decmin, decmax, RunConfiguration['tiletotal'])
-
-    """
-    # Going to want to remove what's below here eveuntually
-    if decmin < 0:
-        decmin = 90 - decmin
-    if decmax < 0:
-        decmax = 90 - decmax
-
-    ra = np.random.uniform(ramin,ramax, RunConfiguration['tiletotal'])
-
-    dmin = np.cos(np.radians(decmin))
-    dmax = np.cos(np.radians(decmax))
-    dec = np.degrees( np.arccos( np.random.uniform(dmin,dmax, RunConfiguration['tiletotal']) ) )
-    neg = (dec > 90.0)
-    dec[neg] = 90.0 - dec[neg]
-    #########
-    """
-    
     return ra, dec
 
 
@@ -186,75 +113,11 @@ def EqualRandomPerTile(RunConfiguration, tiles):
     wcoords = np.empty( (len(tiles),RunConfiguration['tiletotal'],2) )
     for i in range(len(tiles)):
         ra, dec = RandomInTile(tiles[i], dcoords, RunConfiguration)
-        #ramin, ramax, decmin, decmax = GetMinMax(tiles[i], dcoords)
-        #ra, dec = UniformRandom(ramin, ramax, decmin, decmax, size=RunConfiguration['tiletotal'])
         wcoords[i][:,0] = ra
         wcoords[i][:,1] = dec
 
     return wcoords
 
-
-"""
-# Generate random, unclustered object positions
-def RandomPositions(RunConfiguration, BalrogConfiguration, tiles, seed=None):
-
-    # Find the unique tile area, only simulate into the unique area since other area will get cut anyway
-    cur = desdb.connect()
-    q = "select urall, uraur, udecll, udecur, tilename from coaddtile"
-    all = cur.quick(q, array=True)
-    cut = np.in1d(all['tilename'], tiles)
-    dcoords = all[cut]
-
-    # To make generating the sample easier, I simulate within bounds [ramin, ramax], [decmin,decmax] then only take what's in the tiles we're using
-    ramin = np.amin(dcoords['urall'])
-    ramax = np.amax(dcoords['uraur'])
-    decmin = np.amin(dcoords['udecll'])
-    decmax = np.amax(dcoords['udecur'])
-
-    # Put into right range for arccos
-    if decmin < 0:
-        decmin = 90 - decmin
-    if decmax < 0:
-        decmax = 90 - decmax
-
-
-    wcoords = []
-    for tile in tiles:
-        wcoords.append( np.empty( (0,2) ) )
-
-    target = len(tiles) * RunConfiguration['tiletotal'] / float(MPI.COMM_WORLD.size)
-    #inc = 10000 
-    inc = RunConfiguration['inc']
-    
-    if RunConfiguration['fixposseed']!=None:
-        rank = MPI.COMM_WORLD.Get_rank()
-        np.random.seed(RunConfiguration['fixposseed'] + rank)
-
-    # Loop until we've kept at least as many galaxies as we wanted, we'll generate inc at a time and see which of those lie in our tiles
-    numfound = 0
-    while numfound < target:
-        ra = np.random.uniform(ramin,ramax, inc)
-        dec = np.arccos( np.random.uniform(np.cos(np.radians(decmin)),np.cos(np.radians(decmax)), inc) ) * 180.0 / np.pi
-        neg = (dec > 90.0)
-        dec[neg] = 90.0 - dec[neg]
-        coords = np.dstack((ra,dec))[0]
-    
-        for i in range(len(tiles)):
-
-            tilecut = (dcoords['tilename']==tiles[i])
-            c = dcoords[tilecut][0]
-            inside = (ra > c['urall']) & (ra < c['uraur']) & (dec > c['udecll']) & (dec < c['udecur'])
-          
-            found = np.sum(inside)
-            if found > 0:
-                wcoords[i] = np.concatenate( (wcoords[i],coords[inside]), axis=0)
-            numfound += found
-
-    for i in range(len(wcoords)):
-        wcoords[i] = mpifunctions.Gather(wcoords[i])
-
-    return wcoords
-"""
 
 
 def GetAllBands():
@@ -270,19 +133,21 @@ def DropTablesIfNeeded(RunConfig, BalrogConfig):
     max = -1
     arr = cur.quick("select table_name from dba_tables where owner='%s'" %(user.upper()), array=True)
     tables = arr['table_name']
-    for band in allbands:
-        for  kind in ['truth', 'nosim', 'sim', 'des']:
-            tab = 'balrog_%s_%s_%s' %(RunConfig['label'], kind, band)
-            if tab.upper() in tables:
-                if RunConfig['DBoverwrite']:
-                    cur.quick("DROP TABLE %s PURGE" %tab)
-                else:
-                    write = False
-                    if kind=='truth':
-                        arr = cur.quick("select coalesce(max(balrog_index),-1) as max from %s"%(tab), array=True)
-                        num = int(arr['max'][0])
-                        if num > max:
-                            max = num
+
+    for  kind in ['truth', 'nosim', 'sim', 'des']:
+        tab = 'balrog_%s_%s' %(RunConfig['label'], kind)
+
+        if tab.upper() in tables:
+            if RunConfig['DBoverwrite']:
+                cur.quick("DROP TABLE %s PURGE" %tab)
+
+            else:
+                write = False
+                if kind=='truth':
+                    arr = cur.quick("select coalesce(max(balrog_index),-1) as max from %s"%(tab), array=True)
+                    num = int(arr['max'][0])
+                    if num > max:
+                        max = num
     indexstart = max + 1
     return indexstart,write
 
@@ -438,7 +303,6 @@ def ServeProcesses(queue, RunConfig, logdir, desdblogdir, itlogdir):
         runbalrog.Mkdir(sld)
         derived['desdblog'] = os.path.join(sld, '%i.log'%it)
 
-        #print derived['iteration'], hostinfo[host]['tileits'], hostinfo[host]['initialized'], balrog['tile']
         balrog['indexstart'] = derived['indexstart']
         if it > 0:
             balrog['indexstart'] += it*balrog['ngal']
@@ -522,11 +386,11 @@ def DoProcesses(logdir, RunConfig):
 
 
 
-def BuildQueue(tiles, images, psfs, pos, BalrogConfig, RunConfig, dbConfig, indexstart, write):
+def BuildQueue(tiles, images, psfs, pos, BalrogConfig, RunConfig, dbConfig, indexstart, write, bands):
     fullQ = Queue.Queue(len(tiles))
 
     for i in range(len(tiles)):
-        derived, balrog = InitCommonToTile(images[i], psfs[i], indexstart, RunConfig, BalrogConfig, dbConfig, tiles[i])
+        derived, balrog = InitCommonToTile(images[i], psfs[i], indexstart, RunConfig, BalrogConfig, dbConfig, tiles[i], bands[i])
 
         workingdir = os.path.join(RunConfig['outdir'], RunConfig['label'], balrog['tile'] )
         derived['workingdir'] = workingdir
@@ -578,11 +442,12 @@ def BuildQueue(tiles, images, psfs, pos, BalrogConfig, RunConfig, dbConfig, inde
     return fullQ
 
 
-def InitCommonToTile(images, psfs, indexstart, RunConfig, BalrogConfig, dbConfig, tile):
+def InitCommonToTile(images, psfs, indexstart, RunConfig, BalrogConfig, dbConfig, tile, bands):
         derived = {'images': images,
                    'psfs': psfs,
                    'indexstart': indexstart,
-                   'db': dbConfig}
+                   'db': dbConfig,
+                   'imbands': bands}
         if RunConfig['fixwrapseed'] != None:
             derived['seedoffset'] = RunConfig['fixwrapseed']
         else:
@@ -597,7 +462,7 @@ def InitCommonToTile(images, psfs, indexstart, RunConfig, BalrogConfig, dbConfig
 
 if __name__ == "__main__":
     
-    RunConfig, BalrogConfig, desdbConfig, dbConfig, tiles = ConfigureFunction.GetConfig(sys.argv[1])
+    RunConfig, BalrogConfig, dbConfig, tiles = ConfigureFunction.GetConfig(sys.argv[1])
 
     runlogdir = 'runlog-%s-%s' %(RunConfig['label'], RunConfig['joblabel'])
     commlogdir = os.path.join(runlogdir, 'communication')
@@ -606,21 +471,9 @@ if __name__ == "__main__":
 
     # Call desdb to find the tiles we need to download and delete any existing DB tables which are the same as your run label.
     if MPI.COMM_WORLD.Get_rank()==0:
-        images, psfs, tiles, bands, skipped = GetFiles2(RunConfig, desdbConfig, tiles)
-        """
+        images, psfs, tiles, bands, skipped = GetFiles2(RunConfig, tiles)
         indexstart, write = DropTablesIfNeeded(RunConfig, BalrogConfig)
         pos = EqualRandomPerTile(RunConfig, tiles)
-
-        '''
-    else:
-        tiles = None
-    tiles = MPI.COMM_WORLD.allgather(tiles)[0]
-
-    # Generate positions for the simulated objects
-    pos = RandomPositions(RunConfig, BalrogConfig, tiles)
-
-    if MPI.COMM_WORLD.Get_rank()==0:
-        '''
 
         if os.path.exists(runlogdir):
             oscmd = ['rm', '-r', runlogdir]
@@ -629,14 +482,15 @@ if __name__ == "__main__":
 
     MPI.COMM_WORLD.barrier()
     if MPI.COMM_WORLD.Get_rank()==0:
-        q = BuildQueue(tiles, images, psfs, pos, BalrogConfig, RunConfig, dbConfig, indexstart, write)
+        q = BuildQueue(tiles, images, psfs, pos, BalrogConfig, RunConfig, dbConfig, indexstart, write, bands)
         ServeProcesses(q, RunConfig, commlogdir, desdblogdir, itlogdir)
     else:
         DoProcesses(commlogdir, RunConfig) 
 
 
+    """
     # Send email when the run finishes
     MPI.COMM_WORLD.barrier()
     if MPI.COMM_WORLD.Get_rank()==0:
         SendEmail(RunConfig)
-        """
+    """

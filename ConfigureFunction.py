@@ -51,11 +51,17 @@ def GetConfig(where):
     # arguments for configuring the run
     run = RunConfigurations.RunConfigurations.default
 
+    #hide these from user
+    run['command'] = 'popen' #['system', 'popen']
+    run['DBload'] = 'cx_Oracle'  # ['cx_Oracle', 'sqlldr'] How to write to DB. 
+    run['DBnull'] = -999 # value to replace nan with
+    run['doDES'] = False  # Run sextractor without any Balrog galaxies over full images
+    run['bands'] = ['g','r','i','z','Y'] # Bands you'll get measurement catalogs for
+    run['dualdetection'] = [1,2,3]  # Use None not to use detection image. Otherwise the indices in the array of bands.
+
+
     # will get passed as command line arguments to balrog
     balrog = RunConfigurations.BalrogConfigurations.default
-
-    # stuff for talking to the DESdb module for finding file
-    DESdb = RunConfigurations.desdbInfo.sva1_coadd
 
     # DB connection info
     db = RunConfigurations.DBInfo.default
@@ -64,22 +70,15 @@ def GetConfig(where):
     tileinfo = esutil.io.read('spte-tiles.fits')
     tiles = tileinfo['tilename']
 
-    '''
-    run['where'] = where
-    if run['where']=='NERSC':
-        run, balrog, DESdb, db, tiles = NerscConfig(run, balrog, DESdb, db, tiles)
-    elif run['where']=='BNL':
-        run, balrog, DESdb, db, tiles = BNLConfig(run, balrog, DESdb, db, tiles)
-    '''
 
     if where=='BNL':
         import BNLCustomConfig as CustomConfig
     if where=='NERSC':
         import NERSCCustomConfig as CustomConfig
-    run, balrog, DESdb, db, tiles = CustomConfig.CustomConfig(run, balrog, DESdb, db, tiles, where)
+    run, balrog, db, tiles = CustomConfig.CustomConfig(run, balrog, db, tiles, where)
 
     #q = SubmitQueue(run)
-    return run, balrog, DESdb, db, tiles
+    return run, balrog, db, tiles
 
 
 def Generate_Job(run, where):

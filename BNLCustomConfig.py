@@ -5,30 +5,31 @@ import esutil
 
 
 # change the defaults if you want
-def CustomConfig(run, balrog, DESdb, db, tiles, where):
+def CustomConfig(run, balrog, db, tiles, where):
     
     # What tiles do you want?  
-    lower = 0
-    upper = 1
-    tiles = esutil.io.read('y1a1_coadd_spt-grizY-tiles.fits')
-    tiles = tiles['tilename'][lower:upper]
-    DESdb['release'] = 'y1a1_coadd'
+    #run['release'] = 'y1a1_coadd'
+    #tiles = esutil.io.read('y1a1_coadd_spt-grizY-tiles.fits')
+    #name = 'DES0356-5331'
+    #cut = (tiles['tilename']==name)
+    #tiles = tiles[cut]['tilename']
+
+    run['release'] = 'sva1_coadd'
+    tiles = tiles[100:106]
 
     
     # Always check these
-    run['label'] = 'y1a1_test'
-    run['joblabel'] = '%i-%i'%(lower,upper)
-    run['nodes'] = 1
+    run['label'] = 'db_test'
+    run['joblabel'] = '6tiles'
+    run['nodes'] = 6
     run['ppn'] = 6
 
 
     # If you're not debugging these should be pretty stable not to need to change. 100,000 for the tiletotal gets you to about observed DES number density.
     # Warning: if you make the cleaning parameters False you will use LOTS of disk space
-    #run['tiletotal'] = 100000
-    run['tiletotal'] = 5000
+    run['tiletotal'] = 100000
+    balrog['ngal'] = 1000
     run['DBoverwrite'] = True
-    run['command'] = 'popen'
-    run['DBload'] = 'cx_Oracle'
     run['outdir'] = os.path.join(os.environ['SCRATCH'], 'BalrogScratch')
     run['intermediate-clean'] = True
     run['tile-clean'] = True
@@ -41,5 +42,5 @@ def CustomConfig(run, balrog, DESdb, db, tiles, where):
         balrog["sersicindex"] = "SERSIC_INDEX"
 
 
-    return run, balrog, DESdb, db, tiles
+    return run, balrog, db, tiles
 
