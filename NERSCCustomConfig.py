@@ -1,7 +1,7 @@
 import os
 
 
-def SVA1Setup(run):
+def SVA1Setup(run, balrog):
     run['release'] = 'sva1_coadd'
     run['module_setup'] = 'sva1_setup'
     run['swarp-config'] = os.path.join(os.environ['ASTRO_CONFIG'], 'default.swarp') 
@@ -22,34 +22,29 @@ def CustomConfig(run, balrog, db, tiles):
 
     # Always check these
     run = SVA1Setup(run, balrog)
-    run['label'] = 'pdbg'
+    run['label'] = 'debug'
     run['joblabel'] = 'test'
-    run['ppn'] = 8
-    run['nodes'] = 2
-    run['walltime'] = '24:00:00'
-    run['queue'] = 'regular'
-    tiles = tiles[30:32]
+    run['ppn'] = 24
+    run['nodes'] = 1
+    run['walltime'] = '00:30:00'
+    run['queue'] = 'debug'
+    tiles = tiles[30:31]
 
 
     # If you're not debugging these should be pretty stable not to need to change. 100,000 for the tiletotal gets you to about observed DES number density.
     # Warning: if you make the cleaning parameters False you will use LOTS of disk space
-    run['tiletotal'] = 5000
+    run['tiletotal'] = 200
+    balrog['ngal'] = 10
+
     run['DBoverwrite'] = True
-    run['command'] = 'popen'
-    run['DBload'] = 'cx_Oracle'
-    run['inc'] = 100
     run['outdir'] = os.path.join(os.environ['SCRATCH'], 'BalrogScratch')
     run['intermediate-clean'] = True
     run['tile-clean'] = True
-    run['bands'] = ['g', 'r', 'i', 'z', 'Y']
-    run['dualdetection'] = [1,2,3]
-    balrog['oldmorph'] = True
 
-
+    balrog['oldmorph'] = False
     if balrog['oldmorph']:
         balrog["reff"] = "HALF_LIGHT_RADIUS"
         balrog["sersicindex"] = "SERSIC_INDEX"
-
 
 
     return run, balrog, db, tiles
