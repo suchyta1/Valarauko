@@ -17,6 +17,7 @@ def GetConfig(where):
     run['doDES'] = False  # Run sextractor without any Balrog galaxies over full images
     run['bands'] = ['g','r','i','z','Y'] # Bands you'll get measurement catalogs for
     run['dualdetection'] = [1,2,3]  # Use None not to use detection image. Otherwise the indices in the array of bands.
+    run['nodesize'] = 24 # Real only, 24 is the amount on edison (not relevant at BNL)
 
 
     # will get passed as command line arguments to balrog
@@ -34,11 +35,15 @@ def GetConfig(where):
         import BNLCustomConfig as CustomConfig
     if where=='NERSC':
         import NERSCCustomConfig as CustomConfig
-    run, balrog, db, tiles = CustomConfig.CustomConfig(run, balrog, db, tiles, where)
+    run, balrog, db, tiles = CustomConfig.CustomConfig(run, balrog, db, tiles)
 
     #q = SubmitQueue(run)
     return run, balrog, db, tiles
 
+
+def PBSadd(str, opt, val, start='#PBS'):
+    str = str + '\n%s %s %s' %(start, opt, val)
+    return str
 
 def Generate_Job(run, where):
     filename = 'job-%s-%s' %(run['label'], run['joblabel'])
@@ -50,20 +55,28 @@ def Generate_Job(run, where):
         descr = descr + 'N: %i\n' %(run['nodes'])
         descr = descr + 'hostfile: auto\n'
         descr = descr + 'job_name: %s' %(filename)
-        #cmd = 'mpirun -npernode 1 -np %i -hostfile %%hostfile%% ./WrapBalrog.py %s' %(run['nodes'], where, run['ppn'])
         cmd = 'mpirun -npernode %i -np %i -hostfile %%hostfile%% ./AllMpi.py %s' %(run['ppn'], num, where)
         out = 'command: |\n   %s\n%s' %(cmd, descr)
-    
+   
     elif where=='NERSC':
-        descr = descr + '#PBS -q %s\n' %(run['queue'])
-        descr = descr + '#PBS -l nodes=%i:ppn=%i\n' %(run['nodes'], run['ppn'])
-        descr = descr + '#PBS -l walltime=%s\n' %(run['walltime'])
-        descr = descr + '#PBS -N %s\n' %(filename)
-        descr = descr + '#PBS -e %s.$PBS_JOBID.err\n' %(filename)
-        descr = descr + '#PBS -o %s.$PBS_JOBID.out\n\n' %(filename)
-        #cmd = 'cd $PBS_O_WORKDIR\nmpirun -np %i ./WrapBalrog.py %s %i' %(run['nodes'], where, run['ppn'])
-        cmd = '%s\ncd $PBS_O_WORKDIR\nmpirun -np %i ./AllMpi.py %s' %(run['module_setup'], num, where)
-        out = '%s%s' %(descr, cmd)
+        descr = "#!/bin/bash"
+        descr = PBSadd(descr, '-q', run['queue'])
+        descr = PBSadd(descr, '-l', 'mppwidth=%i'%(run['nodesize']*run['nodes']))
+        descr = PBSadd(descr, '-l', 'walltime=%s'%(run['walltime']))
+        descr = PBSadd(descr, '-N', filename)
+        descr = PBSadd(descr, '-j', 'oe')
+        descr = PBSadd(descr, '-m', 'ae')
+
+        descr = descr + '\n\ncd $PBS_O_WORKDIR'
+        descr = descr + '\n%s' %(run['module_setup'])
+        descr = descr + '\naprun -n %i -N %i' %(num, run['ppn'])
+
+        if run['hyper-thread'] > 1:
+            descr = descr + ' -j %i'%(run['hyper-thread'])
+        descr = descr + ' ./AllMpi.py %s' %(where)
+
+        out = descr
+        filename = '%s.pbs' %(filename)
 
     job = open(filename, 'w')
     job.write(out)

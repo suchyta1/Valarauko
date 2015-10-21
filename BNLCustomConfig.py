@@ -4,8 +4,27 @@ import sys
 import esutil
 
 
+def SVA1Setup(run):
+    run['release'] = 'sva1_coadd'
+    run['funpack'] = os.path.join(os.environ['BALROG_MPI'], 'software','cfitsio-3.300','funpack')
+    run['swarp'] = os.path.join(os.environ['BALROG_MPI'], 'software','swarp-2.36.1','install-dir','bin','swarp')
+    run['swarp-config'] = os.path.join(os.environ['BALROG_MPI'], 'astro_config', 'sva1', 'default.swarp')
+    run['balrog'] = os.path.join(os.environ['BALROG_MPI'], 'software','Balrog','balrog.py')
+    run['outdir'] = os.path.join(os.environ['SCRATCH'],'BalrogOutput')
+
+    balrog['pyconfig'] = os.path.join(os.environ['BALROG_MPI'], 'pyconfig', 'slr2.py')
+    balrog['sexnnw'] = os.path.join(os.environ['BALROG_MPI'], 'astro_config', 'sva1', 'sex.nnw')
+    balrog['sexconv'] = os.path.join(os.environ['BALROG_MPI'], 'astro_config', 'sva1', 'sex.conv')
+    balrog['sexparam'] = os.path.join(os.environ['BALROG_MPI'], 'astro_config', 'sva1', 'sex.param_diskonly')
+    balrog['nosimsexparam'] = os.path.join(os.environ['BALROG_MPI'], 'astro_config', 'sva1', 'sex.param_diskonly')
+    balrog['sexconfig'] = os.path.join(os.environ['BALROG_MPI'], 'astro_config', 'sva1', 'sex.config')
+    balrog['sexpath'] = os.path.join(os.environ['BALROG_MPI'], 'software','sextractor-2.18.10', 'install-dir','bin','sex')
+
+    return run
+
+
 # change the defaults if you want
-def CustomConfig(run, balrog, db, tiles, where):
+def CustomConfig(run, balrog, db, tiles):
     
     # What tiles do you want?  
     #run['release'] = 'y1a1_coadd'
@@ -14,11 +33,11 @@ def CustomConfig(run, balrog, db, tiles, where):
     #cut = (tiles['tilename']==name)
     #tiles = tiles[cut]['tilename']
 
-    run['release'] = 'sva1_coadd'
     tiles = tiles[100:106]
 
     
     # Always check these
+    run, balrog = SVA1Setup(run, balrog)
     run['label'] = 'db_test'
     run['joblabel'] = '6tiles'
     run['nodes'] = 6
@@ -33,8 +52,6 @@ def CustomConfig(run, balrog, db, tiles, where):
     run['outdir'] = os.path.join(os.environ['SCRATCH'], 'BalrogScratch')
     run['intermediate-clean'] = True
     run['tile-clean'] = True
-    run['bands'] = ['g', 'r', 'i', 'z', 'Y']
-    run['dualdetection'] = [1,2,3]
 
     balrog['oldmorph'] = False
     if balrog['oldmorph']:
