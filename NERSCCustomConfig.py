@@ -3,7 +3,7 @@ import os
 
 def SVA1Setup(run, balrog):
     run['release'] = 'sva1_coadd'
-    run['module_setup'] = 'sva1_setup'
+    run['module_setup'] = 'balrog_sva1_setup'
     run['swarp-config'] = os.path.join(os.environ['ASTRO_CONFIG'], 'default.swarp') 
     run['outdir'] = os.path.join(os.environ['SCRATCH'],'BalrogOutput')
 
@@ -22,12 +22,12 @@ def CustomConfig(run, balrog, db, tiles):
 
     # Always check these
     run = SVA1Setup(run, balrog)
-    run['label'] = 'debug'
+    run['label'] = 'debug2'
     run['joblabel'] = 'test'
     run['ppn'] = 24
     run['nodes'] = 1
-    run['walltime'] = '00:30:00'
-    run['queue'] = 'debug'
+    run['walltime'] = '01:00:00'
+    run['queue'] = 'regular'
     tiles = tiles[30:31]
 
 
