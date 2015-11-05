@@ -6,6 +6,7 @@ import StringIO
 import socket
 import logging
 import datetime
+import time
 import resource
 
 import sys
@@ -29,7 +30,7 @@ def Mkdir(dir):
     if not os.path.lexists(dir):
         os.makedirs(dir)
 
-def SystemCall(cmd, redirect=None, kind='system'):
+def SystemCall(cmd, redirect=None, kind='system', sleeptime=0.10):
 
     if kind=='system':
         oscmd = subprocess.list2cmdline(cmd)
@@ -55,7 +56,21 @@ def SystemCall(cmd, redirect=None, kind='system'):
             log.write('# Running os.system\n')
             log.write('%s\n' %(oscmd))
             log.close()
-            os.system('%s >> %s 2>&1' %(oscmd, redirect))
+
+            #os.system('%s >> %s 2>&1' %(oscmd, redirect))
+
+            t1 = time.time()
+            os.system( '/bin/bash -c "%s; sleep %.2f" >> %s 2>&1'%(oscmd, sleeptime, redirect) )
+            t2 = time.time()
+
+            tdiff = t2 - t1
+            if tdiff < sleeptime:
+                log = open(redirect, 'a')
+                log.write('\nrank = %i, host = %s, system time = %s' %(rank, host, datetime.datetime.now()) )
+                log.write('\nRedoing the system command because it returned too quickly\n\n')
+                log.close()
+                SystemCall(cmd, redirect=redirect, kind=kind, sleeptime=sleeptime)
+
             log = open(redirect, 'a')
             log.write('\nrank = %i, host = %s, system time = %s' %(rank, host, datetime.datetime.now()) )
             log.write('\n\n')
@@ -119,7 +134,10 @@ def DownloadImages(indir, images, psfs, RunConfig, DerivedConfig, skip=False):
 
 # Convert Balrog dictionary to command line arguments
 def Dict2Cmd(d, cmd):
-    l = [cmd]
+
+    #l = [cmd]
+    l = ['python', '-s', cmd]
+
     for key in d.keys():
         if type(d[key])==bool:
             if d[key]:
