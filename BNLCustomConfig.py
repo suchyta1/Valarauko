@@ -11,10 +11,10 @@ def SVA1Setup(run, balrog):
     run['swarp-config'] = os.path.join(os.environ['BALROG_MPI'], 'astro_config', 'sva1', 'default.swarp')
     run['outdir'] = os.path.join(os.environ['SCRATCH'],'BalrogOutput')
 
-    run['db-columns'] = '/gpfs01/astro/workarea/esuchyta/git-repos/BalrogMPI/sva1_coadd_objects-columns.fits'
     run['balrog'] = os.path.join(os.environ['BALROG_MPI'], 'software','Balrog','balrog.py')
-
     balrog['pyconfig'] = os.path.join(os.environ['BALROG_MPI'], 'pyconfig', 'slr2.py')
+    run['db-columns'] = '/gpfs01/astro/workarea/esuchyta/git-repos/BalrogMPI/sva1_coadd_objects-columns.fits'
+
     balrog['sexnnw'] = os.path.join(os.environ['BALROG_MPI'], 'astro_config', 'sva1', 'sex.nnw')
     balrog['sexconv'] = os.path.join(os.environ['BALROG_MPI'], 'astro_config', 'sva1', 'sex.conv')
     balrog['sexparam'] = os.path.join(os.environ['BALROG_MPI'], 'astro_config', 'sva1', 'sex.param_diskonly')
@@ -25,24 +25,45 @@ def SVA1Setup(run, balrog):
     return run, balrog
 
 
+def Y1A1Setup(run, balrog):
+    run['release'] = 'y1a1_coadd'
+    run['funpack'] = '/gpfs01/astro/workarea/esuchyta/software/cfitsio/install/bin/funpack'
+    run['swarp'] = '/gpfs01/astro/workarea/esuchyta/software/swarp-2.36.2/install/bin/swarp'
+    run['swarp-config'] = '/gpfs01/astro/workarea/esuchyta/software/Y1A1-config/20150806_default.swarp'
+    run['outdir'] = os.path.join(os.environ['SCRATCH'],'BalrogOutput')
+
+    run['balrog'] = os.path.join(os.environ['BALROG_MPI'], 'software','Balrog','balrog.py')
+    balrog['pyconfig'] = '/gpfs01/astro/workarea/esuchyta/software/Y1A1-pyconfig/fiducial.py'
+    run['db-columns'] = '/gpfs01/astro/workarea/esuchyta/git-repos/BalrogMPI/y1a1_coadd_objects-columns.fits'
+
+    balrog['sexnnw'] = '/gpfs01/astro/workarea/esuchyta/software/Y1A1-config/20150806_sex.nnw'
+    balrog['sexconv'] = '/gpfs01/astro/workarea/esuchyta/software/Y1A1-config/20150806_sex.conv'
+    balrog['sexparam'] = '/gpfs01/astro/workarea/esuchyta/software/Y1A1-config/20150806_sex.param_diskonly'
+    balrog['nosimsexparam'] = '/gpfs01/astro/workarea/esuchyta/software/Y1A1-config/20150806_sex.param_diskonly'
+    balrog['sexconfig'] = '/gpfs01/astro/workarea/esuchyta/software/Y1A1-config/20150806_sex.config'
+    balrog['sexpath'] = '/gpfs01/astro/workarea/esuchyta/software/sextractor-2.18.10/install/bin/sex'
+
+    return run, balrog
+
+
 # change the defaults if you want
 def CustomConfig(run, balrog, db, tiles):
+    run, balrog = Y1A1Setup(run, balrog)
+    #run, balrog = SVA1Setup(run, balrog)
     
     # What tiles do you want?  
-    #run['release'] = 'y1a1_coadd'
-    #tiles = esutil.io.read('y1a1_coadd_spt-grizY-tiles.fits')
-    #name = 'DES0356-5331'
-    #cut = (tiles['tilename']==name)
-    #tiles = tiles[cut]['tilename']
+    tiles = esutil.io.read('/gpfs01/astro/workarea/esuchyta/git-repos/BalrogMPI/y1a1_coadd_spt-grizY-tiles.fits')
+    name = 'DES0356-5331'
+    cut = (tiles['tilename']==name)
+    tiles = tiles[cut]['tilename']
 
-    tiles = tiles[100:106]
+    #tiles = tiles[100:101]
 
     
     # Always check these
-    run, balrog = SVA1Setup(run, balrog)
     run['label'] = 'db_test'
-    run['joblabel'] = '6tiles'
-    run['nodes'] = 6
+    run['joblabel'] = 'y1-1tile'
+    run['nodes'] = 1
     run['ppn'] = 6
 
 
@@ -54,12 +75,6 @@ def CustomConfig(run, balrog, db, tiles):
     run['outdir'] = os.path.join(os.environ['SCRATCH'], 'BalrogScratch')
     run['intermediate-clean'] = True
     run['tile-clean'] = True
-
-    balrog['oldmorph'] = False
-    if balrog['oldmorph']:
-        balrog["reff"] = "HALF_LIGHT_RADIUS"
-        balrog["sersicindex"] = "SERSIC_INDEX"
-
 
     return run, balrog, db, tiles
 

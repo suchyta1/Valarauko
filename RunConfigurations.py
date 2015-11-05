@@ -22,13 +22,9 @@ class RunConfigurations:
 
             'release': 'sva1_coadd',
             'db-columns': 'sva1_coadd_objects-columns.fits',
-
-            'outdir': os.path.join(os.path.dirname(os.path.__file__),'BalrogOutput'),  # The ouput directory for all intermediate work. This should be in the scratch area on the node.
-            'intermediate-clean': True,  # Delete an iteration's output Balrog images
-            'tile-clean': True,  # Delete the entire outdir/run's contents
-
             'label': 'debug',  # DB tables will look like <username>.balrog_<label>_<type>_<band>
             'DBoverwrite': False,  # Overwrite DB tables with same names (if they exist). False means append into existing tables. Regardless, the tables will be created if they don't exist.
+            'outdir': os.path.join(os.path.dirname(os.path.__file__),'BalrogOutput'),  # The ouput directory for all intermediate work. This should be in the scratch area on the node.
 
             'tiletotal': 100000, # Approximate number of (truth) Balrog galaxies per tile.
             'fixposseed': None,  # Fix this to an integer to get the same positions every time you run

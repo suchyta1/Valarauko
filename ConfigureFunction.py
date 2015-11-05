@@ -18,6 +18,8 @@ def GetConfig(where):
     run['bands'] = ['g','r','i','z','Y'] # Bands you'll get measurement catalogs for
     run['dualdetection'] = [1,2,3]  # Use None not to use detection image. Otherwise the indices in the array of bands.
     run['nodesize'] = 24 # Real only, 24 is the amount on edison (not relevant at BNL)
+    run['intermediate-clean'] = True # Delete an iteration's output Balrog images
+    run['tile-clean'] = True  # Delete the entire outdir/run's contents
 
 
     # will get passed as command line arguments to balrog
