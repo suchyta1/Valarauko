@@ -4,7 +4,7 @@ import sys
 import esutil
 
 
-def SVA1Setup(run):
+def SVA1Setup(run, balrog):
     run['release'] = 'sva1_coadd'
     run['funpack'] = os.path.join(os.environ['BALROG_MPI'], 'software','cfitsio-3.300','funpack')
     run['swarp'] = os.path.join(os.environ['BALROG_MPI'], 'software','swarp-2.36.1','install-dir','bin','swarp')
@@ -20,7 +20,7 @@ def SVA1Setup(run):
     balrog['sexconfig'] = os.path.join(os.environ['BALROG_MPI'], 'astro_config', 'sva1', 'sex.config')
     balrog['sexpath'] = os.path.join(os.environ['BALROG_MPI'], 'software','sextractor-2.18.10', 'install-dir','bin','sex')
 
-    return run
+    return run, balrog
 
 
 # change the defaults if you want
@@ -46,8 +46,8 @@ def CustomConfig(run, balrog, db, tiles):
 
     # If you're not debugging these should be pretty stable not to need to change. 100,000 for the tiletotal gets you to about observed DES number density.
     # Warning: if you make the cleaning parameters False you will use LOTS of disk space
-    run['tiletotal'] = 100000
-    balrog['ngal'] = 1000
+    run['tiletotal'] = 50
+    balrog['ngal'] = 10
     run['DBoverwrite'] = True
     run['outdir'] = os.path.join(os.environ['SCRATCH'], 'BalrogScratch')
     run['intermediate-clean'] = True
