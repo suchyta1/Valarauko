@@ -48,16 +48,14 @@ def Y1A1Setup(run, balrog):
 
 # change the defaults if you want
 def CustomConfig(run, balrog, db, tiles):
-    run, balrog = Y1A1Setup(run, balrog)
     #run, balrog = SVA1Setup(run, balrog)
+    run, balrog = Y1A1Setup(run, balrog)
     
     # What tiles do you want?  
     tiles = esutil.io.read('/gpfs01/astro/workarea/esuchyta/git-repos/BalrogMPI/y1a1_coadd_spt-grizY-tiles.fits')
     name = 'DES0356-5331'
     cut = (tiles['tilename']==name)
     tiles = tiles[cut]['tilename']
-
-    #tiles = tiles[100:101]
 
     
     # Always check these
@@ -71,10 +69,7 @@ def CustomConfig(run, balrog, db, tiles):
     # Warning: if you make the cleaning parameters False you will use LOTS of disk space
     run['tiletotal'] = 50
     balrog['ngal'] = 10
-    run['DBoverwrite'] = True
-    run['outdir'] = os.path.join(os.environ['SCRATCH'], 'BalrogScratch')
-    run['intermediate-clean'] = True
-    run['tile-clean'] = True
+    run['DBoverwrite'] = False
 
     return run, balrog, db, tiles
 
