@@ -21,6 +21,8 @@ class RunConfigurations:
             'swarp-config': 'default.swarp', # swarp configuration file, only relevant if in multi-image detection mode
 
             'release': 'sva1_coadd',
+            'db-columns': 'sva1_coadd_objects-columns.fits',
+
             'outdir': os.path.join(os.path.dirname(os.path.__file__),'BalrogOutput'),  # The ouput directory for all intermediate work. This should be in the scratch area on the node.
             'intermediate-clean': True,  # Delete an iteration's output Balrog images
             'tile-clean': True,  # Delete the entire outdir/run's contents

@@ -461,8 +461,8 @@ def AllDefs(arr, tablename):
     create_cmd, alldefs = desdb.desdb.get_tabledef(a.dtype.descr, tablename)
     return create_cmd, alldefs
 
-def desdm_names(release):
-    file = '%s_objects-columns.fits' %(release)
+def desdm_names(file):
+    #file = '%s_objects-columns.fits' %(release)
     cnames = pyfits.open(file)[1].data['column_name']
     names = []
     for c in cnames:
@@ -470,13 +470,13 @@ def desdm_names(release):
     return names
 
 
-def UpdateCreates(arr, tablename, creates, names, j, i, singles, allbands, required='i', truth=False, release='y1a1_coadd', truth_cols=[]):
+def UpdateCreates(arr, tablename, creates, names, j, i, singles, allbands, dbfile, required='i', truth=False, truth_cols=[]):
     #create_cmd = GetOracleStructure(arr, tablename, noarr=noarr, create=True)
     create_cmd, alldefs = AllDefs(arr, tablename)
     create_cmd = create_cmd.replace('not null', 'null')
     cc = create_cmd.split('\n')
 
-    desdm_cols = desdm_names(release)
+    desdm_cols = desdm_names(dbfile)
     obs_one = ObsOne()
 
     cols = cc[1:-2]
@@ -551,10 +551,10 @@ def NewWrite2DB2(bcats, labels, valids, RunConfig, BalrogConfig, DerivedConfig, 
                 t = True
 
             if create:
-                creates, names = UpdateCreates(arr, tablename, creates, names, j, i, singles, allbands, required=required, truth=t, release=RunConfig['release'])
+                creates, names = UpdateCreates(arr, tablename, creates, names, j, i, singles, allbands, RunConfig['db-columns'], required=required, truth=t)
 
             else:
-                dobj = UpdateInserts(arr, tablename, noarr, j, i, allbands, dobj, singles, valids, required=required, truth=t, release=RunConfig['release'])
+                dobj = UpdateInserts(arr, tablename, noarr, j, i, allbands, dobj, singles, valids, RunConfig['db-columns'], required=required, truth=t)
 
     if create:
         for i in range(len(creates)):
@@ -592,9 +592,9 @@ def NewWrite2DB2(bcats, labels, valids, RunConfig, BalrogConfig, DerivedConfig, 
     cxcur.close()
 
 
-def UpdateInserts(arr, tablename, noarr, j, i, allbands, dobj, singles, valids, required='i', truth=False, release='y1a1_coadd'):
+def UpdateInserts(arr, tablename, noarr, j, i, allbands, dobj, singles, valids, dbfile, required='i', truth=False):
     create_cmd, alldefs = AllDefs(arr, tablename)
-    desdm_cols = desdm_names(release)
+    desdm_cols = desdm_names(dbfile)
     obs_one = ObsOne()
 
     if j==0:
