@@ -52,23 +52,26 @@ def CustomConfig(run, balrog, db, tiles):
     run, balrog = Y1A1Setup(run, balrog)
     
     # What tiles do you want?  
-    tiles = esutil.io.read('/gpfs01/astro/workarea/esuchyta/git-repos/BalrogMPI/y1a1_coadd_spt-grizY-tiles.fits')
-    name = 'DES0356-5331'
-    cut = (tiles['tilename']==name)
-    tiles = tiles[cut]['tilename']
+    #tiles = esutil.io.read('/gpfs01/astro/workarea/esuchyta/git-repos/BalrogMPI/y1a1_coadd_spt-grizY-tiles.fits')
+    #name = 'DES0356-5331'
+    #cut = (tiles['tilename']==name)
+    #tiles = tiles[cut]['tilename']
 
+    tiles = esutil.io.read('/gpfs01/astro/workarea/esuchyta/git-repos/BalrogDirs/2015-Nov/BalrogMPI/spt-sva1+y1a1-overlap-grizY.fits')
+    tiles = tiles['tilename']
+    tiles = tiles[100:106]
     
     # Always check these
-    run['label'] = 'db_test'
-    run['joblabel'] = 'y1-1tile'
-    run['nodes'] = 1
-    run['ppn'] = 6
+    run['label'] = 'y1a1_000'
+    run['joblabel'] = 'test'
+    run['nodes'] = 6
+    run['ppn'] = 8
 
 
     # If you're not debugging these should be pretty stable not to need to change. 100,000 for the tiletotal gets you to about observed DES number density.
     # Warning: if you make the cleaning parameters False you will use LOTS of disk space
-    run['tiletotal'] = 50
-    balrog['ngal'] = 10
+    run['tiletotal'] = 100000
+    balrog['ngal'] = 1000
     run['DBoverwrite'] = False
 
     return run, balrog, db, tiles
