@@ -26,6 +26,7 @@ def Y1A1Setup(run, balrog, tiles):
     run['module_setup'] = 'balrog_y1a1_setup'
     run['outdir'] = os.path.join(os.environ['SCRATCH'],'BalrogScratch')
     run['db-columns'] = os.path.join(dir, 'y1a1_coadd_objects-columns.fits')
+    run['balrog'] = os.path.join(os.environ['BALROG_DIR'], 'balrog.py')
     balrog['pyconfig'] = os.path.join(dir, 'BalrogConfig-OrigSGQ.py')
 
     run['swarp-config'] = os.path.join(dir, '20150806_default.swarp')
