@@ -9,7 +9,7 @@ def SVA1Setup(run, balrog):
     run['funpack'] = os.path.join(os.environ['BALROG_MPI'], 'software','cfitsio-3.300','funpack')
     run['swarp'] = os.path.join(os.environ['BALROG_MPI'], 'software','swarp-2.36.1','install-dir','bin','swarp')
     run['swarp-config'] = os.path.join(os.environ['BALROG_MPI'], 'astro_config', 'sva1', 'default.swarp')
-    run['outdir'] = os.path.join(os.environ['SCRATCH'],'BalrogOutput')
+    run['outdir'] = os.path.join(os.environ['SCRATCH'],'BalrogScratch')
 
     run['balrog'] = os.path.join(os.environ['BALROG_MPI'], 'software','Balrog','balrog.py')
     balrog['pyconfig'] = os.path.join(os.environ['BALROG_MPI'], 'pyconfig', 'slr2.py')
@@ -30,7 +30,7 @@ def Y1A1Setup(run, balrog):
     run['funpack'] = '/gpfs01/astro/workarea/esuchyta/software/cfitsio/install/bin/funpack'
     run['swarp'] = '/gpfs01/astro/workarea/esuchyta/software/swarp-2.36.2/install/bin/swarp'
     run['swarp-config'] = '/gpfs01/astro/workarea/esuchyta/software/Y1A1-config/20150806_default.swarp'
-    run['outdir'] = os.path.join(os.environ['SCRATCH'],'BalrogOutput')
+    run['outdir'] = os.path.join(os.environ['SCRATCH'],'BalrogScratch')
 
     run['balrog'] = os.path.join(os.environ['BALROG_MPI'], 'software','Balrog','balrog.py')
     balrog['pyconfig'] = '/gpfs01/astro/workarea/esuchyta/software/Y1A1-pyconfig/fiducial.py'

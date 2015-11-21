@@ -12,7 +12,6 @@ def GetConfig(where):
     run = RunConfigurations.RunConfigurations.default
 
     #hide these from user
-    run['command'] = 'popen' #['system', 'popen']
     run['DBload'] = 'cx_Oracle'  # ['cx_Oracle', 'sqlldr'] How to write to DB. 
     run['doDES'] = False  # Run sextractor without any Balrog galaxies over full images
     run['bands'] = ['g','r','i','z','Y'] # Bands you'll get measurement catalogs for
@@ -34,8 +33,10 @@ def GetConfig(where):
 
 
     if where=='BNL':
+        run['command'] = 'popen' #['system', 'popen']
         import BNLCustomConfig as CustomConfig
     if where=='NERSC':
+        run['command'] = 'system' #['system', 'popen']
         import NERSCCustomConfig as CustomConfig
     run, balrog, db, tiles = CustomConfig.CustomConfig(run, balrog, db, tiles)
 
