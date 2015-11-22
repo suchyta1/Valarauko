@@ -10,10 +10,8 @@ class RunConfigurations:
             'ppn': 6,
 
             # Relevant only for NERSC (only edison is supported in these wrappers)
-            'queue': 'regular',
             'walltime': '24:00:00',
-            'module_setup': 'sva1_setup',
-            'hyper-thread': 1, # 1=usual or 2=hyper-threaded
+            'module_setup': 'sva1_setup', # A bash function to call before running
 
             'balrog': 'balrog',  # Balrog executable you'll use
             'funpack': 'funpack', # funpack executable 
@@ -25,6 +23,9 @@ class RunConfigurations:
             'label': 'debug',  # DB tables will look like <username>.balrog_<label>_<type>_<band>
             'DBoverwrite': False,  # Overwrite DB tables with same names (if they exist). False means append into existing tables. Regardless, the tables will be created if they don't exist.
             'outdir': os.path.join(os.path.dirname(os.path.__file__),'BalrogOutput'),  # The ouput directory for all intermediate work. This should be in the scratch area on the node.
+
+            'indexstart': None, # None means start from +1 of whatever exists in the DB. (If the DB doesn't exist yet, None will become 0)
+            'verifyindex': True, # Check if you're trying to add balrog_index which already exists
 
             'tiletotal': 100000, # Approximate number of (truth) Balrog galaxies per tile.
             'fixposseed': None,  # Fix this to an integer to get the same positions every time you run

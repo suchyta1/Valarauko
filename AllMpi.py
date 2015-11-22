@@ -9,11 +9,11 @@ import Queue
 import socket
 import logging
 import subprocess
+import json
 
 from mpi4py import MPI
 import mpifunctions
 
-import ConfigureFunction
 import RunBalrog as runbalrog
 
 
@@ -123,14 +123,19 @@ def EqualRandomPerTile(RunConfiguration, tiles):
 def GetAllBands():
     return ['det','g','r','i','z','Y']
 
+
 # Delete the existing DB tables for your run if the names already exist
-def DropTablesIfNeeded(RunConfig, BalrogConfig):
+def DropTablesIfNeeded(RunConfig, BalrogConfig, total):
     allbands = GetAllBands()
     cur = desdb.connect()
     user = cur.username
-
     write = True
-    max = -1
+
+    if RunConfig['indexstart'] is not None:
+        indexstart = RunConfig['indexstart']
+    else:
+        indexstart = 0
+
     arr = cur.quick("select table_name from dba_tables where owner='%s'" %(user.upper()), array=True)
     tables = arr['table_name']
 
@@ -138,18 +143,27 @@ def DropTablesIfNeeded(RunConfig, BalrogConfig):
         tab = 'balrog_%s_%s' %(RunConfig['label'], kind)
 
         if tab.upper() in tables:
+
             if RunConfig['DBoverwrite']:
                 cur.quick("DROP TABLE %s PURGE" %tab)
 
             else:
                 write = False
-                if kind=='truth':
-                    arr = cur.quick("select coalesce(max(balrog_index),-1) as max from %s"%(tab), array=True)
-                    num = int(arr['max'][0])
-                    if num > max:
-                        max = num
-    indexstart = max + 1
-    return indexstart,write
+                if (kind=='truth'):
+
+                    if (RunConfig['indexstart'] is None):
+                            arr = cur.quick("select coalesce(max(balrog_index),-1) as max from %s"%(tab), array=True)
+                            max = int(arr['max'][0])
+                            indexstart = max + 1
+
+                    elif (RunConfig['verifyindex']):
+                        arr = cur.quick("select balrog_index from %s"%(tab), array=True)
+                        this = np.arange(indexstart, indexstart+total, 1)
+                        inboth = np.in1d(np.int64(this), np.int64(arr['balrog_index']))
+                        if np.sum(inboth) > 0:
+                            raise Exception("You are trying to add balrog_index(es) which already exist. Setting verifyindex=False is the only way to allow this. But unless you understand what you're doing, and have thought of reasons I haven't, don't duplicate balrog_index")
+
+    return indexstart, write
 
 
 
@@ -461,8 +475,13 @@ def InitCommonToTile(images, psfs, indexstart, RunConfig, BalrogConfig, dbConfig
 
 
 if __name__ == "__main__":
-    
-    RunConfig, BalrogConfig, dbConfig, tiles = ConfigureFunction.GetConfig(sys.argv[1])
+  
+    with open(sys.argv[1]) as jsonfile:
+        config = json.load(jsonfile)
+    RunConfig = config['run']
+    BalrogConfig = config['balrog']
+    dbConfig = config['db']
+    tiles = np.array(config['tiles'], dtype='|S12')
 
     runlogdir = 'runlog-%s-%s' %(RunConfig['label'], RunConfig['joblabel'])
     commlogdir = os.path.join(runlogdir, 'communication')
@@ -472,7 +491,8 @@ if __name__ == "__main__":
     # Call desdb to find the tiles we need to download and delete any existing DB tables which are the same as your run label.
     if MPI.COMM_WORLD.Get_rank()==0:
         images, psfs, tiles, bands, skipped = GetFiles2(RunConfig, tiles)
-        indexstart, write = DropTablesIfNeeded(RunConfig, BalrogConfig)
+        totalnum = len(images) * RunConfig['tiletotal']
+        indexstart, write = DropTablesIfNeeded(RunConfig, BalrogConfig, totalnum)
         pos = EqualRandomPerTile(RunConfig, tiles)
 
         if os.path.exists(runlogdir):

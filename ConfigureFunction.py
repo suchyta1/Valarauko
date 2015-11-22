@@ -48,40 +48,48 @@ def PBSadd(str, opt, val, start='#PBS'):
     str = str + '\n%s %s %s' %(start, opt, val)
     return str
 
-def Generate_Job(run, where):
-    filename = 'job-%s-%s' %(run['label'], run['joblabel'])
+def Generate_Job(run, where, jobname, dirname, jsonfile):
     descr = ''
+    thisdir = os.path.dirname(os.path.realpath(__file__))
+    allmpi = os.path.join(thisdir, 'AllMpi.py')
+    jobfile = os.path.join(dirname, jobname)
+    logdir = os.path.join(dirname, 'runlog')
 
     num = run['nodes'] * run['ppn']
     if where=='BNL':
         descr = descr + 'mode: bynode\n'
         descr = descr + 'N: %i\n' %(run['nodes'])
         descr = descr + 'hostfile: auto\n'
-        descr = descr + 'job_name: %s' %(filename)
-        cmd = 'mpirun -npernode %i -np %i -hostfile %%hostfile%% ./AllMpi.py %s' %(run['ppn'], num, where)
+        descr = descr + 'job_name: %s' %(jobname)
+        #cmd = 'mpirun -npernode %i -np %i -hostfile %%hostfile%% ./AllMpi.py %s' %(run['ppn'], num, where)
+        cmd = 'mpirun -npernode %i -np %i -hostfile %%hostfile%% %s %s %s' %(run['ppn'], num, allmpi, jsonfile, logdir)
         out = 'command: |\n   %s\n%s' %(cmd, descr)
+
+        jobfile = '%s.wq' %(jobfile)
    
     elif where=='NERSC':
         descr = "#!/bin/bash"
         descr = PBSadd(descr, '-q', run['queue'])
         descr = PBSadd(descr, '-l', 'mppwidth=%i'%(run['nodesize']*run['nodes']))
         descr = PBSadd(descr, '-l', 'walltime=%s'%(run['walltime']))
-        descr = PBSadd(descr, '-N', filename)
+        descr = PBSadd(descr, '-N', jobname)
         descr = PBSadd(descr, '-j', 'oe')
         descr = PBSadd(descr, '-m', 'ae')
 
-        descr = descr + '\n\ncd $PBS_O_WORKDIR'
+        #descr = descr + '\n\ncd $PBS_O_WORKDIR'
         descr = descr + '\n%s' %(run['module_setup'])
         descr = descr + '\naprun -n %i -N %i' %(num, run['ppn'])
 
         if run['hyper-thread'] > 1:
             descr = descr + ' -j %i'%(run['hyper-thread'])
-        descr = descr + ' ./AllMpi.py %s' %(where)
+        #descr = descr + ' ./AllMpi.py %s' %(where)
+        descr = descr + ' %s %s %s' %(allmpi, jsonfile, logdir)
 
         out = descr
-        filename = '%s.pbs' %(filename)
+        jobfile = '%s.pbs' %(jobfile)
 
-    job = open(filename, 'w')
-    job.write(out)
-    return filename
+    with open(jobfile, 'w') as job:
+        job.write(out)
+
+    return jobfile
 
