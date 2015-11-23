@@ -32,7 +32,8 @@ def Y1A1Setup(run, balrog):
     run['swarp-config'] = '/gpfs01/astro/workarea/esuchyta/software/Y1A1-config/20150806_default.swarp'
     run['outdir'] = os.path.join(os.environ['SCRATCH'],'BalrogScratch')
 
-    run['balrog'] = os.path.join(os.environ['BALROG_MPI'], 'software','Balrog','balrog.py')
+    #run['balrog'] = os.path.join(os.environ['BALROG_MPI'], 'software','Balrog','balrog.py')
+    run['balrog'] = '/gpfs01/astro/workarea/esuchyta/git-repos/BalrogDirs/2015-Nov/Balrog/balrog.py'
     balrog['pyconfig'] = '/gpfs01/astro/workarea/esuchyta/software/Y1A1-pyconfig/fiducial.py'
     run['db-columns'] = '/gpfs01/astro/workarea/esuchyta/git-repos/BalrogMPI/y1a1_coadd_objects-columns.fits'
 
@@ -53,7 +54,7 @@ def CustomConfig(run, balrog, db, tiles):
     tiles = tiles['tilename']
     tiles = tiles[100:101]
     
-    run['label'] = 'y1a1_test'
+    run['label'] = 'y1a1_btest'
     run['joblabel'] = 'test'
     run['nodes'] = 1
     run['ppn'] = 8

@@ -483,7 +483,8 @@ if __name__ == "__main__":
     dbConfig = config['db']
     tiles = np.array(config['tiles'], dtype='|S12')
 
-    runlogdir = 'runlog-%s-%s' %(RunConfig['label'], RunConfig['joblabel'])
+    #runlogdir = 'runlog-%s-%s' %(RunConfig['label'], RunConfig['joblabel'])
+    runlogdir = sys.argv[2]
     commlogdir = os.path.join(runlogdir, 'communication')
     desdblogdir = os.path.join(runlogdir, 'sqlldr')
     itlogdir = os.path.join(runlogdir, 'iterations')
