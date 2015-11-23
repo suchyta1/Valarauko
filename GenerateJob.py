@@ -48,7 +48,7 @@ def GetConfig(where):
     hours, minutes, seconds = run['walltime'].split(':')
     duration = datetime.timedelta(hours=float(hours), minutes=float(minutes), seconds=float(seconds))
     if where=='NERSC':
-        if (run['queue']=='debug') and (duration.total_seconds > 30*60):
+        if (run['queue']=='debug') and (duration.total_seconds() > 30*60):
             raise Exception("Walltime %s is too long for debug queue. Max is 00:30:00." %(run['walltime']))
         elif (run['queue']=='regular') and (run['nodes'] <= 682) and (duration.total_seconds() > 48.0*60.0*60.0):
             raise Exception("Walltime %s is too long for %i nodes in the regular queue. Max is 48:00:00." %(run['walltime'], run['nodes']))
