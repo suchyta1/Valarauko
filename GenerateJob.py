@@ -118,7 +118,7 @@ def Generate_Job(run, where, jobname, dirname, jsonfile):
         descr = SLURMadd(descr, '--nodes=%i'%(run['nodes']), start='#SBATCH')
         descr = SLURMadd(descr, '--time=%s'%(run['walltime']), start='#SBATCH')
         descr = SLURMadd(descr, '--job-name=%s'%(jobname), start='#SBATCH')
-        descr = SLURMadd(descr, '--output=%s-%%j'%(jobname), start='#SBATCH')
+        descr = SLURMadd(descr, '--output=%s-%%j.out'%(jobname), start='#SBATCH')
 
         descr = descr + '\n\n%s' %(run['module_setup'])
         descr = descr + '\nsrun -n %i' %(num)
