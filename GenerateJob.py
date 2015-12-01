@@ -68,6 +68,10 @@ def PBSadd(str, opt, val, start='#PBS'):
     str = str + '\n%s %s %s' %(start, opt, val)
     return str
 
+def SLURMadd(str, opt, val, start='#SBATCH'):
+    str = str + '\n%s %s' %(start, opt, val)
+    return str
+
 def Generate_Job(run, where, jobname, dirname, jsonfile):
     descr = ''
     thisdir = os.path.dirname(os.path.realpath(__file__))
@@ -110,11 +114,11 @@ def Generate_Job(run, where, jobname, dirname, jsonfile):
 
     elif where=='CORI':
         descr = "#!/bin/bash -l \n"
-        descr = PBSadd(descr, '--partition=', run['queue'], start='#SBATCH')
-        descr = PBSadd(descr, '--nodes=', str(run['nodes']), start='#SBATCH')
-        descr = PBSadd(descr, '--time=', run['walltime'], start='#SBATCH')
-        descr = PBSadd(descr, '--job-name=', jobname, start='#SBATCH')
-        descr = PBSadd(descr, '--output=', '%s-\%j'%(jobname), start='#SBATCH')
+        descr = SLURMadd(descr, '--partition=%s'%(run['queue']), start='#SBATCH')
+        descr = SLURMadd(descr, '--nodes=%i'%(run['nodes']), start='#SBATCH')
+        descr = SLURMadd(descr, '--time=%s'%s(run['walltime']), start='#SBATCH')
+        descr = SLURMadd(descr, '--job-name=%s'%(jobname), start='#SBATCH')
+        descr = SLURMadd(descr, '--output=%s-%%j'%(jobname), start='#SBATCH')
 
         descr = descr + '\n\n%s' %(run['module_setup'])
         descr = descr + '\nsrun -n %i' %(num)
