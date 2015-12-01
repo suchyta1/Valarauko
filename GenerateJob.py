@@ -125,7 +125,7 @@ def Generate_Job(run, where, jobname, dirname, jsonfile):
         descr = descr + ' %s %s %s' %(allmpi, jsonfile, logdir)
 
         out = descr
-        jobfile = '%s.pbs' %(jobfile)
+        jobfile = '%s.sl' %(jobfile)
 
 
     with open(jobfile, 'w') as job:
