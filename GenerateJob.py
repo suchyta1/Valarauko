@@ -40,9 +40,13 @@ def GetConfig(where):
     if where=='BNL':
         run['command'] = 'popen' #['system', 'popen']
         import BNLCustomConfig as CustomConfig
-    if where=='NERSC':
+    elif where=='NERSC':
         run['command'] = 'system' #['system', 'popen']
         import NERSCCustomConfig as CustomConfig
+    elif where=='CORI':
+        run['command'] = 'system' #['system', 'popen']
+        import NERSCCustomConfig as CustomConfig
+
     run, balrog, db, tiles = CustomConfig.CustomConfig(run, balrog, db, tiles)
 
     hours, minutes, seconds = run['walltime'].split(':')
@@ -103,6 +107,22 @@ def Generate_Job(run, where, jobname, dirname, jsonfile):
 
         out = descr
         jobfile = '%s.pbs' %(jobfile)
+
+    elif where=='CORI':
+        descr = "#!/bin/bash -l \n"
+        descr = PBSadd(descr, '--partition=', run['queue'], start='#SBATCH')
+        descr = PBSadd(descr, '--nodes=', str(run['nodes']), start='#SBATCH')
+        descr = PBSadd(descr, '--time=', run['walltime'], start='#SBATCH')
+        descr = PBSadd(descr, '--job-name=', jobname, start='#SBATCH')
+        descr = PBSadd(descr, '--output=', '%s-\%j'%(jobname), start='#SBATCH')
+
+        descr = descr + '\n\n%s' %(run['module_setup'])
+        descr = descr + '\nsrun -n %i' %(num)
+        descr = descr + ' %s %s %s' %(allmpi, jsonfile, logdir)
+
+        out = descr
+        jobfile = '%s.pbs' %(jobfile)
+
 
     with open(jobfile, 'w') as job:
         job.write(out)
