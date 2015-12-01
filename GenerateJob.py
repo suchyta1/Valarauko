@@ -68,8 +68,8 @@ def PBSadd(str, opt, val, start='#PBS'):
     str = str + '\n%s %s %s' %(start, opt, val)
     return str
 
-def SLURMadd(str, opt, val, start='#SBATCH'):
-    str = str + '\n%s %s' %(start, opt, val)
+def SLURMadd(str, val, start='#SBATCH'):
+    str = str + '\n%s %s' %(start, val)
     return str
 
 def Generate_Job(run, where, jobname, dirname, jsonfile):
