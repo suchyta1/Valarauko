@@ -52,14 +52,14 @@ def CustomConfig(run, balrog, db, tiles):
     run['walltime'] = '00:30:00'
     run['queue'] = 'debug'
 
-    run['label'] = 'y1test'
-    run['joblabel'] = '50-51'
+    run['label'] = 'y1_spt_0003'
+    run['joblabel'] = '100-150'
 
-    run['DBoverwrite'] = True
+    run['DBoverwrite'] = False
     run['indexstart'] = 0
     run['verifyindex'] = True
 
-    run['tiletotal'] = 100
-    balrog['ngal'] = 10
+    run['tiletotal'] = 100000
+    balrog['ngal'] = 1000
 
     return run, balrog, db, tiles
