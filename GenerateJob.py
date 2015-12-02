@@ -38,7 +38,7 @@ def GetConfig(where, setup):
     if where=='BNL':
         run['command'] = 'popen' #['system', 'popen']
         import BNLCustomConfig as CustomConfig
-    elif where=='NERSC':
+    elif where=='EDISON':
         run['command'] = 'system' #['system', 'popen']
         import NERSCCustomConfig as CustomConfig
     elif where=='CORI':
@@ -51,7 +51,7 @@ def GetConfig(where, setup):
 
     hours, minutes, seconds = run['walltime'].split(':')
     duration = datetime.timedelta(hours=float(hours), minutes=float(minutes), seconds=float(seconds))
-    if where=='NERSC':
+    if where=='EDISON':
         if (run['queue']=='debug') and (duration.total_seconds() > 30*60):
             raise Exception("Walltime %s is too long for debug queue. Max is 00:30:00." %(run['walltime']))
         elif (run['queue']=='regular') and (run['nodes'] <= 682) and (duration.total_seconds() > 48.0*60.0*60.0):
@@ -94,7 +94,7 @@ def Generate_Job(run, where, jobname, dirname, jsonfile):
 
         jobfile = '%s.wq' %(jobfile)
    
-    elif where=='NERSC':
+    elif where=='EDISON':
         nodesize = 24 
         hyp = ''
         if run['ppn'] > nodesize:
@@ -141,7 +141,7 @@ def Generate_Job(run, where, jobname, dirname, jsonfile):
 
 def GetWhere(argv):
     if len(argv) < 2:
-        raise Exception("Must specifiy where the job is for: ['BNL','NERSC','CORI']")
+        raise Exception("Must specifiy where the job is for: ['BNL','EDISON','CORI']")
 
     setup = None
     where = argv[1]
