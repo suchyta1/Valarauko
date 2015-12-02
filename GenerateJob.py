@@ -9,7 +9,7 @@ import datetime
 
 
 # get a default config object
-def GetConfig(where):
+def GetConfig(where, setup):
 
     # arguments for configuring the run
     run = RunConfigurations.RunConfigurations.default
@@ -48,6 +48,8 @@ def GetConfig(where):
         import NERSCCustomConfig as CustomConfig
 
     run, balrog, db, tiles = CustomConfig.CustomConfig(run, balrog, db, tiles)
+    if setup is not None:
+        run['setup'] = setup
 
     hours, minutes, seconds = run['walltime'].split(':')
     duration = datetime.timedelta(hours=float(hours), minutes=float(minutes), seconds=float(seconds))
@@ -148,7 +150,7 @@ def GetWhere(argv):
 
 def GenJob(argv):
     where, setup = GetWhere(argv)
-    run, balrog, db, tiles = GetConfig(where)
+    run, balrog, db, tiles = GetConfig(where, setup)
 
     jobname = '%s-%s' %(run['label'], run['joblabel'])
     dirname = os.path.join(os.path.dirname(os.path.realpath(__file__)), '%s-jobdir' %(jobname))
