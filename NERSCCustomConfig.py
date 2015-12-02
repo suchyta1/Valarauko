@@ -23,7 +23,9 @@ def Y1A1Setup(run, balrog, tiles):
     tiles = esutil.io.read(os.path.join(dir, 'spt-sva1+y1a1-overlap-grizY.fits'))['tilename']
 
     run['release'] = 'y1a1_coadd'
-    run['module_setup'] = 'balrog_y1a1_setup'
+    run['setup'] = 'balrog_y1a1_setup'
+    run['setup'] = os.path.join( os.path.dirname(os.path.realpath(__file)), 'setups', 'y1-cori')
+
     run['outdir'] = os.path.join(os.environ['SCRATCH'],'BalrogScratch')
     run['db-columns'] = os.path.join(dir, 'y1a1_coadd_objects-columns.fits')
     run['balrog'] = os.path.join(os.environ['BALROG_DIR'], 'balrog.py')

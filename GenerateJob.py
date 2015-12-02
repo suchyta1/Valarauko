@@ -101,7 +101,7 @@ def Generate_Job(run, where, jobname, dirname, jsonfile):
         descr = PBSadd(descr, '-m', 'ae')
 
         #descr = descr + '\n\ncd $PBS_O_WORKDIR'
-        descr = descr + '\n\n%s' %(run['module_setup'])
+        descr = descr + '\n\nsource %s' %(run['setup'])
         descr = descr + '\naprun -n %i -N %i' %(num, run['ppn'])
 
         if run['hyper-thread'] > 1:
@@ -120,7 +120,7 @@ def Generate_Job(run, where, jobname, dirname, jsonfile):
         descr = SLURMadd(descr, '--job-name=%s'%(jobname), start='#SBATCH')
         descr = SLURMadd(descr, '--output=%s-%%j.out'%(jobname), start='#SBATCH')
 
-        descr = descr + '\n\n%s' %(run['module_setup'])
+        descr = descr + '\n\nsource %s' %(run['setup'])
         descr = descr + '\nsrun -n %i' %(num)
         descr = descr + ' %s %s %s' %(allmpi, jsonfile, logdir)
 

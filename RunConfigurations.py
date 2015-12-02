@@ -11,7 +11,7 @@ class RunConfigurations:
 
             # Relevant only for NERSC (only edison is supported in these wrappers)
             'walltime': '24:00:00',
-            'module_setup': 'sva1_setup', # A bash function to call before running
+            'setup': None, # File to source to setup
 
             'balrog': 'balrog',  # Balrog executable you'll use
             'funpack': 'funpack', # funpack executable 
