@@ -8,10 +8,10 @@ class RunConfigurations:
             'joblabel': 'test',
             'nodes': 10,
             'ppn': 6,
-
-            # Relevant only for NERSC (only edison is supported in these wrappers)
-            'walltime': '24:00:00',
             'setup': None, # File to source to setup
+
+            # Relevant only for NERSC
+            'walltime': '24:00:00',
 
             'balrog': 'balrog',  # Balrog executable you'll use
             'funpack': 'funpack', # funpack executable 

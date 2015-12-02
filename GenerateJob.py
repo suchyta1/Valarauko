@@ -23,8 +23,6 @@ def GetConfig(where, setup):
     run['tile-clean'] = True  # Delete the entire outdir/run's contents
 
     run['queue'] = 'regular' # Probably no one other than Eric Suchyta will ever use the debug queue with this.
-    run['nodesize'] = 24 # Real only, 24 is the amount on edison (not relevant at BNL)
-    run['hyper-thread'] = 1 # 1 or 2 are the possibilities, 1 means don't hyperthread.
 
     # will get passed as command line arguments to balrog
     balrog = RunConfigurations.BalrogConfigurations.default
@@ -49,7 +47,7 @@ def GetConfig(where, setup):
 
     run, balrog, db, tiles = CustomConfig.CustomConfig(run, balrog, db, tiles)
     if setup is not None:
-        run['setup'] = setup
+        run['setup'] = os.path.realpath(setup)
 
     hours, minutes, seconds = run['walltime'].split(':')
     duration = datetime.timedelta(hours=float(hours), minutes=float(minutes), seconds=float(seconds))
@@ -87,29 +85,33 @@ def Generate_Job(run, where, jobname, dirname, jsonfile):
         descr = descr + 'N: %i\n' %(run['nodes'])
         descr = descr + 'hostfile: auto\n'
         descr = descr + 'job_name: %s' %(jobname)
-        #cmd = 'mpirun -npernode %i -np %i -hostfile %%hostfile%% ./AllMpi.py %s' %(run['ppn'], num, where)
+
+        s = ''
+        if run['setup'] is not None:
+            s = 'source %s\n   ' %(run['setup'])
         cmd = 'mpirun -npernode %i -np %i -hostfile %%hostfile%% %s %s %s' %(run['ppn'], num, allmpi, jsonfile, logdir)
-        out = 'command: |\n   %s\n%s' %(cmd, descr)
+        out = 'command: |\n   %s%s\n%s' %(s, cmd, descr)
 
         jobfile = '%s.wq' %(jobfile)
    
     elif where=='NERSC':
+        nodesize = 24 
+        hyp = ''
+        if run['ppn'] > nodesize:
+            hyp = ' -j 2'
+
         descr = "#!/bin/bash"
         descr = PBSadd(descr, '-q', run['queue'])
-        descr = PBSadd(descr, '-l', 'mppwidth=%i'%(run['nodesize']*run['nodes']))
+        descr = PBSadd(descr, '-l', 'mppwidth=%i'%(nodesize*run['nodes']))
         descr = PBSadd(descr, '-l', 'walltime=%s'%(run['walltime']))
         descr = PBSadd(descr, '-N', jobname)
         descr = PBSadd(descr, '-j', 'oe')
         descr = PBSadd(descr, '-m', 'ae')
+        descr = descr + '\n\n'
 
-        #descr = descr + '\n\ncd $PBS_O_WORKDIR'
-        descr = descr + '\n\nsource %s' %(run['setup'])
-        descr = descr + '\naprun -n %i -N %i' %(num, run['ppn'])
-
-        if run['hyper-thread'] > 1:
-            descr = descr + ' -j %i'%(run['hyper-thread'])
-        #descr = descr + ' ./AllMpi.py %s' %(where)
-        descr = descr + ' %s %s %s' %(allmpi, jsonfile, logdir)
+        if run['setup']!=None:
+            descr = descr + 'source %s\n' %(run['setup'])
+        descr = descr + 'aprun -n %i -N %i%s %s %s %s' %(num, run['ppn'], hyp, allmpi, jsonfile, logdir)
 
         out = descr
         jobfile = '%s.pbs' %(jobfile)
@@ -121,10 +123,11 @@ def Generate_Job(run, where, jobname, dirname, jsonfile):
         descr = SLURMadd(descr, '--time=%s'%(run['walltime']), start='#SBATCH')
         descr = SLURMadd(descr, '--job-name=%s'%(jobname), start='#SBATCH')
         descr = SLURMadd(descr, '--output=%s-%%j.out'%(jobname), start='#SBATCH')
+        descr = descr + '\n\n'
 
-        descr = descr + '\n\nsource %s' %(run['setup'])
-        descr = descr + '\nsrun -n %i' %(num)
-        descr = descr + ' %s %s %s' %(allmpi, jsonfile, logdir)
+        if run['setup']!=None:
+            descr = descr + 'source %s\n' %(run['setup'])
+        descr = descr + 'srun -n %i %s %s %s' %(num, allmpi, jsonfile, logdir)
 
         out = descr
         jobfile = '%s.sl' %(jobfile)
