@@ -1,5 +1,6 @@
 import os
 import esutil
+import pprint
 
 
 def SVA1Setup(run, balrog):
@@ -19,6 +20,8 @@ def SVA1Setup(run, balrog):
 
 
 def Y1A1Setup(run, balrog, tiles):
+    pprint.pprint(dict(os.environ))
+
     dir = os.environ['BALROG_CONFIG']
     tiles = esutil.io.read(os.path.join(dir, 'spt-sva1+y1a1-overlap-grizY.fits'))['tilename']
 
