@@ -1,18 +1,17 @@
 #!/usr/bin/env python
 
+import RunConfigurations
 import os
 import sys
+import esutil
 import json
 import datetime
-import pprint
-import subprocess
 
 
 # get a default config object
 def GetConfig(where):
 
     # arguments for configuring the run
-    import RunConfigurations
     run = RunConfigurations.RunConfigurations.default
 
     #hide these from user
@@ -34,7 +33,6 @@ def GetConfig(where):
     db = RunConfigurations.DBInfo.default
 
     # what files to run balrog over
-    import esutil
     tileinfo = esutil.io.read('spte-tiles.fits')
     tiles = tileinfo['tilename']
 
@@ -136,17 +134,6 @@ def Generate_Job(run, where, jobname, dirname, jsonfile):
     return jobfile
 
 
-def Source(file):
-    command = ['/bin/bash', '-c', file]
-    proc = subprocess.Popen(command, stdout=subprocess.PIPE)
-
-    for line in proc.stdout:
-      (key, _, value) = line.partition("=")
-      os.environ[key] = value
-
-    proc.communicate()
-
-
 def GetWhere(argv):
     if len(argv) < 2:
         raise Exception("Must specifiy where the job is for: ['BNL','NERSC','CORI']")
@@ -155,7 +142,6 @@ def GetWhere(argv):
     where = argv[1]
     if len(argv) > 2:
         setup = argv[2]
-        Source(setup)
 
     return where, setup
 
