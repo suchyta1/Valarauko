@@ -65,7 +65,7 @@ def CustomConfig(run, balrog, db, tiles):
 
     run['indexstart'] = None
     run['verifyindex'] = True
-    run['DBoverwrite'] = False
+    run['DBoverwrite'] = True
 
     return run, balrog, db, tiles
 
