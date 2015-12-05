@@ -46,11 +46,20 @@ function balrog_y1a1_setup
 	module load desdm-config/y1a1
 	module load kmeans_radec/master
 	module load basemap/1.0.7
+	module load pywcs/1.12
 	source ${SUCHYTA_SOFTWARE}/desdb/des-oracle-linux-x86-64-v2/install/setup.sh
 	module load desdb/master
 	module load suchyta_utils/master
 	module load balrog/master
 	module load BalrogMPI/master
+}
+
+function hdf5_setup
+{
+	module load hdf5-parallel
+	module unload h5py
+	module load h5py-parallel
+	module load pandas
 }
 
 
@@ -64,6 +73,5 @@ function balrog_test
 	module load sextractor-hpcp
 	module load astropy-hpcp
 }
-
 
 balrog_y1a1_setup
