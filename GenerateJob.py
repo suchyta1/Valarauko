@@ -36,7 +36,8 @@ def GetConfig(where, setup):
 
 
     if where=='BNL':
-        run['command'] = 'popen' #['system', 'popen']
+        #run['command'] = 'popen' #['system', 'popen']
+        run['command'] = 'system' #['system', 'popen']
         import BNLCustomConfig as CustomConfig
     elif where=='EDISON':
         run['command'] = 'system' #['system', 'popen']

@@ -11,8 +11,10 @@ def SVA1Setup(run, balrog):
     run['swarp-config'] = os.path.join(os.environ['BALROG_MPI'], 'astro_config', 'sva1', 'default.swarp')
     run['outdir'] = os.path.join(os.environ['SCRATCH'],'BalrogScratch')
 
-    run['balrog'] = os.path.join(os.environ['BALROG_MPI'], 'software','Balrog','balrog.py')
-    balrog['pyconfig'] = os.path.join(os.environ['BALROG_MPI'], 'pyconfig', 'slr2.py')
+    #run['balrog'] = os.path.join(os.environ['BALROG_MPI'], 'software','Balrog','balrog.py')
+    #balrog['pyconfig'] = os.path.join(os.environ['BALROG_MPI'], 'pyconfig', 'slr2.py')
+    run['balrog'] = '/gpfs01/astro/workarea/esuchyta/git-repos/BalrogDirs/2015-Nov/Balrog/balrog.py'
+    balrog['pyconfig'] = '/gpfs01/astro/workarea/esuchyta/software/SVA1-pyconfig/BalrogConfig-OrigSGQ.py'
     run['db-columns'] = '/gpfs01/astro/workarea/esuchyta/git-repos/BalrogMPI/sva1_coadd_objects-columns.fits'
 
     balrog['sexnnw'] = os.path.join(os.environ['BALROG_MPI'], 'astro_config', 'sva1', 'sex.nnw')
@@ -33,8 +35,9 @@ def Y1A1Setup(run, balrog):
     run['outdir'] = os.path.join(os.environ['SCRATCH'],'BalrogScratch')
 
     #run['balrog'] = os.path.join(os.environ['BALROG_MPI'], 'software','Balrog','balrog.py')
+    #balrog['pyconfig'] = '/gpfs01/astro/workarea/esuchyta/software/Y1A1-pyconfig/fiducial.py'
     run['balrog'] = '/gpfs01/astro/workarea/esuchyta/git-repos/BalrogDirs/2015-Nov/Balrog/balrog.py'
-    balrog['pyconfig'] = '/gpfs01/astro/workarea/esuchyta/software/Y1A1-pyconfig/fiducial.py'
+    balrog['pyconfig'] = '/gpfs01/astro/workarea/esuchyta/software/Y1A1-pyconfig/BalrogConfig-OrigSGQ.py'
     run['db-columns'] = '/gpfs01/astro/workarea/esuchyta/git-repos/BalrogMPI/y1a1_coadd_objects-columns.fits'
 
     balrog['sexnnw'] = '/gpfs01/astro/workarea/esuchyta/software/Y1A1-config/20150806_sex.nnw'
@@ -50,22 +53,18 @@ def Y1A1Setup(run, balrog):
 def CustomConfig(run, balrog, db, tiles):
     run, balrog = Y1A1Setup(run, balrog)
     
-    tiles = esutil.io.read('/gpfs01/astro/workarea/esuchyta/git-repos/BalrogDirs/2015-Nov/BalrogMPI/spt-sva1+y1a1-overlap-grizY.fits')
-    tiles = tiles['tilename']
-    tiles = tiles[100:102]
-    
-    run['label'] = 'y1a1_btest'
-    run['joblabel'] = 'test'
-    run['nodes'] = 2
+    tiles = esutil.io.read('/gpfs01/astro/workarea/esuchyta/git-repos/BalrogDirs/2015-Nov/BalrogMPI/spt-sva1+y1a1-overlap-grizY.fits')['tilename'][0:30]
+    run['label'] = 'y1a1_spto_01'
+    run['joblabel'] = '0:30'
+    run['nodes'] = 10
     run['ppn'] = 8
 
+    run['tiletotal'] = 100000
+    balrog['ngal'] = 1000
 
-    run['tiletotal'] = 50
-    balrog['ngal'] = 10
-
-    run['indexstart'] = None
+    run['indexstart'] = 0
     run['verifyindex'] = True
-    run['DBoverwrite'] = True
+    run['DBoverwrite'] = False
 
     return run, balrog, db, tiles
 
