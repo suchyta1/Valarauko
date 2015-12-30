@@ -63,7 +63,7 @@ def SystemCall(cmd, redirect=None, kind='system', sleeptime=0.10, DerivedConfig=
         log.close()
         """
         sys.stdout = s
-        sys.seterr = e
+        sys.stderr = e
         """
 
         return
@@ -744,7 +744,7 @@ def NewWrite2DB(cats, labels, RunConfig, BalrogConfig, DerivedConfig):
             print 'redirect print end time: %s' %(str(datetime.datetime.now()))
             log.close()
             sys.stdout = s
-            sys.seterr = e
+            sys.stderr = e
 
             if create:
                 create_file = '%s.create.sql' %(controlfile)
