@@ -21,6 +21,7 @@ from mpi4py import MPI
 import AllMpi
 import balrog
 import traceback
+import fitsio
 
 
 def Remove(file):
@@ -134,35 +135,72 @@ def SystemCall(cmd, redirect=None, kind='system', sleeptime=0.10, DerivedConfig=
             redirect.info('\n')
 
 
+def ImageDownload(indir, file, DerivedConfig, RunConfig, skip):
+    infile = os.path.join(indir, os.path.basename(file))
+    if not skip:
+        Remove(infile)
+        oscmd = ['wget', '--no-check-certificate', file, '-O', infile]
+        SystemCall(oscmd, redirect=DerivedConfig['itlog'], kind=RunConfig['command'], DerivedConfig=DerivedConfig)
+        if not os.path.exists(infile):
+            return ImageDownload(indir, file, DerivedConfig, RunConfig, skip)
+    ufile = infile.replace('.fits.fz', '.fits')
+    if not skip:
+        Remove(ufile) 
+        oscmd = [RunConfig['funpack'], '-O', ufile, infile]
+        SystemCall(oscmd, redirect=DerivedConfig['itlog'], kind=RunConfig['command'], DerivedConfig=DerivedConfig)
+        if not os.path.exists(ufile):
+            return ImageDownload(indir, file, DerivedConfig, RunConfig, skip)
+        try:
+            f = fitsio.FITS(ufile)
+        except:
+            return ImageDownload(indir, file, DerivedConfig, RunConfig, skip)
+    return ufile
+
+def PSFDownload(indir, psf, DerivedConfig, RunConfig, skip):
+    pfile = os.path.join(indir, os.path.basename(psf))
+    if not skip:
+        Remove(pfile)
+        oscmd = ['wget', '--no-check-certificate', psf, '-O', pfile]
+        SystemCall(oscmd, redirect=DerivedConfig['itlog'], kind=RunConfig['command'], DerivedConfig=DerivedConfig)
+        if not os.path.exists(pfile):
+            return PSFDownload(indir, psf, DerivedConfig, RunConfig, skip)
+        try:
+            f = fitsio.FITS(pfile)
+        except:
+            return PSFDownload(indir, psf, DerivedConfig, RunConfig, skip)
+    return pfile
+
+
 # Download and uncompress images
 def DownloadImages(indir, images, psfs, RunConfig, DerivedConfig, skip=False):
     useimages = []
 
     for file in images:
+        """
         infile = os.path.join(indir, os.path.basename(file))
         if not skip:
             Remove(infile)
-            #subprocess.call( ['wget', '-q', '--no-check-certificate', file, '-O', infile] )
-            #oscmd = ['wget', '-q', '--no-check-certificate', file, '-O', infile]
             oscmd = ['wget', '--no-check-certificate', file, '-O', infile]
             SystemCall(oscmd, redirect=DerivedConfig['itlog'], kind=RunConfig['command'], DerivedConfig=DerivedConfig)
         ufile = infile.replace('.fits.fz', '.fits')
         if not skip:
             Remove(ufile) 
-            #subprocess.call([RunConfig['funpack'], '-O', ufile, infile])
             oscmd = [RunConfig['funpack'], '-O', ufile, infile]
             SystemCall(oscmd, redirect=DerivedConfig['itlog'], kind=RunConfig['command'], DerivedConfig=DerivedConfig)
+        """
+        ufile = ImageDownload(indir, file, DerivedConfig, RunConfig, skip)
         useimages.append(ufile)
 
     usepsfs = []
     for psf in psfs:
+        """
         pfile = os.path.join(indir, os.path.basename(psf))
         if not skip:
             Remove(pfile)
-            #subprocess.call( ['wget', '-q', '--no-check-certificate', psf, '-O', pfile] )
-            #oscmd = ['wget', '-q', '--no-check-certificate', psf, '-O', pfile]
             oscmd = ['wget', '--no-check-certificate', psf, '-O', pfile]
             SystemCall(oscmd, redirect=DerivedConfig['itlog'], kind=RunConfig['command'], DerivedConfig=DerivedConfig)
+        """
+        pfile = PSFDownload(indir, psf, DerivedConfig, RunConfig, skip)
         usepsfs.append(pfile)
 
     return [useimages, usepsfs]
