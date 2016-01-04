@@ -47,20 +47,21 @@ def CustomConfig(run, balrog, db, tiles):
     # Always check these
     run, balrog, tiles = Y1A1Setup(run, balrog, tiles)
 
-    tiles = tiles[0:2]
+    tiles = tiles[0:50]
     run['ppn'] = 32
-    run['nodes'] = 2
-    run['walltime'] = '02:00:00'
+    run['nodes'] = 50
+    run['walltime'] = '18:00:00'
     run['queue'] = 'regular'
 
-    run['label'] = 'y1a1_spt_test'
-    run['joblabel'] = '0:2'
+    run['runnum'] = 0 
+    run['label'] = 'y1a1_spto_01'
+    run['joblabel'] = '0:50'
 
     run['DBoverwrite'] = True
-    run['indexstart'] = 0
     run['verifyindex'] = True
+    run['indexstart'] = 0
 
-    run['tiletotal'] = 100
-    balrog['ngal'] = 10
+    run['tiletotal'] = 100000
+    balrog['ngal'] = 1000
 
     return run, balrog, db, tiles
