@@ -9,7 +9,6 @@ class RunConfigurations:
             'nodes': 10,
             'ppn': 6,
             'runnum': 0,
-            'setup': None, # File to source to setup
 
             # Relevant only for NERSC
             'walltime': '24:00:00',

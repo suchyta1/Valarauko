@@ -21,8 +21,9 @@ def GetConfig(where, setup):
     run['dualdetection'] = [1,2,3]  # Use None not to use detection image. Otherwise the indices in the array of bands.
     run['intermediate-clean'] = True # Delete an iteration's output Balrog images
     run['tile-clean'] = True  # Delete the entire outdir/run's contents
-
     run['queue'] = 'regular' # Probably no one other than Eric Suchyta will ever use the debug queue with this.
+    run['setup'] = None # File to source to setup. The preferred way to use this is as the command line argument in generate job
+    run['balrog_as_function'] = True
 
     # will get passed as command line arguments to balrog
     balrog = RunConfigurations.BalrogConfigurations.default
@@ -65,6 +66,36 @@ def GetConfig(where, setup):
     return run, balrog, db, tiles
 
 
+def EndBNL(s):
+    return '%s\n   '%(s)
+
+def EndNERSC(s):
+    return '%s\n'%(s)
+
+def GetEnd(s, end):
+    if end=='BNL':
+        s = EndBNL(s)
+    elif end in ['CORI','EDISON']:
+        s = EndNERSC(s)
+    return s
+
+
+def BalrogDir(run, end):
+    d = ''
+    if run['balrog_as_function']:
+        dir = os.path.dirname( os.path.realpath(run['balrog']) )
+        d = "export PYTHONPATH=%s:${PYTHONPATH}"%(dir)
+        d = GetEnd(d, end)
+    return d
+
+def Source(run, end):
+    s = ''
+    if run['setup'] is not None:
+        s = 'source %s' %(run['setup'])
+        s = GetEnd(s, end)
+    return s
+
+
 def PBSadd(str, opt, val, start='#PBS'):
     str = str + '\n%s %s %s' %(start, opt, val)
     return str
@@ -80,18 +111,17 @@ def Generate_Job(run, where, jobname, dirname, jsonfile):
     jobfile = os.path.join(dirname, jobname)
     logdir = os.path.join(dirname, 'runlog')
 
+    s = Source(run, where)
+    d = BalrogDir(run, where)
     num = run['nodes'] * run['ppn']
     if where=='BNL':
         descr = descr + 'mode: bynode\n'
         descr = descr + 'N: %i\n' %(run['nodes'])
         descr = descr + 'hostfile: auto\n'
         descr = descr + 'job_name: %s' %(jobname)
-
-        s = ''
-        if run['setup'] is not None:
-            s = 'source %s\n   ' %(run['setup'])
+        
         cmd = 'mpirun -npernode %i -np %i -hostfile %%hostfile%% %s %s %s' %(run['ppn'], num, allmpi, jsonfile, logdir)
-        out = 'command: |\n   %s%s\n%s' %(s, cmd, descr)
+        out = 'command: |\n   %s%s%s\n%s' %(s, d, cmd, descr)
 
         jobfile = '%s.wq' %(jobfile)
    
@@ -110,8 +140,7 @@ def Generate_Job(run, where, jobname, dirname, jsonfile):
         descr = PBSadd(descr, '-m', 'ae')
         descr = descr + '\n\n'
 
-        if run['setup']!=None:
-            descr = descr + 'source %s\n' %(run['setup'])
+        descr =  descr + s + d
         descr = descr + 'aprun -n %i -N %i%s %s %s %s' %(num, run['ppn'], hyp, allmpi, jsonfile, logdir)
 
         out = descr
@@ -126,8 +155,7 @@ def Generate_Job(run, where, jobname, dirname, jsonfile):
         descr = SLURMadd(descr, '--output=%s-%%j.out'%(jobname), start='#SBATCH')
         descr = descr + '\n\n'
 
-        if run['setup']!=None:
-            descr = descr + 'source %s\n' %(run['setup'])
+        descr =  descr + s + d
         descr = descr + 'srun -n %i %s %s %s' %(num, allmpi, jsonfile, logdir)
 
         out = descr

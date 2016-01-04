@@ -32,8 +32,10 @@ def Mkdir(dir):
     if not os.path.lexists(dir):
         os.makedirs(dir)
 
-def SystemCall(cmd, redirect=None, kind='system', sleeptime=0.10, DerivedConfig=None):
-    if (cmd[0:2] == ['python', '-s', ]) and (cmd[2].find('balrog.py')!=-1):
+def SystemCall(cmd, redirect=None, kind='system', sleeptime=0.10, DerivedConfig=None, bf=False):
+
+    #if (cmd[0:2] == ['python', '-s', ]) and (cmd[2].find('balrog.py')!=-1):
+    if bf:
         
         """
         s = sys.stdout
@@ -106,7 +108,7 @@ def SystemCall(cmd, redirect=None, kind='system', sleeptime=0.10, DerivedConfig=
                 log.write('\nrank = %i, host = %s, system time = %s' %(rank, host, datetime.datetime.now()) )
                 log.write('\nRedoing the system command because it returned too quickly\n\n')
                 log.close()
-                SystemCall(cmd, redirect=redirect, kind=kind, sleeptime=sleeptime, DerivedConfig=DerivedConfig)
+                SystemCall(cmd, redirect=redirect, kind=kind, sleeptime=sleeptime, DerivedConfig=DerivedConfig, bf=bf)
 
             log = open(redirect, 'a')
             log.write('\nrank = %i, host = %s, system time = %s' %(rank, host, datetime.datetime.now()) )
@@ -176,30 +178,11 @@ def DownloadImages(indir, images, psfs, RunConfig, DerivedConfig, skip=False):
     useimages = []
 
     for file in images:
-        """
-        infile = os.path.join(indir, os.path.basename(file))
-        if not skip:
-            Remove(infile)
-            oscmd = ['wget', '--no-check-certificate', file, '-O', infile]
-            SystemCall(oscmd, redirect=DerivedConfig['itlog'], kind=RunConfig['command'], DerivedConfig=DerivedConfig)
-        ufile = infile.replace('.fits.fz', '.fits')
-        if not skip:
-            Remove(ufile) 
-            oscmd = [RunConfig['funpack'], '-O', ufile, infile]
-            SystemCall(oscmd, redirect=DerivedConfig['itlog'], kind=RunConfig['command'], DerivedConfig=DerivedConfig)
-        """
         ufile = ImageDownload(indir, file, DerivedConfig, RunConfig, skip)
         useimages.append(ufile)
 
     usepsfs = []
     for psf in psfs:
-        """
-        pfile = os.path.join(indir, os.path.basename(psf))
-        if not skip:
-            Remove(pfile)
-            oscmd = ['wget', '--no-check-certificate', psf, '-O', pfile]
-            SystemCall(oscmd, redirect=DerivedConfig['itlog'], kind=RunConfig['command'], DerivedConfig=DerivedConfig)
-        """
         pfile = PSFDownload(indir, psf, DerivedConfig, RunConfig, skip)
         usepsfs.append(pfile)
 
@@ -903,7 +886,7 @@ def RunOnlyCreate(RunConfig, BalrogConfig, DerivedConfig):
     BalrogConfig['outdir'] = os.path.join(DerivedConfig['outdir'], BalrogConfig['band'])
     cmd = Dict2Cmd(BalrogConfig, RunConfig['balrog'])
     #subprocess.call(cmd)
-    SystemCall(cmd, redirect=DerivedConfig['itlog'], kind=RunConfig['command'], DerivedConfig=DerivedConfig)
+    SystemCall(cmd, redirect=DerivedConfig['itlog'], kind=RunConfig['command'], DerivedConfig=DerivedConfig, bf=RunConfig['balrog_as_function'])
 
     fixband = BalrogConfig['band']
     cats, labels, valids = GetRelevantCats2(BalrogConfig, RunConfig, DerivedConfig, allfix='det', create=True, appendsim=False, sim2nosim=False)
@@ -941,7 +924,7 @@ def RunDoDES(RunConfig, BalrogConfig, DerivedConfig):
 
     cmd = Dict2Cmd(BalrogConfig, RunConfig['balrog'])
     #subprocess.call(cmd)
-    SystemCall(cmd, redirect=DerivedConfig['itlog'], kind=RunConfig['command'], DerivedConfig=DerivedConfig)
+    SystemCall(cmd, redirect=DerivedConfig['itlog'], kind=RunConfig['command'], DerivedConfig=DerivedConfig, bf=RunConfig['balrog_as_function'])
 
     cats, labels = GetRelevantCatalogs(BalrogConfig, RunConfig, DerivedConfig)
     NewWrite2DB(cats, labels, RunConfig, BalrogConfig, DerivedConfig)
@@ -1019,7 +1002,7 @@ def RunNormal2(RunConfig, BalrogConfig, DerivedConfig):
         cmd = Dict2Cmd(BConfig, RunConfig['balrog'])
         print cats, labels, valids
         print cmd
-        SystemCall(cmd, redirect=DerivedConfig['itlog'], kind=RunConfig['command'])
+        SystemCall(cmd, redirect=DerivedConfig['itlog'], kind=RunConfig['command'], bf=RunConfig['balrog_as_function'])
         '''
 
         #for k in range(len(DerivedConfig['images'])):
@@ -1031,7 +1014,7 @@ def RunNormal2(RunConfig, BalrogConfig, DerivedConfig):
             BConfig['outdir'] = os.path.join(DerivedConfig['outdir'], band)
             BConfig['zeropoint'] = GetZeropoint(RunConfig, DerivedConfig, BConfig)
             cmd = Dict2Cmd(BConfig, RunConfig['balrog'])
-            SystemCall(cmd, redirect=DerivedConfig['itlog'], kind=RunConfig['command'], DerivedConfig=DerivedConfig)
+            SystemCall(cmd, redirect=DerivedConfig['itlog'], kind=RunConfig['command'], DerivedConfig=DerivedConfig, bf=RunConfig['balrog_as_function'])
 
         cats, labels, valids = GetRelevantCats2(BConfig, RunConfig, DerivedConfig, allfix=None, missingfix='i', appendsim=False, sim2nosim=True, create=False)
         NewWrite2DB2(cats, labels, valids, RunConfig, BConfig, DerivedConfig)
@@ -1057,7 +1040,7 @@ def RunNormal2(RunConfig, BalrogConfig, DerivedConfig):
             cmd = Dict2Cmd(BConfig, RunConfig['balrog'])
             #subprocess.call(cmd)
 
-            SystemCall(cmd, redirect=DerivedConfig['itlog'], kind=RunConfig['command'], DerivedConfig=DerivedConfig)
+            SystemCall(cmd, redirect=DerivedConfig['itlog'], kind=RunConfig['command'], DerivedConfig=DerivedConfig, bf=RunConfig['balrog_as_function'])
 
             #cats, labels, valid = GetRelevantCats2(BConfig, RunConfig, DerivedConfig)
             #NewWrite2DB2(cats, labels, valids, RunConfig, BConfig, DerivedConfig)
@@ -1116,7 +1099,7 @@ def RunNormal2(RunConfig, BalrogConfig, DerivedConfig):
         #runlog.info('%s %s %s %s' %('h', BConfig['band'], DerivedConfig['iteration'], socket.gethostname()))
         cmd = Dict2Cmd(BConfig, RunConfig['balrog'])
         #subprocess.call(cmd)
-        SystemCall(cmd, redirect=DerivedConfig['itlog'], kind=RunConfig['command'], DerivedConfig=DerivedConfig)
+        SystemCall(cmd, redirect=DerivedConfig['itlog'], kind=RunConfig['command'], DerivedConfig=DerivedConfig, bf=RunConfig['balrog_as_function'])
         #runlog.info('%s %s %s %s' %('j', BConfig['band'], DerivedConfig['iteration'], socket.gethostname()))
 
         #cats, labels = GetRelevantCatalogs(BConfig, RunConfig, DerivedConfig, appendsim=appendsim)
@@ -1144,7 +1127,7 @@ def RunNormal(RunConfig, BalrogConfig, DerivedConfig):
         BConfig['nonosim'] = True
 
         cmd = Dict2Cmd(BConfig, RunConfig['balrog'])
-        SystemCall(cmd, redirect=DerivedConfig['itlog'], kind=RunConfig['command'], DerivedConfig=DerivedConfig)
+        SystemCall(cmd, redirect=DerivedConfig['itlog'], kind=RunConfig['command'], DerivedConfig=DerivedConfig, bf=RunConfig['balrog_as_function'])
 
         cats, labels, valids = GetRelevantCats2(BConfig, RunConfig, DerivedConfig, sim2nosim=True)
         NewWrite2DB2(cats, labels, valids, RunConfig, BConfig, DerivedConfig)
@@ -1168,7 +1151,7 @@ def RunNormal(RunConfig, BalrogConfig, DerivedConfig):
             cimgs.append(outfile)
             cmd = Dict2Cmd(BConfig, RunConfig['balrog'])
             #subprocess.call(cmd)
-            SystemCall(cmd, redirect=DerivedConfig['itlog'], kind=RunConfig['command'], DerivedConfig=DerivedConfig)
+            SystemCall(cmd, redirect=DerivedConfig['itlog'], kind=RunConfig['command'], DerivedConfig=DerivedConfig, bf=RunConfig['balrog_as_function'])
 
             cats, labels, valid = GetRelevantCats2(BConfig, RunConfig, DerivedConfig)
             NewWrite2DB2(cats, labels, valids, RunConfig, BConfig, DerivedConfig)
@@ -1217,7 +1200,7 @@ def RunNormal(RunConfig, BalrogConfig, DerivedConfig):
         #runlog.info('%s %s %s %s' %('h', BConfig['band'], DerivedConfig['iteration'], socket.gethostname()))
         cmd = Dict2Cmd(BConfig, RunConfig['balrog'])
         #subprocess.call(cmd)
-        SystemCall(cmd, redirect=DerivedConfig['itlog'], kind=RunConfig['command'], DerivedConfig=DerivedConfig)
+        SystemCall(cmd, redirect=DerivedConfig['itlog'], kind=RunConfig['command'], DerivedConfig=DerivedConfig, bf=RunConfig['balrog_as_function'])
         #runlog.info('%s %s %s %s' %('j', BConfig['band'], DerivedConfig['iteration'], socket.gethostname()))
 
         cats, labels = GetRelevantCatalogs(BConfig, RunConfig, DerivedConfig, appendsim=appendsim)
