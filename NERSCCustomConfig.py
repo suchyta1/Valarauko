@@ -50,7 +50,7 @@ def CustomConfig(run, balrog, db, tiles):
     tiles = tiles[0:50]
     run['ppn'] = 32
     run['nodes'] = 50
-    run['walltime'] = '18:00:00'
+    run['walltime'] = '12:00:00'
     run['queue'] = 'regular'
 
     run['runnum'] = 0 
