@@ -519,6 +519,10 @@ def NewMakeOracleFriendly(file, ext, BalrogConfig, DerivedConfig, label, RunConf
         
     t = np.array( [BalrogConfig['tile']]*len(ndata) )
     ndata = recfunctions.append_fields(ndata, 'tilename', t, '|S12', usemask=False)
+
+    num = np.array( [RunConfig['runnum']]*len(ndata) )
+    ndata = recfunctions.append_fields(ndata, 'runnum', num, usemask=False)
+
     return ndata
 
 
@@ -740,13 +744,13 @@ def UpdateInserts(arr, tablename, noarr, j, i, allbands, dobj, singles, valids, 
 
 
 def ObsOne():
-    return ['balrog_index', 'tilename', 'number_sex']
+    return ['balrog_index', 'tilename', 'number_sex', 'runnum']
 
 def OneOnly():
     return ['balrog_index', 'tilename',
             'x','y','g1','g2','magnification','halflightradius_0','beta_0','sersicindex_0','axisratio_0',
             'ra','dec','id','mod', 'objtype','z','indexstart','seed',
-            'number_sex']
+            'number_sex', 'runnum']
 
 
 # Write Balrog catalogs to DB

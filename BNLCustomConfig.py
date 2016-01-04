@@ -56,6 +56,8 @@ def CustomConfig(run, balrog, db, tiles):
     tiles = esutil.io.read('/gpfs01/astro/workarea/esuchyta/git-repos/BalrogDirs/2015-Nov/BalrogMPI/spt-sva1+y1a1-overlap-grizY.fits')['tilename'][0:2]
     run['label'] = 'y1a1_test'
     run['joblabel'] = '0:2'
+    run['runnum'] = 0
+
     run['nodes'] = 2
     run['ppn'] = 8
 
@@ -65,7 +67,6 @@ def CustomConfig(run, balrog, db, tiles):
     run['indexstart'] = 0
     run['verifyindex'] = True
     run['DBoverwrite'] = True
-    run['funpack'] = '/gpfs01/astro/workarea/esuchyta/git-repos/BalrogDirs/2015-Nov/BalrogMPI/stupid-cmds/funpack'
 
     return run, balrog, db, tiles
 
