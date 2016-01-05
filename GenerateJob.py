@@ -36,14 +36,11 @@ def GetConfig(where, setup):
     tiles = tileinfo['tilename']
 
 
-    if where=='BNL':
+    if where.upper()=='BNL':
         #run['command'] = 'popen' #['system', 'popen']
         run['command'] = 'system' #['system', 'popen']
         import BNLCustomConfig as CustomConfig
-    elif where=='EDISON':
-        run['command'] = 'system' #['system', 'popen']
-        import NERSCCustomConfig as CustomConfig
-    elif where=='CORI':
+    elif where.upper() in ['EDISON', 'CORI', 'NERSC']:
         run['command'] = 'system' #['system', 'popen']
         import NERSCCustomConfig as CustomConfig
 
@@ -53,7 +50,7 @@ def GetConfig(where, setup):
 
     hours, minutes, seconds = run['walltime'].split(':')
     duration = datetime.timedelta(hours=float(hours), minutes=float(minutes), seconds=float(seconds))
-    if where=='EDISON':
+    if where.upper()=='EDISON':
         if (run['queue']=='debug') and (duration.total_seconds() > 30*60):
             raise Exception("Walltime %s is too long for debug queue. Max is 00:30:00." %(run['walltime']))
         elif (run['queue']=='regular') and (run['nodes'] <= 682) and (duration.total_seconds() > 48.0*60.0*60.0):
@@ -73,9 +70,9 @@ def EndNERSC(s):
     return '%s\n'%(s)
 
 def GetEnd(s, end):
-    if end=='BNL':
+    if end.upper()=='BNL':
         s = EndBNL(s)
-    elif end in ['CORI','EDISON']:
+    elif end.upper() in ['CORI','EDISON','NERSC']:
         s = EndNERSC(s)
     return s
 
@@ -114,7 +111,8 @@ def Generate_Job(run, where, jobname, dirname, jsonfile):
     s = Source(run, where)
     d = BalrogDir(run, where)
     num = run['nodes'] * run['ppn']
-    if where=='BNL':
+
+    if where.upper()=='BNL':
         descr = descr + 'mode: bynode\n'
         descr = descr + 'N: %i\n' %(run['nodes'])
         descr = descr + 'hostfile: auto\n'
@@ -124,7 +122,24 @@ def Generate_Job(run, where, jobname, dirname, jsonfile):
         out = 'command: |\n   %s%s%s\n%s' %(s, d, cmd, descr)
 
         jobfile = '%s.wq' %(jobfile)
-   
+    
+
+    elif where.upper() in ['CORI', 'EDISON', 'NERSC']:
+        descr = "#!/bin/bash -l \n"
+        descr = SLURMadd(descr, '--partition=%s'%(run['queue']), start='#SBATCH')
+        descr = SLURMadd(descr, '--nodes=%i'%(run['nodes']), start='#SBATCH')
+        descr = SLURMadd(descr, '--time=%s'%(run['walltime']), start='#SBATCH')
+        descr = SLURMadd(descr, '--job-name=%s'%(jobname), start='#SBATCH')
+        descr = SLURMadd(descr, '--output=%s-%%j.out'%(jobname), start='#SBATCH')
+        descr = descr + '\n\n'
+
+        descr =  descr + s + d
+        descr = descr + 'srun -n %i %s %s %s' %(num, allmpi, jsonfile, logdir)
+
+        out = descr
+        jobfile = '%s.sl' %(jobfile)
+
+    '''
     elif where=='EDISON':
         nodesize = 24 
         hyp = ''
@@ -145,21 +160,7 @@ def Generate_Job(run, where, jobname, dirname, jsonfile):
 
         out = descr
         jobfile = '%s.pbs' %(jobfile)
-
-    elif where=='CORI':
-        descr = "#!/bin/bash -l \n"
-        descr = SLURMadd(descr, '--partition=%s'%(run['queue']), start='#SBATCH')
-        descr = SLURMadd(descr, '--nodes=%i'%(run['nodes']), start='#SBATCH')
-        descr = SLURMadd(descr, '--time=%s'%(run['walltime']), start='#SBATCH')
-        descr = SLURMadd(descr, '--job-name=%s'%(jobname), start='#SBATCH')
-        descr = SLURMadd(descr, '--output=%s-%%j.out'%(jobname), start='#SBATCH')
-        descr = descr + '\n\n'
-
-        descr =  descr + s + d
-        descr = descr + 'srun -n %i %s %s %s' %(num, allmpi, jsonfile, logdir)
-
-        out = descr
-        jobfile = '%s.sl' %(jobfile)
+    '''
 
 
     with open(jobfile, 'w') as job:
@@ -170,7 +171,7 @@ def Generate_Job(run, where, jobname, dirname, jsonfile):
 
 def GetWhere(argv):
     if len(argv) < 2:
-        raise Exception("Must specifiy where the job is for: ['BNL','EDISON','CORI']")
+        raise Exception("Must specifiy where the job is for: ['BNL','EDISON','CORI', 'NERSC']")
 
     setup = None
     where = argv[1]

@@ -1,0 +1,86 @@
+
+function hpcp_setup
+{
+	source /project/projectdirs/cmb/modules/hpcports_NERSC.sh
+	hpcports shared_gnu
+
+	module load python-hpcp
+	module load numpy-hpcp
+	module load mpi4py-hpcp
+	module load healpy-hpcp
+	#module load matplotlib-hpcp
+
+	module load astropy-hpcp
+	#module load astropy/0.4.2+2
+
+	module load boost-hpcp
+	#module load tmv-hpcp
+	#module load scons-hpcp
+	#module load fftw-hpcp
+	#module load blas-hpcp
+	#module load lapack-hpcp
+	#module load scalapack-hpcp
+	#module load gsl-hpcp
+	#module load automake-hpcp
+	#module load cmake-hpcp
+
+}
+
+
+
+function suchyta_setup
+{
+export SUCHYTA_SCRATCH=/scratch1/scratchdirs/esuchyta
+export SUCHYTA_SOFTWARE=${SUCHYTA_SCRATCH}/software
+export SUCHYTA_MODULES=${SUCHYTA_SCRATCH}/privatemodules/edison
+}
+
+
+function desdm_eups_setup 
+{
+	export DESDM_EUPS=${SUCHYTA_SOFTWARE}/DESDM/eups
+	source ${DESDM_EUPS}/desdm_eups_setup.sh
+
+	#source /project/projectdirs/cmb/modules/hpcports_NERSC.sh
+	#hpcports shared_gnu
+}
+
+
+function balrog_y1a1_setup
+{
+	suchyta_setup
+	desdm_eups_setup
+	hpcp_setup
+
+	module use ${SUCHYTA_MODULES}
+	export DESREMOTE=https://desar2.cosmology.illinois.edu:/DESFiles/desardata
+
+	module load desdm-config/y1a1
+	module load pywcs/1.12
+	module load kmeans_radec/master
+	module load basemap/1.0.7
+	module load scikit-learn/0.17
+	module load suchyta_utils/master
+	module load balrog/master
+	module load BalrogMPI/master
+
+
+	# From Joe (Niall)
+	# Galsim, desdb, esutil, (im3shape), maybe others
+
+	#module load boost-hpcp
+	export STACK_BASE_DIR=/scratch2/scratchdirs/zuntz/edison-im3shape-stack
+	export PYTHONPATH=$PYTHONPATH:${STACK_BASE_DIR}/usr/lib/python2.7/site-packages
+	export PATH=$PATH:${STACK_BASE_DIR}/usr/bin
+	export DESDATA=${SCRATCH}/DES/desdata
+	#export DESREMOTE=https://desar2.cosmology.illinois.edu:7443/DESFiles/desardata
+	export DESPROJ=OPS 
+	export BALROG_DESDATA=${SCRATCH}/DES/balrog_desdata
+	export PYTHONPATH=$PYTHONPATH:/scratch2/scratchdirs/maccrann/code/im3shape-git/
+	export ORACLE_HOME=${STACK_BASE_DIR}/oracle/instantclient_12_1
+	export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$ORACLE_HOME
+	export LD_LIBRARY_PATH=$STACK_BASE_DIR/usr/lib:$LD_LIBRARY_PATH
+}
+
+
+balrog_y1a1_setup
