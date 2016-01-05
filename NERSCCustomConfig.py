@@ -51,7 +51,7 @@ def CustomConfig(run, balrog, db, tiles):
     run['ppn'] = 24
     run['nodes'] = 300
     run['walltime'] = '12:00:00'
-    run['queue'] = 'debug'
+    run['queue'] = 'regular'
 
     run['label'] = 'y1a1_spto_02'
     run['joblabel'] = '50:350'
