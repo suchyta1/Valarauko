@@ -47,7 +47,7 @@ def CustomConfig(run, balrog, db, tiles):
     # Always check these
     run, balrog, tiles = Y1A1Setup(run, balrog, tiles)
 
-    tiles = tiles[0:2]
+    tiles = tiles[50:350]
     run['ppn'] = 24
     run['nodes'] = 300
     run['walltime'] = '12:00:00'
