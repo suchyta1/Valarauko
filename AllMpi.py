@@ -15,6 +15,7 @@ from mpi4py import MPI
 import mpifunctions
 
 import RunBalrog as runbalrog
+import balrog as balrogmodule
 
 
 """
@@ -374,15 +375,17 @@ def DoProcesses(logdir, RunConfig):
             send = -6
             clean = job[1]
             workingdir = job[2]
-            #if clean and os.path.lexists(workingdir):
             log.info(workingdir)
             if clean and os.path.exists(workingdir):
                 log.info('cleaning up')
-                #subprocess.call( ['rm', '-r', workingdir] )
+                
+                f = '%i-%s-%s-systemcall.tmp'%(MPI.COMM_WORLD.Get_rank(), RunConfig['label'], RunConfig['joblabel'])
+                redirect = balrogmodule.SystemCallSetup(sleep=RunConfig['sleep'], retry=RunConfig['retry'], touch=RunConfig['touch'], touchdir=os.getcwd(), touchfile=f, redirect=log, kind=RunConfig['command'])
+
                 oscmd = ['rm', '-r', workingdir]
-                runbalrog.SystemCall(oscmd, kind=RunConfig['command'])
+                balrogmodule.SystemCall(oscmd, setup=redirect)
                 log.info('removed %s' %(workingdir) )
-            #MPI.COMM_WORLD.send(send, dest=0)
+
         elif job[0]=='wait':
             send = -4
             log.info('Waiting for tile = %s to %s' %(job[1], job[2]) )
@@ -495,10 +498,14 @@ if __name__ == "__main__":
         totalnum = len(images) * RunConfig['tiletotal']
         indexstart, write = DropTablesIfNeeded(RunConfig, BalrogConfig, totalnum)
         pos = EqualRandomPerTile(RunConfig, tiles)
-
+        
         if os.path.exists(runlogdir):
+            f = '%i-%s-%s-systemcall.tmp'%(MPI.COMM_WORLD.Get_rank(), RunConfig['label'], RunConfig['joblabel'])
+            noredirect = balrogmodule.SystemCallSetup(sleep=RunConfig['sleep'], retry=RunConfig['retry'], touch=RunConfig['touch'], touchdir=os.getcwd(), touchfile=f, redirect=None, kind=RunConfig['command'])
+
             oscmd = ['rm', '-r', runlogdir]
-            runbalrog.SystemCall(oscmd, kind=RunConfig['command'])
+            balrogmodule.SystemCall(oscmd, setup=noredirect)
+
         runbalrog.Mkdir(commlogdir)
 
     MPI.COMM_WORLD.barrier()

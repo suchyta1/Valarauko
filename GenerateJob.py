@@ -23,7 +23,14 @@ def GetConfig(where, setup):
     run['tile-clean'] = True  # Delete the entire outdir/run's contents
     run['queue'] = 'regular' # Probably no one other than Eric Suchyta will ever use the debug queue with this.
     run['setup'] = None # File to source to setup. The preferred way to use this is as the command line argument in generate job
+
+
     run['balrog_as_function'] = True
+    run['command'] = 'popen' #['system', 'popen']
+    run['sleep'] = 0
+    run['touch'] = True
+    run['retry'] = True
+
 
     # will get passed as command line arguments to balrog
     balrog = RunConfigurations.BalrogConfigurations.default
@@ -37,16 +44,17 @@ def GetConfig(where, setup):
 
 
     if where.upper()=='BNL':
-        #run['command'] = 'popen' #['system', 'popen']
-        run['command'] = 'system' #['system', 'popen']
         import BNLCustomConfig as CustomConfig
     elif where.upper() in ['EDISON', 'CORI', 'NERSC']:
-        run['command'] = 'system' #['system', 'popen']
         import NERSCCustomConfig as CustomConfig
 
     run, balrog, db, tiles = CustomConfig.CustomConfig(run, balrog, db, tiles)
     if setup is not None:
         run['setup'] = os.path.realpath(setup)
+    balrog['systemcmd'] = run['command']
+    balrog['sleep'] = run['sleep']
+    balrog['touch'] = run['touch']
+    balrog['retrycmd'] = run['retry']
 
     hours, minutes, seconds = run['walltime'].split(':')
     duration = datetime.timedelta(hours=float(hours), minutes=float(minutes), seconds=float(seconds))
@@ -78,11 +86,16 @@ def GetEnd(s, end):
 
 
 def BalrogDir(run, end):
+    """
     d = ''
     if run['balrog_as_function']:
         dir = os.path.dirname( os.path.realpath(run['balrog']) )
         d = "export PYTHONPATH=%s:${PYTHONPATH}"%(dir)
         d = GetEnd(d, end)
+    """
+    dir = os.path.dirname( os.path.realpath(run['balrog']) )
+    d = "export PYTHONPATH=%s:${PYTHONPATH}"%(dir)
+    d = GetEnd(d, end)
     return d
 
 def Source(run, end):
