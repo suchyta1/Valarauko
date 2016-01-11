@@ -16,14 +16,20 @@ def GetConfig(where, setup):
 
     #hide these from user
     run['DBload'] = 'cx_Oracle'  # ['cx_Oracle', 'sqlldr'] How to write to DB. 
-    run['doDES'] = False  # Run sextractor without any Balrog galaxies over full images
     run['bands'] = ['g','r','i','z','Y'] # Bands you'll get measurement catalogs for
     run['dualdetection'] = [1,2,3]  # Use None not to use detection image. Otherwise the indices in the array of bands.
     run['intermediate-clean'] = True # Delete an iteration's output Balrog images
     run['tile-clean'] = True  # Delete the entire outdir/run's contents
     run['queue'] = 'regular' # Probably no one other than Eric Suchyta will ever use the debug queue with this.
     run['setup'] = None # File to source to setup. The preferred way to use this is as the command line argument in generate job
+
+
     run['balrog_as_function'] = True
+    run['command'] = 'popen' #['system', 'popen']
+    run['sleep'] = 0
+    run['touch'] = True
+    run['retry'] = True
+
 
     # will get passed as command line arguments to balrog
     balrog = RunConfigurations.BalrogConfigurations.default
@@ -36,24 +42,25 @@ def GetConfig(where, setup):
     tiles = tileinfo['tilename']
 
 
-    if where=='BNL':
-        #run['command'] = 'popen' #['system', 'popen']
-        run['command'] = 'system' #['system', 'popen']
+    if where.upper()=='BNL':
         import BNLCustomConfig as CustomConfig
-    elif where=='EDISON':
-        run['command'] = 'system' #['system', 'popen']
-        import NERSCCustomConfig as CustomConfig
-    elif where=='CORI':
-        run['command'] = 'system' #['system', 'popen']
+    elif where.upper() in ['EDISON', 'CORI', 'NERSC']:
         import NERSCCustomConfig as CustomConfig
 
     run, balrog, db, tiles = CustomConfig.CustomConfig(run, balrog, db, tiles)
     if setup is not None:
         run['setup'] = os.path.realpath(setup)
+    balrog['systemcmd'] = run['command']
+    balrog['sleep'] = run['sleep']
+    balrog['touch'] = run['touch']
+    balrog['retrycmd'] = run['retry']
+        
+    # This isn't supported in the new version. At least not yet, if ever.
+    run['doDES'] = False  # Run sextractor without any Balrog galaxies over full images
 
     hours, minutes, seconds = run['walltime'].split(':')
     duration = datetime.timedelta(hours=float(hours), minutes=float(minutes), seconds=float(seconds))
-    if where=='EDISON':
+    if where.upper()=='EDISON':
         if (run['queue']=='debug') and (duration.total_seconds() > 30*60):
             raise Exception("Walltime %s is too long for debug queue. Max is 00:30:00." %(run['walltime']))
         elif (run['queue']=='regular') and (run['nodes'] <= 682) and (duration.total_seconds() > 48.0*60.0*60.0):
@@ -73,19 +80,24 @@ def EndNERSC(s):
     return '%s\n'%(s)
 
 def GetEnd(s, end):
-    if end=='BNL':
+    if end.upper()=='BNL':
         s = EndBNL(s)
-    elif end in ['CORI','EDISON']:
+    elif end.upper() in ['CORI','EDISON','NERSC']:
         s = EndNERSC(s)
     return s
 
 
 def BalrogDir(run, end):
+    """
     d = ''
     if run['balrog_as_function']:
         dir = os.path.dirname( os.path.realpath(run['balrog']) )
         d = "export PYTHONPATH=%s:${PYTHONPATH}"%(dir)
         d = GetEnd(d, end)
+    """
+    dir = os.path.dirname( os.path.realpath(run['balrog']) )
+    d = "export PYTHONPATH=%s:${PYTHONPATH}"%(dir)
+    d = GetEnd(d, end)
     return d
 
 def Source(run, end):
@@ -114,7 +126,8 @@ def Generate_Job(run, where, jobname, dirname, jsonfile):
     s = Source(run, where)
     d = BalrogDir(run, where)
     num = run['nodes'] * run['ppn']
-    if where=='BNL':
+
+    if where.upper()=='BNL':
         descr = descr + 'mode: bynode\n'
         descr = descr + 'N: %i\n' %(run['nodes'])
         descr = descr + 'hostfile: auto\n'
@@ -124,7 +137,24 @@ def Generate_Job(run, where, jobname, dirname, jsonfile):
         out = 'command: |\n   %s%s%s\n%s' %(s, d, cmd, descr)
 
         jobfile = '%s.wq' %(jobfile)
-   
+    
+
+    elif where.upper() in ['CORI', 'EDISON', 'NERSC']:
+        descr = "#!/bin/bash -l \n"
+        descr = SLURMadd(descr, '--partition=%s'%(run['queue']), start='#SBATCH')
+        descr = SLURMadd(descr, '--nodes=%i'%(run['nodes']), start='#SBATCH')
+        descr = SLURMadd(descr, '--time=%s'%(run['walltime']), start='#SBATCH')
+        descr = SLURMadd(descr, '--job-name=%s'%(jobname), start='#SBATCH')
+        descr = SLURMadd(descr, '--output=%s-%%j.out'%(jobname), start='#SBATCH')
+        descr = descr + '\n\n'
+
+        descr =  descr + s + d
+        descr = descr + 'srun -n %i %s %s %s' %(num, allmpi, jsonfile, logdir)
+
+        out = descr
+        jobfile = '%s.sl' %(jobfile)
+
+    '''
     elif where=='EDISON':
         nodesize = 24 
         hyp = ''
@@ -145,21 +175,7 @@ def Generate_Job(run, where, jobname, dirname, jsonfile):
 
         out = descr
         jobfile = '%s.pbs' %(jobfile)
-
-    elif where=='CORI':
-        descr = "#!/bin/bash -l \n"
-        descr = SLURMadd(descr, '--partition=%s'%(run['queue']), start='#SBATCH')
-        descr = SLURMadd(descr, '--nodes=%i'%(run['nodes']), start='#SBATCH')
-        descr = SLURMadd(descr, '--time=%s'%(run['walltime']), start='#SBATCH')
-        descr = SLURMadd(descr, '--job-name=%s'%(jobname), start='#SBATCH')
-        descr = SLURMadd(descr, '--output=%s-%%j.out'%(jobname), start='#SBATCH')
-        descr = descr + '\n\n'
-
-        descr =  descr + s + d
-        descr = descr + 'srun -n %i %s %s %s' %(num, allmpi, jsonfile, logdir)
-
-        out = descr
-        jobfile = '%s.sl' %(jobfile)
+    '''
 
 
     with open(jobfile, 'w') as job:
@@ -170,7 +186,7 @@ def Generate_Job(run, where, jobname, dirname, jsonfile):
 
 def GetWhere(argv):
     if len(argv) < 2:
-        raise Exception("Must specifiy where the job is for: ['BNL','EDISON','CORI']")
+        raise Exception("Must specifiy where the job is for: ['BNL','EDISON','CORI', 'NERSC']")
 
     setup = None
     where = argv[1]

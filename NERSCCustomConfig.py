@@ -57,8 +57,9 @@ def CustomConfig(run, balrog, db, tiles):
     run['label'] = 'y1a1_test'
     run['joblabel'] = '0:2'
 
-    run['DBoverwrite'] = True
+    run['DBoverwrite'] = False
     run['verifyindex'] = True
+    run['runnum'] = 0 
     run['indexstart'] = 0
 
     run['tiletotal'] = 100
