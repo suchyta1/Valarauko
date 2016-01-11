@@ -54,7 +54,7 @@ def CustomConfig(run, balrog, db, tiles):
     run, balrog = Y1A1Setup(run, balrog)
     
     tiles = esutil.io.read('/gpfs01/astro/workarea/esuchyta/git-repos/BalrogDirs/2015-Nov/BalrogMPI/spt-sva1+y1a1-overlap-grizY.fits')['tilename'][0:2]
-    run['label'] = 'y1a1_test'
+    run['label'] = 'y1a1_btest'
     run['joblabel'] = '0:2'
     run['runnum'] = 0
 

@@ -337,6 +337,9 @@ def ServeProcesses(queue, RunConfig, logdir, desdblogdir, itlogdir):
 
 
 def SetupLog(logdir, host, rank):
+    rootlogger = logging.getLogger('root')
+    rootlogger.setLevel(logging.NOTSET)
+
     logfile = os.path.join(logdir, '%i.log'%(rank))
     log = logging.getLogger('comm rank = %i' %rank)
     log.setLevel(logging.DEBUG)
