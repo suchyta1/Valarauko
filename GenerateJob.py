@@ -146,6 +146,7 @@ def Generate_Job(run, where, jobname, dirname, jsonfile):
         descr = SLURMadd(descr, '--time=%s'%(run['walltime']), start='#SBATCH')
         descr = SLURMadd(descr, '--job-name=%s'%(jobname), start='#SBATCH')
         descr = SLURMadd(descr, '--output=%s-%%j.out'%(jobname), start='#SBATCH')
+        descr = SLURMadd(descr, '--mail-type=BEGIN,END,TIME_LIMIT_50', start='#SBATCH')
         descr = descr + '\n\n'
 
         descr =  descr + s + d
