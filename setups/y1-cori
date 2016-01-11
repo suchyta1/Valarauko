@@ -46,6 +46,7 @@ function balrog_y1a1_setup
 	module load desdm-config/y1a1
 	module load kmeans_radec/master
 	module load basemap/1.0.7
+	module load scikit-learn/0.17
 	module load pywcs/1.12
 	source ${SUCHYTA_SOFTWARE}/desdb/des-oracle-linux-x86-64-v2/install/setup.sh
 	module load desdb/master

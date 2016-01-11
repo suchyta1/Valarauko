@@ -54,7 +54,7 @@ def CustomConfig(run, balrog, db, tiles):
     run['queue'] = 'regular'
 
     run['runnum'] = 0 
-    run['label'] = 'y1a1_test'
+    run['label'] = 'y1a1_ctest'
     run['joblabel'] = '0:2'
 
     run['DBoverwrite'] = False
