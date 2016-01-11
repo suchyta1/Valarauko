@@ -16,7 +16,6 @@ def GetConfig(where, setup):
 
     #hide these from user
     run['DBload'] = 'cx_Oracle'  # ['cx_Oracle', 'sqlldr'] How to write to DB. 
-    run['doDES'] = False  # Run sextractor without any Balrog galaxies over full images
     run['bands'] = ['g','r','i','z','Y'] # Bands you'll get measurement catalogs for
     run['dualdetection'] = [1,2,3]  # Use None not to use detection image. Otherwise the indices in the array of bands.
     run['intermediate-clean'] = True # Delete an iteration's output Balrog images
@@ -55,6 +54,9 @@ def GetConfig(where, setup):
     balrog['sleep'] = run['sleep']
     balrog['touch'] = run['touch']
     balrog['retrycmd'] = run['retry']
+        
+    # This isn't supported in the new version. At least not yet, if ever.
+    run['doDES'] = False  # Run sextractor without any Balrog galaxies over full images
 
     hours, minutes, seconds = run['walltime'].split(':')
     duration = datetime.timedelta(hours=float(hours), minutes=float(minutes), seconds=float(seconds))
