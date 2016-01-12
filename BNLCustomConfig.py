@@ -27,15 +27,13 @@ def SVA1Setup(run, balrog):
     return run, balrog
 
 
-def Y1A1Setup(run, balrog):
+def Y1A1Setup(run, balrog, tiles):
     run['release'] = 'y1a1_coadd'
     run['funpack'] = '/gpfs01/astro/workarea/esuchyta/software/cfitsio/install/bin/funpack'
     run['swarp'] = '/gpfs01/astro/workarea/esuchyta/software/swarp-2.36.2/install/bin/swarp'
     run['swarp-config'] = '/gpfs01/astro/workarea/esuchyta/software/Y1A1-config/20150806_default.swarp'
     run['outdir'] = os.path.join(os.environ['SCRATCH'],'BalrogScratch')
 
-    #run['balrog'] = os.path.join(os.environ['BALROG_MPI'], 'software','Balrog','balrog.py')
-    #balrog['pyconfig'] = '/gpfs01/astro/workarea/esuchyta/software/Y1A1-pyconfig/fiducial.py'
     run['balrog'] = '/gpfs01/astro/workarea/esuchyta/git-repos/BalrogDirs/2015-Nov/Balrog/balrog.py'
     balrog['pyconfig'] = '/gpfs01/astro/workarea/esuchyta/software/Y1A1-pyconfig/BalrogConfig-OrigSGQ.py'
     run['db-columns'] = '/gpfs01/astro/workarea/esuchyta/git-repos/BalrogMPI/y1a1_coadd_objects-columns.fits'
@@ -47,26 +45,29 @@ def Y1A1Setup(run, balrog):
     balrog['sexconfig'] = '/gpfs01/astro/workarea/esuchyta/software/Y1A1-config/20150806_sex.config'
     balrog['sexpath'] = '/gpfs01/astro/workarea/esuchyta/software/sextractor-2.18.10/install/bin/sex'
 
-    return run, balrog
+    tiles = esutil.io.read('/gpfs01/astro/workarea/esuchyta/git-repos/BalrogDirs/2015-Nov/BalrogMPI/spt-sva1+y1a1-overlap-grizY.fits')['tilename']
+    return run, balrog, tiles
 
 
 def CustomConfig(run, balrog, db, tiles):
-    run, balrog = Y1A1Setup(run, balrog)
-    
-    tiles = esutil.io.read('/gpfs01/astro/workarea/esuchyta/git-repos/BalrogDirs/2015-Nov/BalrogMPI/spt-sva1+y1a1-overlap-grizY.fits')['tilename'][0:2]
-    run['label'] = 'y1a1_btest'
-    run['joblabel'] = '0:2'
-    run['runnum'] = 0
+    run, balrog, tiles = Y1A1Setup(run, balrog, tiles)
 
-    run['nodes'] = 2
+    tstart = 100
+    tend = 125
+    run['nodes'] = 13
     run['ppn'] = 8
+    run['label'] = 'y1a1_spto_02'
+    run['runnum'] = 0 
 
-    run['tiletotal'] = 50
-    balrog['ngal'] = 10
+    tiletotal = 100000
+    run['tiletotal'] = tiletotal
+    run['indexstart'] = tstart * tiletotal
+    balrog['ngal'] = 1000
 
-    run['indexstart'] = 0
+    run['DBoverwrite'] = False
     run['verifyindex'] = True
-    run['DBoverwrite'] = True
+
+    tiles = tiles[tstart:tend]
+    run['joblabel'] = '%i:%i' %(tstart, tend)
 
     return run, balrog, db, tiles
-

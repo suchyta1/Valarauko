@@ -43,27 +43,26 @@ def Y1A1Setup(run, balrog, tiles):
 
 # change the defaults if you want
 def CustomConfig(run, balrog, db, tiles):
-    tiletotal = 100000
-
-    # Always check these
     run, balrog, tiles = Y1A1Setup(run, balrog, tiles)
 
     tstart = 0
     tend = 100
-    tiles = tiles[tstart:tend]
     run['nodes'] = len(tiles)
-    run['joblabel'] = '%i:%i' %(tstart, tend)
-    run['indexstart'] = tstart * tiletotal
-
-    run['label'] = 'y1a1_spto_01'
-    run['runnum'] = 0 
-
     run['ppn'] = 24
     run['walltime'] = '12:00:00'
     run['queue'] = 'regular'
-    run['DBoverwrite'] = False
-    run['verifyindex'] = True
+    run['label'] = 'y1a1_spto_01'
+    run['runnum'] = 0 
+
+    tiletotal = 100000
+    run['indexstart'] = tstart * tiletotal
     run['tiletotal'] = tiletotal
     balrog['ngal'] = 1000
+
+    run['DBoverwrite'] = False
+    run['verifyindex'] = True
+
+    tiles = tiles[tstart:tend]
+    run['joblabel'] = '%i:%i' %(tstart, tend)
 
     return run, balrog, db, tiles
