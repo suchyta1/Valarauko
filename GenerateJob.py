@@ -29,6 +29,7 @@ def GetConfig(where, setup):
     run['sleep'] = 0
     run['touch'] = True
     run['retry'] = True
+    run['usebash'] = False
 
 
     # will get passed as command line arguments to balrog
@@ -54,6 +55,7 @@ def GetConfig(where, setup):
     balrog['sleep'] = run['sleep']
     balrog['touch'] = run['touch']
     balrog['retrycmd'] = run['retry']
+    balrog['usebash'] = run['usebash']
         
     # This isn't supported in the new version. At least not yet, if ever.
     run['doDES'] = False  # Run sextractor without any Balrog galaxies over full images

@@ -16,6 +16,7 @@ import mpifunctions
 
 import RunBalrog as runbalrog
 import balrog as balrogmodule
+import shutil
 
 
 """
@@ -239,7 +240,7 @@ def ServeProcesses(queue, RunConfig, logdir, desdblogdir, itlogdir):
 
     thisrank = MPI.COMM_WORLD.Get_rank()
     thishost = socket.gethostname()
-    log = SetupLog(logdir, thishost, thisrank)
+    log, logfile = SetupLog(logdir, thishost, thisrank)
     log.info('Started server')
 
     while done < size:
@@ -352,7 +353,7 @@ def SetupLog(logdir, host, rank):
     extra = {'hostname': 'host = %s'%host,
              'ranknumber': 'rank = %i'%rank}
     log = logging.LoggerAdapter(log, extra)
-    return log
+    return log, logfile
 
 
 def DoProcesses(logdir, RunConfig):
@@ -360,7 +361,7 @@ def DoProcesses(logdir, RunConfig):
     rank = MPI.COMM_WORLD.Get_rank()
     host = socket.gethostname()
 
-    log = SetupLog(logdir, host, rank)
+    log, logfile = SetupLog(logdir, host, rank)
     log.info('Started listener')
 
     send = -7
@@ -381,12 +382,7 @@ def DoProcesses(logdir, RunConfig):
             log.info(workingdir)
             if clean and os.path.exists(workingdir):
                 log.info('cleaning up')
-                
-                f = '%i-%s-%s-systemcall.tmp'%(MPI.COMM_WORLD.Get_rank(), RunConfig['label'], RunConfig['joblabel'])
-                redirect = balrogmodule.SystemCallSetup(sleep=RunConfig['sleep'], retry=RunConfig['retry'], touch=RunConfig['touch'], touchdir=os.getcwd(), touchfile=f, redirect=log, kind=RunConfig['command'])
-
-                oscmd = ['rm', '-r', workingdir]
-                balrogmodule.SystemCall(oscmd, setup=redirect)
+                shutil.rmtree(workingdir)
                 log.info('removed %s' %(workingdir) )
 
         elif job[0]=='wait':
@@ -503,11 +499,7 @@ if __name__ == "__main__":
         pos = EqualRandomPerTile(RunConfig, tiles)
         
         if os.path.exists(runlogdir):
-            f = '%i-%s-%s-systemcall.tmp'%(MPI.COMM_WORLD.Get_rank(), RunConfig['label'], RunConfig['joblabel'])
-            noredirect = balrogmodule.SystemCallSetup(sleep=RunConfig['sleep'], retry=RunConfig['retry'], touch=RunConfig['touch'], touchdir=os.getcwd(), touchfile=f, redirect=None, kind=RunConfig['command'])
-
-            oscmd = ['rm', '-r', runlogdir]
-            balrogmodule.SystemCall(oscmd, setup=noredirect)
+            shutil.rmtree(runlogdir)
 
         runbalrog.Mkdir(commlogdir)
 

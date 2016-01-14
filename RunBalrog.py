@@ -7,6 +7,7 @@ import logging
 import datetime
 import time
 import resource
+import shutil
 
 import sys
 import os
@@ -941,13 +942,11 @@ def run_balrog(args):
 
     if RunConfig['intermediate-clean']:
         if it < 0:
-            oscmd = ['rm', '-r', BalrogConfig['outdir']]
-            balrog.SystemCall(oscmd, setup=DerivedConfig['setup'])
+            shutil.rmtree(BalrogConfig['outdir'])
         else:
             for band in DerivedConfig['bands']:
                 dir = os.path.join(DerivedConfig['outdir'], band)
-                oscmd = ['rm', '-r', dir]
-                balrog.SystemCall(oscmd, setup=DerivedConfig['setup'])
+                shutil.rmtree(dir)
 
 
 
