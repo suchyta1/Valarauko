@@ -47,7 +47,7 @@ def ImageDownload(indir, file, DerivedConfig, RunConfig, skip):
     infile = os.path.join(indir, os.path.basename(file))
     if not skip:
         Remove(infile)
-        oscmd = ['wget', '--no-check-certificate', file, '-O', infile]
+        oscmd = ['wget', '--quiet', '--no-check-certificate', file, '-O', infile]
         balrog.SystemCall(oscmd, setup=DerivedConfig['setup'])
         if not os.path.exists(infile):
             return ImageDownload(indir, file, DerivedConfig, RunConfig, skip)
@@ -69,7 +69,7 @@ def PSFDownload(indir, psf, DerivedConfig, RunConfig, skip):
     pfile = os.path.join(indir, os.path.basename(psf))
     if not skip:
         Remove(pfile)
-        oscmd = ['wget', '--no-check-certificate', psf, '-O', pfile]
+        oscmd = ['wget', '--quiet', '--no-check-certificate', psf, '-O', pfile]
         balrog.SystemCall(oscmd, setup=DerivedConfig['setup'])
         if not os.path.exists(pfile):
             return PSFDownload(indir, psf, DerivedConfig, RunConfig, skip)
