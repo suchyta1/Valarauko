@@ -977,12 +977,7 @@ def MPIRunBalrog(RunConfig, BalrogConfig, DerivedConfig):
     elif RunConfig['command']=='system':
         DerivedConfig['itlog'] = DerivedConfig['itlogfile']
     f = '%i-%s-%s-systemcall.tmp'%(MPI.COMM_WORLD.Get_rank(), RunConfig['label'], RunConfig['joblabel'])
-    DerivedConfig['setup'] = balrog.SystemCallSetup(sleep=RunConfig['sleep'], retry=RunConfig['retry'], touch=RunConfig['touch'], touchdir=os.path.dirname(DerivedConfig['itlogfile']), touchfile=f, redirect=DerivedConfig['itlog'], kind=RunConfig['command'], usebash=RunConfig['usebash'])
-
-    '''
-    if RunConfig['balrog_as_function']:
-        BalrogConfig['slrprint'] = DerivedConfig['setup']
-    '''
+    DerivedConfig['setup'] = balrog.SystemCallSetup(retry=RunConfig['retry'], redirect=DerivedConfig['itlog'], kind=RunConfig['command'], usebash=RunConfig['usebash'])
 
 
     DerivedConfig['images'], DerivedConfig['psfs'] = DownloadImages(DerivedConfig['indir'], DerivedConfig['images'], DerivedConfig['psfs'], RunConfig, DerivedConfig, skip=DerivedConfig['initialized'])

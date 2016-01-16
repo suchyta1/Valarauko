@@ -26,8 +26,6 @@ def GetConfig(where, setup):
 
     run['balrog_as_function'] = True
     run['command'] = 'popen' #['system', 'popen']
-    run['sleep'] = 0
-    run['touch'] = True
     run['retry'] = True
     run['usebash'] = False
 
@@ -52,8 +50,6 @@ def GetConfig(where, setup):
     if setup is not None:
         run['setup'] = os.path.realpath(setup)
     balrog['systemcmd'] = run['command']
-    balrog['sleep'] = run['sleep']
-    balrog['touch'] = run['touch']
     balrog['retrycmd'] = run['retry']
     balrog['usebash'] = run['usebash']
         
