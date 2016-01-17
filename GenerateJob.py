@@ -26,8 +26,9 @@ def GetConfig(where, setup):
 
     run['balrog_as_function'] = True
     run['command'] = 'popen' #['system', 'popen']
+    run['useshell'] = False # Only relevant with popen
     run['retry'] = True
-    run['usebash'] = False
+    #run['usebash'] = False
 
 
     # will get passed as command line arguments to balrog
@@ -51,7 +52,8 @@ def GetConfig(where, setup):
         run['setup'] = os.path.realpath(setup)
     balrog['systemcmd'] = run['command']
     balrog['retrycmd'] = run['retry']
-    balrog['usebash'] = run['usebash']
+    balrog['useshell'] = run['useshell']
+    #balrog['usebash'] = run['usebash']
         
     # This isn't supported in the new version. At least not yet, if ever.
     run['doDES'] = False  # Run sextractor without any Balrog galaxies over full images

@@ -58,8 +58,9 @@ def CustomConfig(run, balrog, db, tiles):
     run['ppn'] = 8
     run['label'] = 'y1a1_test'
     run['runnum'] = 0 
+
     run['command'] = 'popen'
-    run['usebash'] = False
+    run['useshell'] = False
 
     tiletotal = 50
     run['tiletotal'] = tiletotal

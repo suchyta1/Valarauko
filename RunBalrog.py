@@ -817,12 +817,6 @@ def RunNormal2(RunConfig, BalrogConfig, DerivedConfig):
         BConfig['detimage'] = DerivedConfig['images'][0]
         #BConfig['image'] = DerivedConfig['images'][0]
 
-        '''
-        cmd = Dict2Cmd(BConfig, RunConfig['balrog'])
-        print cats, labels, valids
-        print cmd
-        balrog.SystemCall(cmd, setup=DerivedConfig['setup'])
-        '''
 
         #for k in range(len(DerivedConfig['images'])):
         for k in range(len(DerivedConfig['imbands'])):
@@ -834,7 +828,6 @@ def RunNormal2(RunConfig, BalrogConfig, DerivedConfig):
             BConfig['zeropoint'] = GetZeropoint(RunConfig, DerivedConfig, BConfig)
             cmd = Dict2Cmd(BConfig, RunConfig['balrog'])
             BalrogSystemCall(cmd, DerivedConfig, func=RunConfig['balrog_as_function'])
-            #balrog.SystemCall(cmd, setup=DerivedConfig['setup'])
 
         cats, labels, valids = GetRelevantCats2(BConfig, RunConfig, DerivedConfig, allfix=None, missingfix='i', appendsim=False, sim2nosim=True, create=False)
         NewWrite2DB2(cats, labels, valids, RunConfig, BConfig, DerivedConfig)
@@ -859,7 +852,6 @@ def RunNormal2(RunConfig, BalrogConfig, DerivedConfig):
             cimgs.append(outfile)
             cmd = Dict2Cmd(BConfig, RunConfig['balrog'])
             BalrogSystemCall(cmd, DerivedConfig, func=RunConfig['balrog_as_function'])
-            #balrog.SystemCall(cmd, setup=DerivedConfig['setup'])
 
             #cats, labels, valid = GetRelevantCats2(BConfig, RunConfig, DerivedConfig)
             #NewWrite2DB2(cats, labels, valids, RunConfig, BConfig, DerivedConfig)
@@ -868,16 +860,6 @@ def RunNormal2(RunConfig, BalrogConfig, DerivedConfig):
         #NewWrite2DB2(cats, labels, valids, RunConfig, BConfig, DerivedConfig)
 
         cmd, detimage, detwimage = SwarpConfig(cimgs, RunConfig, DerivedConfig, BConfig)
-
-        '''
-        oscmd = subprocess.list2cmdline(cmd)
-        swarplogfile = detimage.replace('.fits', '.log')
-        swarplog = open(swarplogfile, 'w')
-        swarplog.write('# Exact command call\n')
-        swarplog.write('%s\n' %(oscmd))
-        swarplog.close()
-        os.system('%s >> %s 2>&1' %(oscmd, swarplogfile))
-        '''
         balrog.SystemCall(cmd, setup=DerivedConfig['setup'])
 
 
@@ -917,7 +899,6 @@ def RunNormal2(RunConfig, BalrogConfig, DerivedConfig):
 
         cmd = Dict2Cmd(BConfig, RunConfig['balrog'])
         BalrogSystemCall(cmd, DerivedConfig, func=RunConfig['balrog_as_function'])
-        #balrog.SystemCall(cmd, redirect=DerivedConfig['itlog'], setup=DerivedConfig['setup'])
 
     BConfig['nodraw'] = False
     cats, labels, valids = GetRelevantCats2(BConfig, RunConfig, DerivedConfig, appendsim=True)
@@ -977,7 +958,7 @@ def MPIRunBalrog(RunConfig, BalrogConfig, DerivedConfig):
     elif RunConfig['command']=='system':
         DerivedConfig['itlog'] = DerivedConfig['itlogfile']
     f = '%i-%s-%s-systemcall.tmp'%(MPI.COMM_WORLD.Get_rank(), RunConfig['label'], RunConfig['joblabel'])
-    DerivedConfig['setup'] = balrog.SystemCallSetup(retry=RunConfig['retry'], redirect=DerivedConfig['itlog'], kind=RunConfig['command'], usebash=RunConfig['usebash'])
+    DerivedConfig['setup'] = balrog.SystemCallSetup(retry=RunConfig['retry'], redirect=DerivedConfig['itlog'], kind=RunConfig['command'], useshell=RunConfig['useshell'])
 
 
     DerivedConfig['images'], DerivedConfig['psfs'] = DownloadImages(DerivedConfig['indir'], DerivedConfig['images'], DerivedConfig['psfs'], RunConfig, DerivedConfig, skip=DerivedConfig['initialized'])
