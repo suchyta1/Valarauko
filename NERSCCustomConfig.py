@@ -69,3 +69,4 @@ def CustomConfig(run, balrog, db, tiles):
     run['joblabel'] = '%i:%i' %(tstart, tend)
 
     return run, balrog, db, tiles
+
