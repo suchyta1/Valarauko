@@ -60,6 +60,7 @@ def GetArgs():
         if not os.path.exists(args.source):
             argslog.error("--source given does not exist: %s."%(args.source))
             err = True
+        args.source = os.path.realpath(args.source)
 
     if args.dir is None:
         args.dir = os.path.dirname(os.path.realpath(__file__))
@@ -83,7 +84,7 @@ if __name__ == "__main__":
     args, argslog = GetArgs()
 
     thisdir = os.path.dirname(os.path.realpath(__file__))
-    gen = os.path.join(thisdir, 'GenerateJob.py')
+    gen = os.path.join(thisdir, 'source-code', 'GenerateJob.py')
 
     cmd = ''
     if args.source is not None:

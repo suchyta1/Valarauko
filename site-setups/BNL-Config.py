@@ -45,7 +45,7 @@ def Y1A1Setup(run, balrog, tiles):
     balrog['sexconfig'] = '/gpfs01/astro/workarea/esuchyta/software/Y1A1-config/20150806_sex.config'
     balrog['sexpath'] = '/gpfs01/astro/workarea/esuchyta/software/sextractor-2.18.10/install/bin/sex'
 
-    tiles = esutil.io.read('/gpfs01/astro/workarea/esuchyta/git-repos/BalrogDirs/2015-Nov/BalrogMPI/spt-sva1+y1a1-overlap-grizY.fits')['tilename']
+    tiles = esutil.io.read('/gpfs01/astro/workarea/esuchyta/git-repos/BalrogDirs/2015-Nov/BalrogMPI/tiles/spt-sva1+y1a1-overlap-grizY.fits')['tilename']
     return run, balrog, tiles
 
 

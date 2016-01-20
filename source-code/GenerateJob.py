@@ -1,16 +1,19 @@
 #!/usr/bin/env python
 
-import RunConfigurations
+import imp
 import os
 import sys
 import esutil
 import json
 import datetime
-import imp
+
+updir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+RunConfigurations = imp.load_source('RunConfigurations', os.path.join(updir,'RunConfigurations.py'))
+#import RunConfigurations
 
 
 # get a default config object
-def GetConfig(where, setup, config):
+def GetConfig(where, config):
 
     # arguments for configuring the run
     run = RunConfigurations.RunConfigurations.default
@@ -22,7 +25,6 @@ def GetConfig(where, setup, config):
     run['intermediate-clean'] = True # Delete an iteration's output Balrog images
     run['tile-clean'] = True  # Delete the entire outdir/run's contents
     run['queue'] = 'regular' # Probably no one other than Eric Suchyta will ever use the debug queue with this.
-    run['setup'] = None # File to source to setup. The preferred way to use this is as the command line argument in generate job
 
 
     run['balrog_as_function'] = True
@@ -38,14 +40,12 @@ def GetConfig(where, setup, config):
     db = RunConfigurations.DBInfo.default
 
     # what files to run balrog over
-    tileinfo = esutil.io.read(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'spte-tiles.fits'))
+    tileinfo = esutil.io.read(os.path.join(updir, 'tiles', 'spte-tiles.fits'))
     tiles = tileinfo['tilename']
 
 
     CustomConfig = imp.load_source('CustomConfig', config)
     run, balrog, db, tiles = CustomConfig.CustomConfig(run, balrog, db, tiles)
-    if setup is not None:
-        run['setup'] = os.path.realpath(setup)
     balrog['systemcmd'] = run['command']
     balrog['retrycmd'] = run['retry']
     balrog['useshell'] = run['useshell']
@@ -88,10 +88,10 @@ def BalrogDir(run, end):
     d = GetEnd(d, end)
     return d
 
-def Source(run, end):
+def Source(setup, end):
     s = ''
-    if run['setup'] is not None:
-        s = 'source %s' %(run['setup'])
+    if setup is not None:
+        s = 'source %s' %(setup)
         s = GetEnd(s, end)
     return s
 
@@ -100,14 +100,14 @@ def SLURMadd(str, val, start='#SBATCH'):
     str = str + '\n%s %s' %(start, val)
     return str
 
-def Generate_Job(run, where, jobname, dirname, jsonfile):
+def Generate_Job(run, where, jobname, dirname, jsonfile, setup):
     descr = ''
     thisdir = os.path.dirname(os.path.realpath(__file__))
     allmpi = os.path.join(thisdir, 'AllMpi.py')
     jobfile = os.path.join(dirname, jobname)
     logdir = os.path.join(dirname, 'runlog')
 
-    s = Source(run, where)
+    s = Source(setup, where)
     d = BalrogDir(run, where)
     num = run['nodes'] * run['ppn']
 
@@ -159,7 +159,7 @@ def GetWhere(argv):
 
 def GenJob(argv):
     where, setup, config, dir = GetWhere(argv)
-    run, balrog, db, tiles = GetConfig(where, setup, config)
+    run, balrog, db, tiles = GetConfig(where, config)
 
     jobname = '%s-%s' %(run['label'], run['joblabel'])
     dirname = os.path.join(dir, '%s-jobdir' %(jobname))
@@ -176,7 +176,7 @@ def GenJob(argv):
     with open(jsonfile, 'w') as outfile:
         json.dump(config, outfile)
 
-    job = Generate_Job(run, where, jobname, dirname, jsonfile)
+    job = Generate_Job(run, where, jobname, dirname, jsonfile, setup)
     return job, where
 
 
