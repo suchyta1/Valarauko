@@ -54,13 +54,13 @@ def CustomConfig(run, balrog, db, tiles):
 
     tstart = 0
     tend = 2
+    tiles = tiles[tstart:tend]
+    run['joblabel'] = '%i:%i' %(tstart, tend)
+
     run['nodes'] = 2
     run['ppn'] = 8
     run['label'] = 'y1a1_test'
     run['runnum'] = 0 
-
-    run['command'] = 'popen'
-    run['useshell'] = False
 
     tiletotal = 50
     run['tiletotal'] = tiletotal
@@ -69,8 +69,5 @@ def CustomConfig(run, balrog, db, tiles):
 
     run['DBoverwrite'] = True
     run['verifyindex'] = True
-
-    tiles = tiles[tstart:tend]
-    run['joblabel'] = '%i:%i' %(tstart, tend)
 
     return run, balrog, db, tiles

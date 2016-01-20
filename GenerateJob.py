@@ -6,10 +6,11 @@ import sys
 import esutil
 import json
 import datetime
+import imp
 
 
 # get a default config object
-def GetConfig(where, setup):
+def GetConfig(where, setup, config):
 
     # arguments for configuring the run
     run = RunConfigurations.RunConfigurations.default
@@ -28,7 +29,6 @@ def GetConfig(where, setup):
     run['command'] = 'popen' #['system', 'popen']
     run['useshell'] = False # Only relevant with popen
     run['retry'] = True
-    #run['usebash'] = False
 
 
     # will get passed as command line arguments to balrog
@@ -38,22 +38,17 @@ def GetConfig(where, setup):
     db = RunConfigurations.DBInfo.default
 
     # what files to run balrog over
-    tileinfo = esutil.io.read('spte-tiles.fits')
+    tileinfo = esutil.io.read(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'spte-tiles.fits'))
     tiles = tileinfo['tilename']
 
 
-    if where.upper()=='BNL':
-        import BNLCustomConfig as CustomConfig
-    elif where.upper() in ['EDISON', 'CORI', 'NERSC']:
-        import NERSCCustomConfig as CustomConfig
-
+    CustomConfig = imp.load_source('CustomConfig', config)
     run, balrog, db, tiles = CustomConfig.CustomConfig(run, balrog, db, tiles)
     if setup is not None:
         run['setup'] = os.path.realpath(setup)
     balrog['systemcmd'] = run['command']
     balrog['retrycmd'] = run['retry']
     balrog['useshell'] = run['useshell']
-    #balrog['usebash'] = run['usebash']
         
     # This isn't supported in the new version. At least not yet, if ever.
     run['doDES'] = False  # Run sextractor without any Balrog galaxies over full images
@@ -82,19 +77,12 @@ def EndNERSC(s):
 def GetEnd(s, end):
     if end.upper()=='BNL':
         s = EndBNL(s)
-    elif end.upper() in ['CORI','EDISON','NERSC']:
+    elif end.upper() in ['CORI','EDISON']:
         s = EndNERSC(s)
     return s
 
 
 def BalrogDir(run, end):
-    """
-    d = ''
-    if run['balrog_as_function']:
-        dir = os.path.dirname( os.path.realpath(run['balrog']) )
-        d = "export PYTHONPATH=%s:${PYTHONPATH}"%(dir)
-        d = GetEnd(d, end)
-    """
     dir = os.path.dirname( os.path.realpath(run['balrog']) )
     d = "export PYTHONPATH=%s:${PYTHONPATH}"%(dir)
     d = GetEnd(d, end)
@@ -107,10 +95,6 @@ def Source(run, end):
         s = GetEnd(s, end)
     return s
 
-
-def PBSadd(str, opt, val, start='#PBS'):
-    str = str + '\n%s %s %s' %(start, opt, val)
-    return str
 
 def SLURMadd(str, val, start='#SBATCH'):
     str = str + '\n%s %s' %(start, val)
@@ -139,7 +123,7 @@ def Generate_Job(run, where, jobname, dirname, jsonfile):
         jobfile = '%s.wq' %(jobfile)
     
 
-    elif where.upper() in ['CORI', 'EDISON', 'NERSC']:
+    elif where.upper() in ['CORI', 'EDISON']:
         descr = "#!/bin/bash -l \n"
         descr = SLURMadd(descr, '--partition=%s'%(run['queue']), start='#SBATCH')
         descr = SLURMadd(descr, '--nodes=%i'%(run['nodes']), start='#SBATCH')
@@ -155,29 +139,6 @@ def Generate_Job(run, where, jobname, dirname, jsonfile):
         out = descr
         jobfile = '%s.sl' %(jobfile)
 
-    '''
-    elif where=='EDISON':
-        nodesize = 24 
-        hyp = ''
-        if run['ppn'] > nodesize:
-            hyp = ' -j 2'
-
-        descr = "#!/bin/bash"
-        descr = PBSadd(descr, '-q', run['queue'])
-        descr = PBSadd(descr, '-l', 'mppwidth=%i'%(nodesize*run['nodes']))
-        descr = PBSadd(descr, '-l', 'walltime=%s'%(run['walltime']))
-        descr = PBSadd(descr, '-N', jobname)
-        descr = PBSadd(descr, '-j', 'oe')
-        descr = PBSadd(descr, '-m', 'ae')
-        descr = descr + '\n\n'
-
-        descr =  descr + s + d
-        descr = descr + 'aprun -n %i -N %i%s %s %s %s' %(num, run['ppn'], hyp, allmpi, jsonfile, logdir)
-
-        out = descr
-        jobfile = '%s.pbs' %(jobfile)
-    '''
-
 
     with open(jobfile, 'w') as job:
         job.write(out)
@@ -186,23 +147,22 @@ def Generate_Job(run, where, jobname, dirname, jsonfile):
 
 
 def GetWhere(argv):
-    if len(argv) < 2:
-        raise Exception("Must specifiy where the job is for: ['BNL','EDISON','CORI', 'NERSC']")
-
     setup = None
     where = argv[1]
-    if len(argv) > 2:
-        setup = argv[2]
+    config = argv[2]
+    dir = argv[3]
+    if len(argv) > 4:
+        setup = argv[4]
 
-    return where, setup
+    return where, setup, config, dir
 
 
 def GenJob(argv):
-    where, setup = GetWhere(argv)
-    run, balrog, db, tiles = GetConfig(where, setup)
+    where, setup, config, dir = GetWhere(argv)
+    run, balrog, db, tiles = GetConfig(where, setup, config)
 
     jobname = '%s-%s' %(run['label'], run['joblabel'])
-    dirname = os.path.join(os.path.dirname(os.path.realpath(__file__)), '%s-jobdir' %(jobname))
+    dirname = os.path.join(dir, '%s-jobdir' %(jobname))
     if not os.path.exists(dirname):
         os.makedirs(dirname)
 
@@ -223,4 +183,4 @@ def GenJob(argv):
 if __name__ == "__main__":
 
     job, where = GenJob(sys.argv)
-    print job
+    print 'Wrote job file to:', job
