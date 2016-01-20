@@ -53,18 +53,18 @@ def CustomConfig(run, balrog, db, tiles):
     run['useshell'] = False
 
     run['nodes'] = len(tiles)
-    run['ppn'] = 48
-    run['walltime'] = '03:00:00'
-    run['queue'] = 'regular'
+    run['ppn'] = 24
+    run['walltime'] = '00:30:00'
+    run['queue'] = 'debug'
     run['label'] = 'y1a1_test30'
     run['runnum'] = 0 
 
-    tiletotal = 9400
+    tiletotal = 4600
     run['indexstart'] = tstart * tiletotal
     run['tiletotal'] = tiletotal
     balrog['ngal'] = 200
 
-    run['DBoverwrite'] = False
+    run['DBoverwrite'] = True
     run['verifyindex'] = True
     run['joblabel'] = '%i:%i' %(tstart, tend)
 
