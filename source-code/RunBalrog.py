@@ -68,7 +68,7 @@ def Funpack(infile, DerivedConfig, RunConfig, skip):
         done = False
         while not done:
             Remove(ufile) 
-            balrog.SystemCall(oscmd, setup=DerivedConfig['setup'], delfiles=[ufile])
+            balrog.SystemCall(oscmd, setup=DerivedConfig['setup'], delfiles=[ufile], keeps=[infile])
 
             with warnings.catch_warnings():
                 warnings.filterwarnings('error')
