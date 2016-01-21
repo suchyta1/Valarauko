@@ -23,6 +23,7 @@ import AllMpi
 import balrog
 import traceback
 import fitsio
+import warnings
 
 
 def Remove(file):
@@ -43,25 +44,46 @@ def BalrogSystemCall(cmd, DerivedConfig, func=True):
         balrog.SystemCall(args, setup=DerivedConfig['setup'])
 
 
-def ImageDownload(indir, file, DerivedConfig, RunConfig, skip):
-    infile = os.path.join(indir, os.path.basename(file))
+def Wget(infile, file, DerivedConfig, RunConfig, skip):
     if not skip:
-        Remove(infile)
-        oscmd = ['wget', '--quiet', '--no-check-certificate', file, '-O', infile]
-        balrog.SystemCall(oscmd, setup=DerivedConfig['setup'])
-        if not os.path.exists(infile):
-            return ImageDownload(indir, file, DerivedConfig, RunConfig, skip)
+        oscmd = [RunConfig['wget'], '--quiet', '--no-check-certificate', file, '-O', infile]
+        done = False
+        while not done:
+            Remove(infile)
+            balrog.SystemCall(oscmd, setup=DerivedConfig['setup'], delfiles=[infile])
+
+            with warnings.catch_warnings():
+                warnings.filterwarnings('error')
+                try:
+                    f = pyfits.open(infile, checksum=True)
+                    done = True
+                except:
+                    balrog.SysInfoPrint(DerivedConfig['setup'], "wget failed checksum. Retrying")
+
+
+def Funpack(infile, DerivedConfig, RunConfig, skip):
     ufile = infile.replace('.fits.fz', '.fits')
     if not skip:
-        Remove(ufile) 
         oscmd = [RunConfig['funpack'], '-O', ufile, infile]
-        balrog.SystemCall(oscmd, setup=DerivedConfig['setup'])
-        if not os.path.exists(ufile):
-            return ImageDownload(indir, file, DerivedConfig, RunConfig, skip)
-        try:
-            f = fitsio.FITS(ufile)
-        except:
-            return ImageDownload(indir, file, DerivedConfig, RunConfig, skip)
+        done = False
+        while not done:
+            Remove(ufile) 
+            balrog.SystemCall(oscmd, setup=DerivedConfig['setup'], delfiles=[ufile])
+
+            with warnings.catch_warnings():
+                warnings.filterwarnings('error')
+                try:
+                    f = pyfits.open(ufile, checksum=True)
+                    done = True
+                except:
+                    balrog.SysInfoPrint(DerivedConfig['setup'], "funpack failed checksum. Retrying")
+    return ufile
+
+
+def ImageDownload(indir, file, DerivedConfig, RunConfig, skip):
+    infile = os.path.join(indir, os.path.basename(file))
+    Wget(infile, file, DerivedConfig, RunConfig, skip)
+    ufile = Funpack(infile, DerivedConfig, RunConfig, skip)
     return ufile
 
 

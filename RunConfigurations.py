@@ -14,6 +14,7 @@ class RunConfigurations:
             'walltime': '24:00:00',
 
             'balrog': 'balrog',  # Balrog executable you'll use
+            'wget': 'wget', # wget executable
             'funpack': 'funpack', # funpack executable 
             'swarp': 'swarp', # swarp executable, only relevant if in multi-image detection mode
             'swarp-config': 'default.swarp', # swarp configuration file, only relevant if in multi-image detection mode
