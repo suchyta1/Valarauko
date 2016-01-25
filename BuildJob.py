@@ -28,6 +28,11 @@ def GetArgs():
     parser.add_argument("-s", "--source", help="A file to source to setup any software needed to build/run the job", default=None, type=str)
     parser.add_argument("-d", "--dir", help="Directory where to output your run directory", default=None, type=str)
 
+    # Slurm options. These aren't obviously easy to do on wq.
+    parser.add_argument("-npsj", "--npersubjob", help="Number of tiles per subjob. <=0 means or >=(number of tiles) means whole job in one call.", default=0, type=int)
+    parser.add_argument("-a", "--asarray", help="Write job as a job array. This launches subjobs as separate jobs.", action="store_true")
+
+
     args = parser.parse_args()
     argslog = Printer()
 
@@ -72,6 +77,11 @@ def GetArgs():
             argslog.error('Could not make --dir %s'%(args.dir))
             err = True
 
+    if args.asarray:
+        args.usearray = 1
+    else:
+        args.usearray = 0
+
     if err:
         argslog.error('No job file written')
         sys.exit()
@@ -89,7 +99,7 @@ if __name__ == "__main__":
     cmd = ''
     if args.source is not None:
         cmd = 'source %s && '%(args.source)
-    cmd = '%s%s %s %s %s'%(cmd, gen, args.cluster, args.config, args.dir)
+    cmd = '%s%s %s %s %s %i %i'%(cmd, gen, args.cluster, args.config, args.dir, args.npersubjob, args.usearray)
     if args.source is not None:
         cmd = '%s %s'%(cmd, args.source)
 

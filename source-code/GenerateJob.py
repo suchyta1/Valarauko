@@ -151,14 +151,17 @@ def GetWhere(argv):
     where = argv[1]
     config = argv[2]
     dir = argv[3]
-    if len(argv) > 4:
-        setup = argv[4]
+    nperjob = argv[4]
+    usearray = argv[5]
 
-    return where, setup, config, dir
+    if len(argv) > 6:
+        setup = argv[6]
+
+    return where, setup, config, dir, nperjob, usearray
 
 
 def GenJob(argv):
-    where, setup, config, dir = GetWhere(argv)
+    where, setup, config, dir, nperjog, usearray = GetWhere(argv)
     run, balrog, db, tiles = GetConfig(where, config)
 
     jobname = '%s-%s' %(run['label'], run['joblabel'])
