@@ -22,14 +22,18 @@ def Printer():
 
 
 def GetArgs():
-    parser = argparse.ArgumentParser()
+    descr = """--asarray has no effect at BNL; there's no concept of job arrays with wq.
+    At least for now, you probably don't want to use --npersubjob at BNL either, because the subjobs are launched sequentially.
+    Concurrence might be doable; I have to play around with how the hosts are specified / if wait works.
+    At NERSC, subjobs launch in parallel."""
+    parser = argparse.ArgumentParser(description=descr)
+
     parser.add_argument("-cl", "--cluster", help="Cluster you are (will be) running on", default=None, type=str)
     parser.add_argument("-co", "--config", help="Custom configuration file to use", required=True, type=str)
     parser.add_argument("-s", "--source", help="A file to source to setup any software needed to build/run the job", default=None, type=str)
     parser.add_argument("-d", "--dir", help="Directory where to output your run directory", default=None, type=str)
 
-    # Slurm options. These aren't obviously easy to do on wq.
-    parser.add_argument("-npsj", "--npersubjob", help="Number of tiles per subjob. <=0 means or >=(number of tiles) means whole job in one call.", default=0, type=int)
+    parser.add_argument("-npsj", "--npersubjob", help="Number of tiles per subjob. <=0 or >=(number of tiles) means whole job in one call.", default=0, type=int)
     parser.add_argument("-a", "--asarray", help="Write job as a job array. This launches subjobs as separate jobs.", action="store_true")
 
 

@@ -84,10 +84,10 @@ def GetEnd(s, end):
     return s
 
 
-def BalrogDir(run, end):
+def BalrogDir(run):
     dir = os.path.dirname( os.path.realpath(run['balrog']) )
     d = "export PYTHONPATH=%s:${PYTHONPATH}"%(dir)
-    d = GetEnd(d, end)
+    d = GetEnd(d, 'EDISON')
     return d
 
 def Source(setup, end):
@@ -111,40 +111,59 @@ def WriteJson(config,dirname, tiles,start,end):
     return jsonfile
 
 
+def GetJdir(usesub, dirname, id, substr):
+    if usesub:
+        jdir = os.path.join(dirname, '%s_%i'%(substr,id))
+    else:
+        jdir = dirname
+
+    if not os.path.exists(jdir):
+        os.makedirs(jdir)
+    return jdir
+
+
+def SubConfig(start,i,indexstart, tiles,subtiles,subnodes,run,config, usesub,dirname,substr):
+    end = start + subtiles[i]
+    id = i + 1
+    jdir = GetJdir(usesub, dirname, id, substr)
+    logdir = os.path.join(jdir, 'runlog')
+    
+    run['indexstart'] = indexstart + start*run['tiletotal']
+    run['nodes'] = subnodes[i]
+    config['run'] = run
+    jsonfile = WriteJson(config,jdir, tiles,start,end)
+
+    num = run['nodes'] * run['ppn']
+    return jsonfile, logdir, num
+
+
 def Generate_Job(run,balrog,db,tiles,  where, jobname, dirname, setup, usearray, subtiles, subnodes, usesub):
 
-    descr = ''
     thisdir = os.path.dirname(os.path.realpath(__file__))
     allmpi = os.path.join(thisdir, 'AllMpi.py')
     jobfile = os.path.join(dirname, jobname)
     s = Source(setup, where)
-    d = BalrogDir(run, where)
+    d = BalrogDir(run)
+
+    substr = 'subjob'
+    config = {}
+    config['balrog'] = balrog
+    config['db'] = db
 
     if where.upper()=='BNL':
-        jsonfile = os.path.join(dirname, 'config.json')
-        config = {}
-        config['run'] = run
-        config['balrog'] = balrog
-        config['db'] = db
-        config['tiles'] = list(tiles)
-        with open(jsonfile, 'w') as outfile:
-            json.dump(config, outfile)
-        logdir = os.path.join(dirname, 'runlog')
-        num = run['nodes'] * run['ppn']
-
-        descr = descr + 'mode: bynode\n'
-        descr = descr + 'N: %i\n' %(run['nodes'])
-        descr = descr + 'hostfile: auto\n'
-        descr = descr + 'job_name: %s' %(jobname)
         
-        cmd = 'mpirun -npernode %i -np %i -hostfile %%hostfile%% %s %s %s' %(run['ppn'], num, allmpi, jsonfile, logdir)
-        out = 'command: |\n   %s%s%s\n%s' %(s, d, cmd, descr)
-
+        descr = 'mode: bynode\n' + 'N: %i\n' %(run['nodes']) + 'hostfile: auto\n' + 'job_name: %s' %(jobname)
+        indexstart = copy.copy(run['indexstart'])
+        start = 0
+        cmd = ''
+        for i in range(len(subtiles)):
+            jsonfile, logdir, num = SubConfig(start,i,indexstart, tiles,subtiles,subnodes,run,config, usesub,dirname,substr)
+            cmd = cmd + '   mpirun -npernode %i -np %i -hostfile %%hostfile%% %s %s %s\n' %(run['ppn'], num, allmpi, jsonfile, logdir)
+        out = 'command: |\n   %s%s%s%s' %(s, d, cmd, descr)
         jobfile = '%s.wq' %(jobfile)
     
 
     elif where.upper() in ['CORI', 'EDISON']:
-        substr = 'subjob'
         descr = "#!/bin/bash -l \n"
 
         descr = SLURMadd(descr, '--job-name=%s'%(jobname), start='#SBATCH')
@@ -164,36 +183,14 @@ def Generate_Job(run,balrog,db,tiles,  where, jobname, dirname, setup, usearray,
             descr = SLURMadd(descr, '--nodes=%i'%(run['nodes']), start='#SBATCH')
 
         descr = SLURMadd(descr, '--output=%s'%(ofile), start='#SBATCH')
-
-
         descr = descr + '\n\n'
         descr =  descr + s + d
-
-        config = {}
-        config['balrog'] = balrog
-        config['db'] = db
 
         indexstart = copy.copy(run['indexstart'])
         start = 0
         for i in range(len(subtiles)):
-            end = start + subtiles[i]
-            id = i + 1
-           
-            if usesub:
-                jdir = os.path.join(dirname, '%s_%i'%(substr,id))
-            else:
-                jdir = dirname
+            jsonfile, logdir, num = SubConfig(start,i,indexstart, tiles,subtiles,subnodes,run,config, usesub,dirname,substr)
 
-            if not os.path.exists(jdir):
-                os.makedirs(jdir)
-            logdir = os.path.join(jdir, 'runlog')
-            
-            run['indexstart'] = indexstart + start*run['tiletotal']
-            run['nodes'] = subnodes[i]
-            config['run'] = run
-            jsonfile = WriteJson(config,jdir, tiles,start,end)
-
-            num = subnodes[i] * run['ppn']
             if not usearray:
                 descr = descr + 'srun -N %i -n %i %s %s %s &\n' %(subnodes[i], num, allmpi, jsonfile, logdir)
             else:
@@ -268,7 +265,7 @@ def Reallocate(subnodes, subtiles, nodes):
 
 
 
-def BySub(tiles, npersubjob, run):
+def BySub(tiles, npersubjob, run, where):
     usesub = False
     if npersubjob <= 0:
         nsub = 1
@@ -278,10 +275,13 @@ def BySub(tiles, npersubjob, run):
         nsub = ConservativeDivide(len(tiles),npersubjob)
         usesub = True
 
-    target = ConservativeDivide(len(tiles), run['nodes'])
     subtiles = np.append(np.array( [npersubjob]*(nsub-1), dtype=np.int32 ), len(tiles)-(nsub-1)*npersubjob)
-    subnodes = (subtiles/target) + np.int32(np.mod(subtiles,target) > 0)
-    subnodes = Reallocate(subnodes, subtiles, run['nodes'])
+    if where.lower() != 'bnl':
+        target = ConservativeDivide(len(tiles), run['nodes'])
+        subnodes = (subtiles/target) + np.int32(np.mod(subtiles,target) > 0)
+        subnodes = Reallocate(subnodes, subtiles, run['nodes'])
+    else:
+        subnodes = np.array( [run['nodes']]*len(subtiles) )
 
     return subtiles, subnodes, usesub
 
@@ -289,7 +289,7 @@ def BySub(tiles, npersubjob, run):
 def GenJob(argv):
     where, setup, config, dir, npersubjob, usearray = GetWhere(argv)
     run, balrog, db, tiles = GetConfig(where, config)
-    subtiles, subnodes, usesub = BySub(tiles, npersubjob, run)
+    subtiles, subnodes, usesub = BySub(tiles, npersubjob, run, where)
 
     jobname = '%s-%s' %(run['label'], run['joblabel'])
     dirname = os.path.join(dir, '%s-jobdir' %(jobname))
