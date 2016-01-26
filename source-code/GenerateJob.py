@@ -134,7 +134,7 @@ def SubConfig(start,i,indexstart, tiles,subtiles,subnodes,run,config, usesub,dir
     jsonfile = WriteJson(config,jdir, tiles,start,end)
 
     num = run['nodes'] * run['ppn']
-    return jsonfile, logdir, num
+    return jsonfile, logdir, num, end
 
 
 def Generate_Job(run,balrog,db,tiles,  where, jobname, dirname, setup, usearray, subtiles, subnodes, usesub):
@@ -157,7 +157,7 @@ def Generate_Job(run,balrog,db,tiles,  where, jobname, dirname, setup, usearray,
         start = 0
         cmd = ''
         for i in range(len(subtiles)):
-            jsonfile, logdir, num = SubConfig(start,i,indexstart, tiles,subtiles,subnodes,run,config, usesub,dirname,substr)
+            jsonfile, logdir, num, start = SubConfig(start,i,indexstart, tiles,subtiles,subnodes,run,config, usesub,dirname,substr)
             cmd = cmd + '   mpirun -npernode %i -np %i -hostfile %%hostfile%% %s %s %s\n' %(run['ppn'], num, allmpi, jsonfile, logdir)
         out = 'command: |\n   %s%s%s%s' %(s, d, cmd, descr)
         jobfile = '%s.wq' %(jobfile)
@@ -189,7 +189,8 @@ def Generate_Job(run,balrog,db,tiles,  where, jobname, dirname, setup, usearray,
         indexstart = copy.copy(run['indexstart'])
         start = 0
         for i in range(len(subtiles)):
-            jsonfile, logdir, num = SubConfig(start,i,indexstart, tiles,subtiles,subnodes,run,config, usesub,dirname,substr)
+            jsonfile, logdir, num, start = SubConfig(start,i,indexstart, tiles,subtiles,subnodes,run,config, usesub,dirname,substr)
+            jdir = os.path.dirname(jsonfile)
 
             if not usearray:
                 descr = descr + 'srun -N %i -n %i %s %s %s &\n' %(subnodes[i], num, allmpi, jsonfile, logdir)
@@ -200,7 +201,6 @@ def Generate_Job(run,balrog,db,tiles,  where, jobname, dirname, setup, usearray,
                     f.write('%i'%(subnodes[i]))
                 with open(npfile, 'w') as f:
                     f.write('%i'%(num))
-            start = end
             
         if usearray:
             subdir = os.path.join(dirname, '%s_${SLURM_ARRAY_TASK_ID}'%(substr))
