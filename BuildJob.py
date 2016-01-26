@@ -109,4 +109,10 @@ if __name__ == "__main__":
     if len(stderr) > 0:
         argslog.error(stderr)
     else:
-        argslog.info(stdout[:-1])
+        lines = stdout.strip().split('\n')
+        for i in range(len(lines)):
+            line = lines[i]
+            if i==(len(lines)-1):
+                argslog.info(line)
+            else:
+                argslog.warning(line)

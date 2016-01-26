@@ -111,7 +111,7 @@ def WriteJson(config,dirname, tiles,start,end):
     return jsonfile
 
 
-def Generate_Job(run,balrog,db,tiles,  where, jobname, dirname, setup, usearray, subtiles, subnodes):
+def Generate_Job(run,balrog,db,tiles,  where, jobname, dirname, setup, usearray, subtiles, subnodes, usesub):
 
     descr = ''
     thisdir = os.path.dirname(os.path.realpath(__file__))
@@ -147,17 +147,22 @@ def Generate_Job(run,balrog,db,tiles,  where, jobname, dirname, setup, usearray,
         substr = 'subjob'
         descr = "#!/bin/bash -l \n"
 
+        descr = SLURMadd(descr, '--job-name=%s'%(jobname), start='#SBATCH')
         descr = SLURMadd(descr, '--mail-type=BEGIN,END,TIME_LIMIT_50', start='#SBATCH')
         descr = SLURMadd(descr, '--partition=%s'%(run['queue']), start='#SBATCH')
         descr = SLURMadd(descr, '--time=%s'%(run['walltime']), start='#SBATCH')
-        descr = SLURMadd(descr, '--nodes=%i'%(run['nodes']), start='#SBATCH')
 
-        descr = SLURMadd(descr, '--job-name=%s'%(jobname), start='#SBATCH')
         if usearray:
             ofile = os.path.join(dirname, '%s_%%a'%(substr), '%s-%%A_%%a.out'%(jobname))
             descr = SLURMadd(descr, '--array=1-%s'%(len(subtiles)), start='#SBATCH')
+            maxnodes = np.amax(subnodes)
+            descr = SLURMadd(descr, '--nodes=%i'%(maxnodes), start='#SBATCH')
+            if not (np.all(subnodes==maxnodes)):
+                print 'In job arrays, each subjob must use the same number of nodes. You gave a "non-equally divisible" job, chunked into subjobs of node sizes: %s. Setting job array to use nodes=%i'%(str(subnodes),maxnodes)
         else:
             ofile = os.path.join(dirname, '%s-%%j.out'%(jobname))
+            descr = SLURMadd(descr, '--nodes=%i'%(run['nodes']), start='#SBATCH')
+
         descr = SLURMadd(descr, '--output=%s'%(ofile), start='#SBATCH')
 
 
@@ -173,13 +178,18 @@ def Generate_Job(run,balrog,db,tiles,  where, jobname, dirname, setup, usearray,
         for i in range(len(subtiles)):
             end = start + subtiles[i]
             id = i + 1
-            
-            jdir = os.path.join(dirname, '%s_%i'%(substr,id))
+           
+            if usesub:
+                jdir = os.path.join(dirname, '%s_%i'%(substr,id))
+            else:
+                jdir = dirname
+
             if not os.path.exists(jdir):
                 os.makedirs(jdir)
             logdir = os.path.join(jdir, 'runlog')
             
             run['indexstart'] = indexstart + start*run['tiletotal']
+            run['nodes'] = subnodes[i]
             config['run'] = run
             jsonfile = WriteJson(config,jdir, tiles,start,end)
 
@@ -259,25 +269,27 @@ def Reallocate(subnodes, subtiles, nodes):
 
 
 def BySub(tiles, npersubjob, run):
+    usesub = False
     if npersubjob <= 0:
         nsub = 1
     elif npersubjob >= len(tiles):
         nsub = 1
     else:
         nsub = ConservativeDivide(len(tiles),npersubjob)
+        usesub = True
 
     target = ConservativeDivide(len(tiles), run['nodes'])
     subtiles = np.append(np.array( [npersubjob]*(nsub-1), dtype=np.int32 ), len(tiles)-(nsub-1)*npersubjob)
     subnodes = (subtiles/target) + np.int32(np.mod(subtiles,target) > 0)
     subnodes = Reallocate(subnodes, subtiles, run['nodes'])
 
-    return subtiles, subnodes
+    return subtiles, subnodes, usesub
 
 
 def GenJob(argv):
     where, setup, config, dir, npersubjob, usearray = GetWhere(argv)
     run, balrog, db, tiles = GetConfig(where, config)
-    subtiles, subnodes = BySub(tiles, npersubjob, run)
+    subtiles, subnodes, usesub = BySub(tiles, npersubjob, run)
 
     jobname = '%s-%s' %(run['label'], run['joblabel'])
     dirname = os.path.join(dir, '%s-jobdir' %(jobname))
@@ -285,7 +297,7 @@ def GenJob(argv):
         os.makedirs(dirname)
 
 
-    job = Generate_Job(run,balrog,db,tiles, where, jobname, dirname, setup, usearray, subtiles, subnodes)
+    job = Generate_Job(run,balrog,db,tiles, where, jobname, dirname, setup, usearray, subtiles, subnodes, usesub)
     return job, where
 
 
