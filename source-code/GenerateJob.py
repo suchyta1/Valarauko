@@ -168,7 +168,7 @@ def Generate_Job(run,balrog,db,tiles,  where, jobname, dirname, setup, usearray,
             jsonfile, logdir, num, start = SubConfig(start,i,indexstart, tiles,subtiles,subnodes,run,config, usesub,dirname,substr)
 
             et = st + subnodes[i] - 1
-            cmd = cmd + """   nstart=%i; nend=%i; for i in `seq $nstart $nend`; do for j in `seq 0 %i`; do  if [ $i = $nstart ] && [ $j = 0 ]; then host=${nodes[$i]}; else host="${host},${nodes[$i]}"; fi; done; done;\n"""%(st, et, run['ppn'])
+            cmd = cmd + """   nstart=%i; nend=%i; for i in `seq $nstart $nend`; do for j in `seq 0 %i`; do  if [ $i = $nstart ] && [ $j = 0 ]; then host=${nodes[$i]}; else host="${host},${nodes[$i]}"; fi; done; done;\n"""%(st, et, run['ppn']-1)
             cmd = cmd + '   mpirun -np %i -host $host %s %s %s%s\n' %(num, allmpi, jsonfile, logdir, seq)
 
             if not sequential:

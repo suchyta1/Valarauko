@@ -53,14 +53,14 @@ def CustomConfig(run, balrog, db, tiles):
     run, balrog, tiles = Y1A1Setup(run, balrog, tiles)
     run['email'] = 'eric.d.suchyta@gmail.com'
 
-    tstart = 80
-    tend = 100
+    tstart = 200
+    tend = 230
     tiles = tiles[tstart:tend]
     run['joblabel'] = '%i:%i' %(tstart, tend)
 
     run['nodes'] = 10
     run['ppn'] = 8
-    run['label'] = 'y1a1_spto_01'
+    run['label'] = 'y1a1_spto_02'
     run['runnum'] = 0 
 
     tiletotal = 100000
