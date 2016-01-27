@@ -19,10 +19,6 @@ import balrog as balrogmodule
 import shutil
 
 
-"""
-This is kind of cool, so you can send an email to yourself when the run finishes.
-You'll notice my email in there, so if you're going to use this change the sender/reciever to yourself.
-"""
 def SendEmail(config, file):
     if config['email'] is None:
         return
