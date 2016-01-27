@@ -51,6 +51,7 @@ def Y1A1Setup(run, balrog, tiles):
 
 def CustomConfig(run, balrog, db, tiles):
     run, balrog, tiles = Y1A1Setup(run, balrog, tiles)
+    run['email'] = 'eric.d.suchyta@gmail.com'
 
     tstart = 80
     tend = 100

@@ -35,6 +35,7 @@ def GetArgs():
 
     parser.add_argument("-npsj", "--npersubjob", help="Number of tiles per subjob. <=0 or >=(number of tiles) means whole job in one call.", default=0, type=int)
     parser.add_argument("-a", "--asarray", help="Write job as a job array. This launches subjobs as separate jobs.", action="store_true")
+    parser.add_argument("-sq", "--sequential", help="Do sequential, instead of paralle subjobs. This can't be done with --asarray", action="store_true")
 
 
     args = parser.parse_args()
@@ -86,16 +87,25 @@ def GetArgs():
     else:
         args.usearray = 0
 
+    if args.sequential:
+        args.sequential = 1
+        if args.asarray==1:
+            argslog.error('--sequential and --asarray cannot both be flagged.')
+            err = True
+    else:
+        args.sequential = 0
+
+    msg = 'No job file written'
     if err:
-        argslog.error('No job file written')
+        argslog.error(msg)
         sys.exit()
 
-    return args, argslog
+    return args, argslog, msg
 
 
 
 if __name__ == "__main__":
-    args, argslog = GetArgs()
+    args, argslog, msg = GetArgs()
 
     thisdir = os.path.dirname(os.path.realpath(__file__))
     gen = os.path.join(thisdir, 'source-code', 'GenerateJob.py')
@@ -103,15 +113,20 @@ if __name__ == "__main__":
     cmd = ''
     if args.source is not None:
         cmd = 'source %s && '%(args.source)
-    cmd = '%s%s %s %s %s %i %i'%(cmd, gen, args.cluster, args.config, args.dir, args.npersubjob, args.usearray)
+    cmd = '%s%s %s %s %s %i %i %i'%(cmd, gen, args.cluster, args.config, args.dir, args.npersubjob, args.usearray, args.sequential)
     if args.source is not None:
         cmd = '%s %s'%(cmd, args.source)
 
     p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     stdout, stderr = p.communicate()
+    rcode = p.returncode
 
     if len(stderr) > 0:
         argslog.error(stderr)
+        argslog.error(msg)
+    elif rcode != 0:
+        argslog.error(stdout.strip())
+        argslog.error(msg)
     else:
         lines = stdout.strip().split('\n')
         for i in range(len(lines)):

@@ -33,6 +33,7 @@ def GetConfig(where, config):
     run['command'] = 'popen' #['system', 'popen']
     run['useshell'] = False # Only relevant with popen
     run['retry'] = True
+    run['email'] = None
 
 
     # will get passed as command line arguments to balrog
@@ -137,13 +138,16 @@ def SubConfig(start,i,indexstart, tiles,subtiles,subnodes,run,config, usesub,dir
     return jsonfile, logdir, num, end
 
 
-def Generate_Job(run,balrog,db,tiles,  where, jobname, dirname, setup, usearray, subtiles, subnodes, usesub):
+def Generate_Job(run,balrog,db,tiles,  where, jobname, dirname, setup, usearray, subtiles, subnodes, usesub, sequential):
 
     thisdir = os.path.dirname(os.path.realpath(__file__))
     allmpi = os.path.join(thisdir, 'AllMpi.py')
     jobfile = os.path.join(dirname, jobname)
     s = Source(setup, where)
     d = BalrogDir(run)
+    seq = " &"
+    if sequential:
+        seq = ''
 
     substr = 'subjob'
     config = {}
@@ -151,19 +155,39 @@ def Generate_Job(run,balrog,db,tiles,  where, jobname, dirname, setup, usearray,
     config['db'] = db
 
     if where.upper()=='BNL':
-        
+
         descr = 'mode: bynode\n' + 'N: %i\n' %(run['nodes']) + 'hostfile: auto\n' + 'job_name: %s' %(jobname)
         indexstart = copy.copy(run['indexstart'])
         start = 0
-        cmd = ''
+        #ss = 1
+
+        st = 0 
+        cmd = """   nodes=(); while read -r line; do found=false; host=$line; for h in "${nodes[@]}"; do if [ "$h" = "$host" ]; then found=true; fi; done; if [ "$found" = "false" ]; then nodes+=("$host"); fi; done < %hostfile%\n"""
+
         for i in range(len(subtiles)):
             jsonfile, logdir, num, start = SubConfig(start,i,indexstart, tiles,subtiles,subnodes,run,config, usesub,dirname,substr)
-            cmd = cmd + '   mpirun -npernode %i -np %i -hostfile %%hostfile%% %s %s %s\n' %(run['ppn'], num, allmpi, jsonfile, logdir)
+
+            et = st + subnodes[i] - 1
+            cmd = cmd + """   nstart=%i; nend=%i; for i in `seq $nstart $nend`; do for j in `seq 0 %i`; do  if [ $i = $nstart ] && [ $j = 0 ]; then host=${nodes[$i]}; else host="${host},${nodes[$i]}"; fi; done; done;\n"""%(st, et, run['ppn'])
+            cmd = cmd + '   mpirun -np %i -host $host %s %s %s%s\n' %(num, allmpi, jsonfile, logdir, seq)
+
+            if not sequential:
+                st = et + 1
+
+            #ee = ss + subnodes[i]*run['ppn']
+            #cmd = cmd + """   start=%i; end=%i; for i in `seq $start $end`; do h=`sed -n "${i}{p;q;}" %%hostfile%%`; if [ $i = $start ]; then hosts=$h; else hosts="${hosts},${h}"; fi; done;\n"""%(ss,ee)
+            #cmd = cmd + '   mpirun -npernode %i -np %i -host $hosts %s %s %s &\n' %(run['ppn'], num, allmpi, jsonfile, logdir)
+            #ss = ee
+
+            #cmd = cmd + '   mpirun -npernode %i -np %i -hostfile %%hostfile%% %s %s %s\n' %(run['ppn'], num, allmpi, jsonfile, logdir)
+
+        cmd = cmd + '   wait\n'
         out = 'command: |\n   %s%s%s%s' %(s, d, cmd, descr)
         jobfile = '%s.wq' %(jobfile)
     
 
     elif where.upper() in ['CORI', 'EDISON']:
+        run['email'] = None
         descr = "#!/bin/bash -l \n"
 
         descr = SLURMadd(descr, '--job-name=%s'%(jobname), start='#SBATCH')
@@ -193,7 +217,7 @@ def Generate_Job(run,balrog,db,tiles,  where, jobname, dirname, setup, usearray,
             jdir = os.path.dirname(jsonfile)
 
             if not usearray:
-                descr = descr + 'srun -N %i -n %i %s %s %s &\n' %(subnodes[i], num, allmpi, jsonfile, logdir)
+                descr = descr + 'srun -N %i -n %i %s %s %s%s\n' %(subnodes[i], num, allmpi, jsonfile, logdir,seq)
             else:
                 nodefile = os.path.join(jdir, 'N')
                 npfile = os.path.join(jdir, 'n')
@@ -227,11 +251,12 @@ def GetWhere(argv):
     dir = argv[3]
     npersubjob = int(argv[4])
     usearray = int(argv[5])
+    sequential = int(argv[6])
 
-    if len(argv) > 6:
-        setup = argv[6]
+    if len(argv) > 7:
+        setup = argv[7]
 
-    return where, setup, config, dir, npersubjob, usearray
+    return where, setup, config, dir, npersubjob, usearray, sequential
 
 
 def ConservativeDivide(num, den):
@@ -243,7 +268,10 @@ def ConservativeDivide(num, den):
 
 
 def Reallocate(subnodes, subtiles, nodes):
-    effect = np.zeros(len(subnodes))
+    if nodes < len(subnodes):
+        print 'Cannot divide %i node(s) into %i simultaneous subjobs'%(nodes,len(subnodes))
+        sys.exit(1)
+
     effective = (subtiles/subnodes) + np.int32(np.mod(subtiles, subnodes) > 0)
 
     if (np.sum(subnodes) > nodes):
@@ -265,7 +293,7 @@ def Reallocate(subnodes, subtiles, nodes):
 
 
 
-def BySub(tiles, npersubjob, run, where):
+def BySub(tiles, npersubjob, run, where, sequential):
     usesub = False
     if npersubjob <= 0:
         nsub = 1
@@ -276,20 +304,20 @@ def BySub(tiles, npersubjob, run, where):
         usesub = True
 
     subtiles = np.append(np.array( [npersubjob]*(nsub-1), dtype=np.int32 ), len(tiles)-(nsub-1)*npersubjob)
-    if where.lower() != 'bnl':
+    if sequential:
+        subnodes = np.array( [run['nodes']]*len(subtiles) )
+    else:
         target = ConservativeDivide(len(tiles), run['nodes'])
         subnodes = (subtiles/target) + np.int32(np.mod(subtiles,target) > 0)
         subnodes = Reallocate(subnodes, subtiles, run['nodes'])
-    else:
-        subnodes = np.array( [run['nodes']]*len(subtiles) )
 
     return subtiles, subnodes, usesub
 
 
 def GenJob(argv):
-    where, setup, config, dir, npersubjob, usearray = GetWhere(argv)
+    where, setup, config, dir, npersubjob, usearray, sequential = GetWhere(argv)
     run, balrog, db, tiles = GetConfig(where, config)
-    subtiles, subnodes, usesub = BySub(tiles, npersubjob, run, where)
+    subtiles, subnodes, usesub = BySub(tiles, npersubjob, run, where, sequential)
 
     jobname = '%s-%s' %(run['label'], run['joblabel'])
     dirname = os.path.join(dir, '%s-jobdir' %(jobname))
@@ -297,7 +325,7 @@ def GenJob(argv):
         os.makedirs(dirname)
 
 
-    job = Generate_Job(run,balrog,db,tiles, where, jobname, dirname, setup, usearray, subtiles, subnodes, usesub)
+    job = Generate_Job(run,balrog,db,tiles, where, jobname, dirname, setup, usearray, subtiles, subnodes, usesub, sequential)
     return job, where
 
 
