@@ -34,6 +34,7 @@ def GetConfig(where, config):
     run['useshell'] = False # Only relevant with popen
     run['retry'] = True
     run['email'] = None
+    run['stripe'] = None
 
 
     # will get passed as command line arguments to balrog
@@ -209,6 +210,10 @@ def Generate_Job(run,balrog,db,tiles,  where, jobname, dirname, setup, usearray,
         descr = SLURMadd(descr, '--output=%s'%(ofile), start='#SBATCH')
         descr = descr + '\n\n'
         descr =  descr + s + d
+
+        if run['stripe'] is not None:
+            descr = descr + 'if ! [ -d %s ]; then mkdir %s; fi;\n' %(run['outdir'],run['outdir'])
+            descr = descr + 'lfs setstripe %s --count %i\n' %(run['outdir'],run['stripe'])
 
         indexstart = copy.copy(run['indexstart'])
         start = 0

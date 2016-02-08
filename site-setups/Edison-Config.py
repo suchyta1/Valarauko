@@ -23,9 +23,6 @@ def Y1A1Setup(run, balrog, tiles):
     tiles = esutil.io.read(os.path.join(dir, 'spt-sva1+y1a1-overlap-grizY.fits'))['tilename']
 
     run['release'] = 'y1a1_coadd'
-    #run['setup'] = os.path.join( os.path.dirname(os.path.realpath(__file__)), 'setups', 'y1-cori')
-
-    run['outdir'] = os.path.join(os.environ['SCRATCH'],'BalrogScratch')
     run['db-columns'] = os.path.join(dir, 'y1a1_coadd_objects-columns.fits')
     run['balrog'] = os.path.join(os.environ['BALROG_DIR'], 'balrog.py')
     balrog['pyconfig'] = os.path.join(dir, 'BalrogConfig-OrigSGQ.py')
@@ -45,8 +42,8 @@ def Y1A1Setup(run, balrog, tiles):
 def CustomConfig(run, balrog, db, tiles):
     run, balrog, tiles = Y1A1Setup(run, balrog, tiles)
 
-    tstart = 125
-    tend = 175
+    tstart = 50
+    tend = 150
     tiles = tiles[tstart:tend]
 
     run['command'] = 'popen'
@@ -54,12 +51,16 @@ def CustomConfig(run, balrog, db, tiles):
 
     run['nodes'] = len(tiles)
     run['ppn'] = 24
-    run['walltime'] = '20:00:00'
+    run['walltime'] = '5:00:00'
     run['queue'] = 'regular'
-    run['label'] = 'y1a1_spto'
     run['runnum'] = 0 
 
-    tiletotal = 100000
+    baseout = '/scratch3/scratchdirs/esuchyta/'
+    run['stripe'] = 5
+    run['label'] = 'y1a1_stripe_%i'%(run['stripe'])
+    run['outdir'] = os.path.join(baseout, 'BalrogScratch', run['label'])
+
+    tiletotal = 10000
     run['indexstart'] = tstart * tiletotal
     run['tiletotal'] = tiletotal
     balrog['ngal'] = 200
