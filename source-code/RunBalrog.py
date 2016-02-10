@@ -518,7 +518,7 @@ def NewWrite2DB2(bcats, labels, valids, RunConfig, BalrogConfig, DerivedConfig, 
                 ext = 2
 
             cat = cats[i]
-            tablename = '%s.balrog_%s_%s' %(cur.username, RunConfig['label'], labels[i])
+            tablename = '%s.balrog_%s_%s' %(cur.username, RunConfig['dbname'], labels[i])
             arr = NewMakeOracleFriendly(cats[i], ext, BalrogConfig, DerivedConfig, labels[i], RunConfig, missingfix=missingfix, create=create)
 
             noarr = False
@@ -549,7 +549,7 @@ def NewWrite2DB2(bcats, labels, valids, RunConfig, BalrogConfig, DerivedConfig, 
             namestr = ', '.join(dobj[i]['name'])
             newarr = zip(*dobj[i]['list'])
 
-            tablename = '%s.balrog_%s_%s' %(cur.username, RunConfig['label'], labels[i])
+            tablename = '%s.balrog_%s_%s' %(cur.username, RunConfig['dbname'], labels[i])
             istr = "insert into %s (%s) values (%s)" %(tablename, namestr, numstr)
 
             cxcur.prepare(istr)
@@ -979,7 +979,6 @@ def MPIRunBalrog(RunConfig, BalrogConfig, DerivedConfig):
         DerivedConfig['itlog'] = SetupLog(DerivedConfig['itlogfile'], host, rank, BalrogConfig['tile'], DerivedConfig['iteration'])
     elif RunConfig['command']=='system':
         DerivedConfig['itlog'] = DerivedConfig['itlogfile']
-    f = '%i-%s-%s-systemcall.tmp'%(MPI.COMM_WORLD.Get_rank(), RunConfig['label'], RunConfig['joblabel'])
     DerivedConfig['setup'] = balrog.SystemCallSetup(retry=RunConfig['retry'], redirect=DerivedConfig['itlog'], kind=RunConfig['command'], useshell=RunConfig['useshell'])
 
 

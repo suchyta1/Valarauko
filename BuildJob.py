@@ -22,21 +22,11 @@ def Printer():
 
 
 def GetArgs():
-    descr = """--asarray has no effect at BNL; there's no concept of job arrays with wq.
-    At least for now, you probably don't want to use --npersubjob at BNL either, because the subjobs are launched sequentially.
-    Concurrence might be doable; I have to play around with how the hosts are specified / if wait works.
-    At NERSC, subjobs launch in parallel."""
-    parser = argparse.ArgumentParser(description=descr)
+    parser = argparse.ArgumentParser()
 
     parser.add_argument("-cl", "--cluster", help="Cluster you are (will be) running on", default=None, type=str)
     parser.add_argument("-co", "--config", help="Custom configuration file to use", required=True, type=str)
     parser.add_argument("-s", "--source", help="A file to source to setup any software needed to build/run the job", default=None, type=str)
-    parser.add_argument("-d", "--dir", help="Directory where to output your run directory", default=None, type=str)
-
-    parser.add_argument("-npsj", "--npersubjob", help="Number of tiles per subjob. <=0 or >=(number of tiles) means whole job in one call.", default=0, type=int)
-    parser.add_argument("-a", "--asarray", help="Write job as a job array. This launches subjobs as separate jobs.", action="store_true")
-    parser.add_argument("-sq", "--sequential", help="Do sequential, instead of paralle subjobs. This can't be done with --asarray", action="store_true")
-
 
     args = parser.parse_args()
     argslog = Printer()
@@ -48,7 +38,7 @@ def GetArgs():
         for h in clus:
             if host.lower().startswith(h):
                 args.cluster = h
-        argslog.info("You didn't give --cluster, but I auto-dectected you're on %s. I'm using that."%(args.cluster))
+        argslog.warning("You didn't give --cluster, but I auto-dectected you're on %s. I'm using that."%(args.cluster))
     if args.cluster is None:
         argslog.error("You didn't give --cluster, and I detected your host is %s. That's not one of the known ones I can use from auto-detecting: %s. Tell me what to use with --cluster"%(host, str(clus)))
         err = True
@@ -72,28 +62,6 @@ def GetArgs():
             err = True
         args.source = os.path.realpath(args.source)
 
-    if args.dir is None:
-        args.dir = os.path.dirname(os.path.realpath(__file__))
-        argslog.info('No --dir given, setting it to: %s'%(args.dir))
-    if not os.path.exists(args.dir):
-        try:
-            os.makedirs(args.dir)
-        except:
-            argslog.error('Could not make --dir %s'%(args.dir))
-            err = True
-
-    if args.asarray:
-        args.usearray = 1
-    else:
-        args.usearray = 0
-
-    if args.sequential:
-        args.sequential = 1
-        if args.asarray==1:
-            argslog.error('--sequential and --asarray cannot both be flagged.')
-            err = True
-    else:
-        args.sequential = 0
 
     msg = 'No job file written'
     if err:
@@ -113,7 +81,7 @@ if __name__ == "__main__":
     cmd = ''
     if args.source is not None:
         cmd = 'source %s && '%(args.source)
-    cmd = '%s%s %s %s %s %i %i %i'%(cmd, gen, args.cluster, args.config, args.dir, args.npersubjob, args.usearray, args.sequential)
+    cmd = '%s%s %s %s %s'%(cmd, gen, args.cluster, args.config)
     if args.source is not None:
         cmd = '%s %s'%(cmd, args.source)
 

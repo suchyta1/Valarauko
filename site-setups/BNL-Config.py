@@ -53,8 +53,8 @@ def CustomConfig(run, balrog, db, tiles):
     run, balrog, tiles = Y1A1Setup(run, balrog, tiles)
     run['email'] = 'eric.d.suchyta@gmail.com'
 
-    tstart = 300
-    tend = 310
+    tstart = 340
+    tend = 370
     tiles = tiles[tstart:tend]
     run['joblabel'] = '%i:%i' %(tstart, tend)
 
@@ -68,7 +68,7 @@ def CustomConfig(run, balrog, db, tiles):
     run['indexstart'] = tstart * tiletotal
     balrog['ngal'] = 1000
 
-    run['DBoverwrite'] = True
+    run['DBoverwrite'] = False
     run['verifyindex'] = True
 
     return run, balrog, db, tiles

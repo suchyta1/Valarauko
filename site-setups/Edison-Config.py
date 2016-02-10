@@ -46,9 +46,6 @@ def CustomConfig(run, balrog, db, tiles):
     tend = 70
     tiles = tiles[tstart:tend]
 
-    run['command'] = 'popen'
-    run['useshell'] = False
-
     run['nodes'] = len(tiles)
     run['ppn'] = 24
     run['walltime'] = '01:00:00'
@@ -57,8 +54,15 @@ def CustomConfig(run, balrog, db, tiles):
 
     baseout = '/scratch3/scratchdirs/esuchyta/'
     run['stripe'] = 4
-    run['label'] = 'y1a1_st%i_t%i_2'%(run['stripe'],len(tiles))
-    run['outdir'] = os.path.join(baseout, 'BalrogScratch', run['label'])
+    run['sequential'] = False
+    run['asarray'] = False
+    run['arraymax'] = None
+    run['npersubjob'] = 0
+    
+    run['dbname'] = 'y1a1_st%i_t%i'%(run['stripe'],len(tiles))
+    run['joblabel'] = '%i:%i_2' %(tstart, tend)
+    run['jobdir'] = os.path.join(baseout, 'BalrogJobs')
+    run['outdir'] = os.path.join(baseout, 'BalrogScratch')
 
     balrog['ngal'] = 200
     run['tiletotal'] = balrog['ngal'] * (run['ppn']-1) 
@@ -66,7 +70,6 @@ def CustomConfig(run, balrog, db, tiles):
 
     run['DBoverwrite'] = True
     run['verifyindex'] = True
-    run['joblabel'] = '%i:%i' %(tstart, tend)
 
     return run, balrog, db, tiles
 

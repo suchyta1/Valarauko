@@ -14,27 +14,42 @@ RunConfigurations = imp.load_source('RunConfigurations', os.path.join(updir,'Run
 #import RunConfigurations
 
 
+def TryToMake(dir):
+    if not os.path.exists(dir):
+        try:
+            os.makedirs(dir)
+        except:
+            print 'Could not make %s'%(dir)
+            sys.exit(1)
+
+
 # get a default config object
 def GetConfig(where, config):
 
     # arguments for configuring the run
     run = RunConfigurations.RunConfigurations.default
 
-    #hide these from user
-    run['DBload'] = 'cx_Oracle'  # ['cx_Oracle', 'sqlldr'] How to write to DB. 
-    run['bands'] = ['g','r','i','z','Y'] # Bands you'll get measurement catalogs for
-    run['dualdetection'] = [1,2,3]  # Use None not to use detection image. Otherwise the indices in the array of bands.
+    # hide these from user
+    run['DBload'] = 'cx_Oracle'  # ['cx_Oracle', 'sqlldr'] How to write to DB. sqlldr is deprecated, and I don't guarantee it still works.
+    run['bands'] = ['g','r','i','z','Y'] # Bands you'll get measurement catalogs for. I haven't tested changing this -- don't.
+    run['dualdetection'] = [1,2,3]  # Use None not to use detection image. Otherwise the indices in the array of bands. I haven't tested changing this -- don't.
     run['intermediate-clean'] = True # Delete an iteration's output Balrog images
     run['tile-clean'] = True  # Delete the entire outdir/run's contents
-    run['queue'] = 'regular' # Probably no one other than Eric Suchyta will ever use the debug queue with this.
-
+    run['queue'] = 'regular' # Which queue to use if running at NERSC. 
+    run['email'] = None # Set this to your email if running at BNL to get an email at finish. At NERSC, I've set slurm to send start, 50%, and finish emails automatically
 
     run['balrog_as_function'] = True
     run['command'] = 'popen' #['system', 'popen']
     run['useshell'] = False # Only relevant with popen
     run['retry'] = True
-    run['email'] = None
-    run['stripe'] = None
+
+
+    # These are only relevant at NERSC. Ask Eric Suchyta what in the world these ones do. They're a little less trivial, and change the workflow.
+    run['stripe'] = None 
+    run['sequential'] = False
+    run['asarray'] = False
+    run['arraymax'] = None
+    run['npersubjob'] = 0
 
 
     # will get passed as command line arguments to balrog
@@ -53,6 +68,25 @@ def GetConfig(where, config):
     balrog['systemcmd'] = run['command']
     balrog['retrycmd'] = run['retry']
     balrog['useshell'] = run['useshell']
+
+    if run['sequential'] and run['asarray']:
+        print 'Cannot set both sequential and asarray to be True'
+        sys.exit(1)
+
+    if run['jobdir'] is None:
+        run['jobdir'] = os.path.dirname(os.path.realpath(__file__))
+        print 'No run jobdir given, setting it to: %s'%(run['jobdir'])
+    TryToMake(run['jobdir'])
+    if run['outdir'] is None:
+        run['outdir'] = os.path.dirname(os.path.realpath(__file__))
+        print 'No run jobdir given, setting it to: %s'%(run['outdir'])
+    TryToMake(run['outdir'])
+
+    run['jobname'] = '%s-%s' %(run['dbname'], run['joblabel'])
+    run['jobdir'] = os.path.join(run['jobdir'], '%s-jobdir' %(run['jobname']))
+    run['outdir'] = os.path.join(run['outdir'], run['jobname'])
+    TryToMake(run['jobdir'])
+    TryToMake(run['outdir'])
         
     # This isn't supported in the new version. At least not yet, if ever.
     run['doDES'] = False  # Run sextractor without any Balrog galaxies over full images
@@ -124,10 +158,10 @@ def GetJdir(usesub, dirname, id, substr):
     return jdir
 
 
-def SubConfig(start,i,indexstart, tiles,subtiles,subnodes,run,config, usesub,dirname,substr):
+def SubConfig(start,i,indexstart, tiles,subtiles,subnodes,run,config, usesub,substr):
     end = start + subtiles[i]
     id = i + 1
-    jdir = GetJdir(usesub, dirname, id, substr)
+    jdir = GetJdir(usesub, run['jobdir'], id, substr)
     logdir = os.path.join(jdir, 'runlog')
     
     run['indexstart'] = indexstart + start*run['tiletotal']
@@ -139,15 +173,15 @@ def SubConfig(start,i,indexstart, tiles,subtiles,subnodes,run,config, usesub,dir
     return jsonfile, logdir, num, end
 
 
-def Generate_Job(run,balrog,db,tiles,  where, jobname, dirname, setup, usearray, subtiles, subnodes, usesub, sequential):
+def Generate_Job(run,balrog,db,tiles,  where, setup, subtiles, subnodes, usesub):
 
     thisdir = os.path.dirname(os.path.realpath(__file__))
     allmpi = os.path.join(thisdir, 'AllMpi.py')
-    jobfile = os.path.join(dirname, jobname)
+    jobfile = os.path.join(run['jobdir'], run['jobname'])
     s = Source(setup, where)
     d = BalrogDir(run)
     seq = " &"
-    if sequential:
+    if run['sequential']:
         seq = ''
 
     substr = 'subjob'
@@ -157,7 +191,7 @@ def Generate_Job(run,balrog,db,tiles,  where, jobname, dirname, setup, usearray,
 
     if where.upper()=='BNL':
 
-        descr = 'mode: bynode\n' + 'N: %i\n' %(run['nodes']) + 'hostfile: auto\n' + 'job_name: %s' %(jobname)
+        descr = 'mode: bynode\n' + 'N: %i\n' %(run['nodes']) + 'hostfile: auto\n' + 'job_name: %s' %(run['jobname'])
         indexstart = copy.copy(run['indexstart'])
         start = 0
         #ss = 1
@@ -166,13 +200,13 @@ def Generate_Job(run,balrog,db,tiles,  where, jobname, dirname, setup, usearray,
         cmd = """   nodes=(); while read -r line; do found=false; host=$line; for h in "${nodes[@]}"; do if [ "$h" = "$host" ]; then found=true; fi; done; if [ "$found" = "false" ]; then nodes+=("$host"); fi; done < %hostfile%\n"""
 
         for i in range(len(subtiles)):
-            jsonfile, logdir, num, start = SubConfig(start,i,indexstart, tiles,subtiles,subnodes,run,config, usesub,dirname,substr)
+            jsonfile, logdir, num, start = SubConfig(start,i,indexstart, tiles,subtiles,subnodes,run,config, usesub,substr)
 
             et = st + subnodes[i] - 1
             cmd = cmd + """   nstart=%i; nend=%i; for i in `seq $nstart $nend`; do for j in `seq 0 %i`; do  if [ $i = $nstart ] && [ $j = 0 ]; then host=${nodes[$i]}; else host="${host},${nodes[$i]}"; fi; done; done;\n"""%(st, et, run['ppn']-1)
             cmd = cmd + '   mpirun -np %i -host $host %s %s %s%s\n' %(num, allmpi, jsonfile, logdir, seq)
 
-            if not sequential:
+            if not run['sequential']:
                 st = et + 1
 
             #ee = ss + subnodes[i]*run['ppn']
@@ -191,20 +225,23 @@ def Generate_Job(run,balrog,db,tiles,  where, jobname, dirname, setup, usearray,
         run['email'] = None
         descr = "#!/bin/bash -l \n"
 
-        descr = SLURMadd(descr, '--job-name=%s'%(jobname), start='#SBATCH')
+        descr = SLURMadd(descr, '--job-name=%s'%(run['jobname']), start='#SBATCH')
         descr = SLURMadd(descr, '--mail-type=BEGIN,END,TIME_LIMIT_50', start='#SBATCH')
         descr = SLURMadd(descr, '--partition=%s'%(run['queue']), start='#SBATCH')
         descr = SLURMadd(descr, '--time=%s'%(run['walltime']), start='#SBATCH')
 
-        if usearray:
-            ofile = os.path.join(dirname, '%s_%%a'%(substr), '%s-%%A_%%a.out'%(jobname))
-            descr = SLURMadd(descr, '--array=1-%s'%(len(subtiles)), start='#SBATCH')
+        if run['asarray']:
+            ofile = os.path.join(run['jobdir'], '%s_%%a'%(substr), '%s-%%A_%%a.out'%(run['jobname']))
+            arrmax = ''
+            if run['arraymax'] is not None:
+                arrmax = '%%%i'%(run['arraymax'])
+            descr = SLURMadd(descr, '--array=1-%i%s'%(len(subtiles),arrmax), start='#SBATCH')
             maxnodes = np.amax(subnodes)
             descr = SLURMadd(descr, '--nodes=%i'%(maxnodes), start='#SBATCH')
             if not (np.all(subnodes==maxnodes)):
                 print 'In job arrays, each subjob must use the same number of nodes. You gave a "non-equally divisible" job, chunked into subjobs of node sizes: %s. Setting job array to use nodes=%i'%(str(subnodes),maxnodes)
         else:
-            ofile = os.path.join(dirname, '%s-%%j.out'%(jobname))
+            ofile = os.path.join(run['jobdir'], '%s-%%j.out'%(run['jobname']))
             descr = SLURMadd(descr, '--nodes=%i'%(run['nodes']), start='#SBATCH')
 
         descr = SLURMadd(descr, '--output=%s'%(ofile), start='#SBATCH')
@@ -218,10 +255,10 @@ def Generate_Job(run,balrog,db,tiles,  where, jobname, dirname, setup, usearray,
         indexstart = copy.copy(run['indexstart'])
         start = 0
         for i in range(len(subtiles)):
-            jsonfile, logdir, num, start = SubConfig(start,i,indexstart, tiles,subtiles,subnodes,run,config, usesub,dirname,substr)
+            jsonfile, logdir, num, start = SubConfig(start,i,indexstart, tiles,subtiles,subnodes,run,config, usesub,substr)
             jdir = os.path.dirname(jsonfile)
 
-            if not usearray:
+            if not run['asarray']:
                 descr = descr + 'srun -N %i -n %i %s %s %s%s\n' %(subnodes[i], num, allmpi, jsonfile, logdir,seq)
             else:
                 nodefile = os.path.join(jdir, 'N')
@@ -231,8 +268,8 @@ def Generate_Job(run,balrog,db,tiles,  where, jobname, dirname, setup, usearray,
                 with open(npfile, 'w') as f:
                     f.write('%i'%(num))
             
-        if usearray:
-            subdir = os.path.join(dirname, '%s_${SLURM_ARRAY_TASK_ID}'%(substr))
+        if run['asarray']:
+            subdir = os.path.join(run['jobdir'], '%s_${SLURM_ARRAY_TASK_ID}'%(substr))
             descr = descr + 'N=$(head -n 1 %s)\n'%(os.path.join(subdir,'N'))
             descr = descr + 'n=$(head -n 1 %s)\n'%(os.path.join(subdir,'n'))
             descr = descr + 'j=%s\n'%(os.path.join(subdir,'config.json'))
@@ -253,15 +290,11 @@ def GetWhere(argv):
     setup = None
     where = argv[1]
     config = argv[2]
-    dir = argv[3]
-    npersubjob = int(argv[4])
-    usearray = int(argv[5])
-    sequential = int(argv[6])
 
-    if len(argv) > 7:
-        setup = argv[7]
+    if len(argv) > 3:
+        setup = argv[3]
 
-    return where, setup, config, dir, npersubjob, usearray, sequential
+    return where, setup, config
 
 
 def ConservativeDivide(num, den):
@@ -298,18 +331,18 @@ def Reallocate(subnodes, subtiles, nodes):
 
 
 
-def BySub(tiles, npersubjob, run, where, sequential):
+def BySub(tiles, run, where):
     usesub = False
-    if npersubjob <= 0:
+    if run['npersubjob'] <= 0:
         nsub = 1
-    elif npersubjob >= len(tiles):
+    elif run['npersubjob'] >= len(tiles):
         nsub = 1
     else:
-        nsub = ConservativeDivide(len(tiles),npersubjob)
+        nsub = ConservativeDivide(len(tiles),run['npersubjob'])
         usesub = True
 
-    subtiles = np.append(np.array( [npersubjob]*(nsub-1), dtype=np.int32 ), len(tiles)-(nsub-1)*npersubjob)
-    if sequential:
+    subtiles = np.append(np.array( [run['npersubjob']]*(nsub-1), dtype=np.int32 ), len(tiles)-(nsub-1)*run['npersubjob'])
+    if run['sequential']:
         subnodes = np.array( [run['nodes']]*len(subtiles) )
     else:
         target = ConservativeDivide(len(tiles), run['nodes'])
@@ -320,17 +353,13 @@ def BySub(tiles, npersubjob, run, where, sequential):
 
 
 def GenJob(argv):
-    where, setup, config, dir, npersubjob, usearray, sequential = GetWhere(argv)
+    where, setup, config = GetWhere(argv)
     run, balrog, db, tiles = GetConfig(where, config)
-    subtiles, subnodes, usesub = BySub(tiles, npersubjob, run, where, sequential)
-
-    jobname = '%s-%s' %(run['label'], run['joblabel'])
-    dirname = os.path.join(dir, '%s-jobdir' %(jobname))
-    if not os.path.exists(dirname):
-        os.makedirs(dirname)
+    subtiles, subnodes, usesub = BySub(tiles, run, where)
 
 
-    job = Generate_Job(run,balrog,db,tiles, where, jobname, dirname, setup, usearray, subtiles, subnodes, usesub, sequential)
+
+    job = Generate_Job(run,balrog,db,tiles, where, setup, subtiles, subnodes, usesub)
     return job, where
 
 
