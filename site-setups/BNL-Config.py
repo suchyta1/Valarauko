@@ -32,7 +32,6 @@ def Y1A1Setup(run, balrog, tiles):
     run['funpack'] = '/gpfs01/astro/workarea/esuchyta/software/cfitsio/install/bin/funpack'
     run['swarp'] = '/gpfs01/astro/workarea/esuchyta/software/swarp-2.36.2/install/bin/swarp'
     run['swarp-config'] = '/gpfs01/astro/workarea/esuchyta/software/Y1A1-config/20150806_default.swarp'
-    run['outdir'] = os.path.join(os.environ['SCRATCH'],'BalrogScratch')
 
     run['balrog'] = '/gpfs01/astro/workarea/esuchyta/git-repos/BalrogDirs/2015-Nov/Balrog/balrog.py'
     balrog['pyconfig'] = '/gpfs01/astro/workarea/esuchyta/software/Y1A1-pyconfig/BalrogConfig-OrigSGQ.py'
@@ -56,11 +55,14 @@ def CustomConfig(run, balrog, db, tiles):
     tstart = 340
     tend = 370
     tiles = tiles[tstart:tend]
+
+    run['label'] = 'y1a1_spto_03'
     run['joblabel'] = '%i:%i' %(tstart, tend)
+    run['outdir'] = os.path.join(os.environ['SCRATCH'],'BalrogScratch')
+    run['jobdir'] = os.path.join(os.environ['GLOBALDIR'],'BalrogJobs')
 
     run['nodes'] = 10
     run['ppn'] = 8
-    run['label'] = 'y1a1_spto_03'
     run['runnum'] = 0 
 
     tiletotal = 100000

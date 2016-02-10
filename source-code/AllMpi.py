@@ -407,7 +407,8 @@ def BuildQueue(tiles, images, psfs, pos, BalrogConfig, RunConfig, dbConfig, inde
     for i in range(len(tiles)):
         derived, balrog = InitCommonToTile(images[i], psfs[i], indexstart, RunConfig, BalrogConfig, dbConfig, tiles[i], bands[i])
 
-        workingdir = os.path.join(RunConfig['outdir'], RunConfig['dbname'], balrog['tile'] )
+        #workingdir = os.path.join(RunConfig['outdir'], RunConfig['dbname'], balrog['tile'] )
+        workingdir = os.path.join(RunConfig['outdir'], balrog['tile'] )
         derived['workingdir'] = workingdir
         derived['indir'] = os.path.join(workingdir, 'input')
 

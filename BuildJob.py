@@ -81,7 +81,7 @@ if __name__ == "__main__":
     cmd = ''
     if args.source is not None:
         cmd = 'source %s && '%(args.source)
-    cmd = '%s%s %s %s %s'%(cmd, gen, args.cluster, args.config)
+    cmd = '%s%s %s %s'%(cmd, gen, args.cluster, args.config)
     if args.source is not None:
         cmd = '%s %s'%(cmd, args.source)
 
