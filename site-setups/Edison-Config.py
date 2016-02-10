@@ -43,7 +43,7 @@ def CustomConfig(run, balrog, db, tiles):
     run, balrog, tiles = Y1A1Setup(run, balrog, tiles)
 
     tstart = 50
-    tend = 150
+    tend = 70
     tiles = tiles[tstart:tend]
 
     run['command'] = 'popen'
@@ -51,21 +51,20 @@ def CustomConfig(run, balrog, db, tiles):
 
     run['nodes'] = len(tiles)
     run['ppn'] = 24
-    run['walltime'] = '5:00:00'
+    run['walltime'] = '01:00:00'
     run['queue'] = 'regular'
     run['runnum'] = 0 
 
     baseout = '/scratch3/scratchdirs/esuchyta/'
-    run['stripe'] = 5
-    run['label'] = 'y1a1_stripe_%i'%(run['stripe'])
+    run['stripe'] = 4
+    run['label'] = 'y1a1_st%i_t%i_2'%(run['stripe'],len(tiles))
     run['outdir'] = os.path.join(baseout, 'BalrogScratch', run['label'])
 
-    tiletotal = 10000
-    run['indexstart'] = tstart * tiletotal
-    run['tiletotal'] = tiletotal
     balrog['ngal'] = 200
+    run['tiletotal'] = balrog['ngal'] * (run['ppn']-1) 
+    run['indexstart'] = tstart * run['tiletotal']
 
-    run['DBoverwrite'] = False
+    run['DBoverwrite'] = True
     run['verifyindex'] = True
     run['joblabel'] = '%i:%i' %(tstart, tend)
 
