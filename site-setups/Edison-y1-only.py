@@ -20,7 +20,7 @@ def SVA1Setup(run, balrog):
 
 def Y1A1Setup(run, balrog, tiles):
     dir = os.environ['BALROG_CONFIG']
-    tiles = esutil.io.read(os.path.join(dir, 'spt-y1a1-only-grizY.fits'))['tilename']
+    tiles = esutil.io.read(os.path.join(dir, 'spt-y1a1-only-g70-grizY.fits'))['tilename']
 
     run['release'] = 'y1a1_coadd'
     run['db-columns'] = os.path.join(dir, 'y1a1_coadd_objects-columns.fits')
@@ -42,30 +42,30 @@ def Y1A1Setup(run, balrog, tiles):
 def CustomConfig(run, balrog, db, tiles):
     run, balrog, tiles = Y1A1Setup(run, balrog, tiles)
 
-    tstart = 200
-    tend = 210
+    tstart = 0
+    tend = 1
     tiles = tiles[tstart:tend]
 
     run['nodes'] = len(tiles)
     run['ppn'] = 24
-    run['walltime'] = '01:00:00'
+    run['walltime'] = '20:00:00'
     run['queue'] = 'regular'
     run['runnum'] = 0 
 
     run['stripe'] = 2
     run['sequential'] = False
-    run['asarray'] = True
-    run['arraymax'] = 8
-    run['npersubjob'] = 1
-    
+    run['asarray'] = False
+    run['arraymax'] = None
+    run['npersubjob'] = 0
+
     baseout = '/scratch3/scratchdirs/esuchyta/'
-    run['dbname'] = 'y1a1_test'
+    run['dbname'] = 'y1a1_sptn_01'
     run['joblabel'] = '%i:%i' %(tstart, tend)
     run['jobdir'] = os.path.join(baseout, 'BalrogJobs')
     run['outdir'] = os.path.join(baseout, 'BalrogScratch')
 
-    balrog['ngal'] = 200
-    run['tiletotal'] = balrog['ngal'] * (run['ppn']-1) 
+    balrog['ngal'] = 1000
+    run['tiletotal'] = 4 * balrog['ngal'] * (run['ppn']-1) 
     run['indexstart'] = tstart * run['tiletotal']
 
     run['DBoverwrite'] = False
