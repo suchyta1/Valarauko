@@ -17,6 +17,7 @@ if __name__ == "__main__":
         both = np.in1d(s['tilename'], y['tilename'])
         common[band] = s['tilename'][both]
         '''
+
         yonly = -np.in1d(y['tilename'], s['tilename'])
         common[band] = y['tilename'][yonly]
         
