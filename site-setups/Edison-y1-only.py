@@ -44,21 +44,22 @@ def Y1A1Setup(run, balrog, tiles):
 def CustomConfig(run, balrog, db, tiles):
     run, balrog, tiles = Y1A1Setup(run, balrog, tiles)
 
-    tstart = 65
-    tend = 95
+    tstart = 135
+    tend = 185
     tiles = tiles[tstart:tend]
     run['npersubjob'] = 1
+    run['nodes'] = 50
+
     balrog['ngal'] = 1000
     run['tiletotal'] = 100000
     run['indexstart'] = tstart * run['tiletotal']
     run['runnum'] = 0 
 
-    run['nodes'] = len(tiles)
     run['walltime'] = '06:00:00'
     run['queue'] = 'regular'
 
-    #baseout = '/scratch1/scratchdirs/esuchyta'
-    baseout = '/scratch3/scratchdirs/esuchyta/'
+    baseout = '/scratch1/scratchdirs/esuchyta'
+    #baseout = '/scratch3/scratchdirs/esuchyta/'
     run['dbname'] = 'y1a1_sptn_01'
     run['joblabel'] = '%i:%i' %(tstart, tend)
     run['jobdir'] = os.path.join(baseout, 'BalrogJobs')

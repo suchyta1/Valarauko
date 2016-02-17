@@ -216,12 +216,12 @@ def SubConfig(start,i,indexstart, tiles,subtiles,subnodes,run,config, usesub,sub
     logdir = os.path.join(jdir, 'runlog')
     
     run['indexstart'] = indexstart + start*run['tiletotal']
-    #run['nodes'] = subnodes[i]
+    run['nodes'] = subnodes[i]
     config['run'] = run
     jsonfile = WriteJson(config,jdir, tiles,start,end)
 
-    #num = run['nodes'] * run['ppn']
-    num = subnodes[i] * run['ppn']
+    #num = subnodes[i] * run['ppn']
+    num = run['nodes'] * run['ppn']
     return jsonfile, logdir, num, end
 
 
@@ -277,10 +277,12 @@ def Generate_Job(run,balrog,db,tiles,  where, setup, subtiles, subnodes, usesub)
         run['email'] = None
 
         start = 0
+        allnodes = run['nodes']
         for k in range(run['ndependencies']):
 
             if run['ndependencies'] > 1:
-                jobdir = '%s_%i'%(run['jobdir'],k+1)
+                run['jobname'] = '%s_dep_%'%(run['jobname'],k+1)
+                jobdir = os.path.join(run['jobdir'], 'dep_%i'%(k+1))
                 TryToMake(jobdir)
             else:
                 jobdir = run['jobdir']
@@ -303,7 +305,7 @@ def Generate_Job(run,balrog,db,tiles,  where, setup, subtiles, subnodes, usesub)
                     print 'In job arrays, each subjob must use the same number of nodes. You gave a "non-equally divisible" job, chunked into subjobs of node sizes: %s. Setting job array to use nodes=%i'%(str(subnodes[k]),maxnodes)
             else:
                 ofile = os.path.join(jobdir, '%s-%%j.out'%(run['jobname']))
-                descr = SLURMadd(descr, '--nodes=%i'%(run['nodes']), start='#SBATCH')
+                descr = SLURMadd(descr, '--nodes=%i'%(allnodes), start='#SBATCH')
 
             descr = SLURMadd(descr, '--output=%s'%(ofile), start='#SBATCH')
             descr = descr + '\n\n'
