@@ -10,7 +10,7 @@ function hpcp_setup
 	module load healpy-hpcp
 	#module load matplotlib-hpcp
 
-	module load astropy-hpcp
+	#module load astropy-hpcp
 	#module load astropy/0.4.2+2
 
 	module load boost-hpcp

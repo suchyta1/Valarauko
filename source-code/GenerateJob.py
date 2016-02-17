@@ -14,13 +14,19 @@ RunConfigurations = imp.load_source('RunConfigurations', os.path.join(updir,'Run
 #import RunConfigurations
 
 
+def Exit(msg):
+    print msg
+    sys.exit(1)
+
+class constants:
+    nersc = ['EDISON','CORI']
+
 def TryToMake(dir):
     if not os.path.exists(dir):
         try:
             os.makedirs(dir)
         except:
-            print 'Could not make %s'%(dir)
-            sys.exit(1)
+            Exit( 'Could not make %s'%(dir) )
 
 
 # get a default config object
@@ -45,11 +51,22 @@ def GetConfig(where, config):
 
 
     # These are only relevant at NERSC. Ask Eric Suchyta what in the world these ones do. They're a little less trivial, and change the workflow.
-    run['stripe'] = None 
     run['sequential'] = False
     run['asarray'] = False
-    run['arraymax'] = None
-    run['npersubjob'] = 0
+
+    if where.upper() in constants.nersc:
+        run['stripe'] = 2
+        run['npersubjob'] = 1
+        run['asdependency'] = None
+        run['arraymax'] = None
+        if where.upper()=='EDISON':
+            run['ppn'] = 24
+        elif where.upper()=='CORI':
+            run['ppn'] = 32
+    else:
+        stripe = None
+        run['npersubjob'] = 0
+        run['asdependency'] = False
 
 
     # will get passed as command line arguments to balrog
@@ -68,10 +85,43 @@ def GetConfig(where, config):
     balrog['systemcmd'] = run['command']
     balrog['retrycmd'] = run['retry']
     balrog['useshell'] = run['useshell']
+    
+    if (where.upper()=='BNL'):
+        if run['asarray']:
+            Exit( 'You cannot do job arrays at BNL. Must use asarray=False.' )
+        if run['asdependency']:
+            Exit( 'You cannot do job dependencies with wq. Must use asdependency=False.' )
 
-    if run['sequential'] and run['asarray']:
-        print 'Cannot set both sequential and asarray to be True'
-        sys.exit(1)
+    if (where.upper() in constants.nersc):
+        if run['asarray'] and run['asdependency']:
+            Exit( "Cannot run asarray and asdependency" )
+
+        if run['sequential']:
+            Exit( "I don't allow you to use sequential at NERSC. This isn't technically impossible, but doesn't really make sense there." )
+
+        mod = len(tiles) % (run['nodes'] * run['npersubjob'])
+        div = len(tiles) / (run['nodes'] * run['npersubjob'])
+
+        if (mod != 0):
+            Exit( "I only allow you to run a evenly divisible jobs at NERSC." )
+        
+        '''
+        if run['npersubjob'] > 1:
+            print "You are using npersubjob > 1. Are you sure you want to do this? You'll need ngal <= 200, and your jobs are going to take A LOT longer."
+        '''
+
+        if not run['asarray']:
+            if run['asdependency'] is None:
+                run['asdependency'] = True
+
+            if run['asdependency']:
+                run['ndependencies'] = div 
+            else:
+                run['ndependencies'] = 1
+                '''
+                if (use != 1):
+                    print "Your job is going to require nodes running more than one tile. Are you sure you want to do this?"
+                '''
 
     if run['jobdir'] is None:
         run['jobdir'] = os.path.dirname(os.path.realpath(__file__))
@@ -81,6 +131,7 @@ def GetConfig(where, config):
         run['outdir'] = os.path.dirname(os.path.realpath(__file__))
         print 'No run jobdir given, setting it to: %s'%(run['outdir'])
     TryToMake(run['outdir'])
+
 
     run['jobname'] = '%s-%s' %(run['dbname'], run['joblabel'])
     run['jobdir'] = os.path.join(run['jobdir'], '%s-jobdir' %(run['jobname']))
@@ -115,7 +166,7 @@ def EndNERSC(s):
 def GetEnd(s, end):
     if end.upper()=='BNL':
         s = EndBNL(s)
-    elif end.upper() in ['CORI','EDISON']:
+    elif end.upper() in constants.nersc:
         s = EndNERSC(s)
     return s
 
@@ -158,26 +209,31 @@ def GetJdir(usesub, dirname, id, substr):
     return jdir
 
 
-def SubConfig(start,i,indexstart, tiles,subtiles,subnodes,run,config, usesub,substr):
+def SubConfig(start,i,indexstart, tiles,subtiles,subnodes,run,config, usesub,substr, jobdir):
     end = start + subtiles[i]
     id = i + 1
-    jdir = GetJdir(usesub, run['jobdir'], id, substr)
+    jdir = GetJdir(usesub, jobdir, id, substr)
     logdir = os.path.join(jdir, 'runlog')
     
     run['indexstart'] = indexstart + start*run['tiletotal']
-    run['nodes'] = subnodes[i]
+    #run['nodes'] = subnodes[i]
     config['run'] = run
     jsonfile = WriteJson(config,jdir, tiles,start,end)
 
-    num = run['nodes'] * run['ppn']
+    #num = run['nodes'] * run['ppn']
+    num = subnodes[i] * run['ppn']
     return jsonfile, logdir, num, end
+
+
+def WriteOut(jobfile, out):
+    with open(jobfile, 'w') as job:
+        job.write(out)
 
 
 def Generate_Job(run,balrog,db,tiles,  where, setup, subtiles, subnodes, usesub):
 
     thisdir = os.path.dirname(os.path.realpath(__file__))
     allmpi = os.path.join(thisdir, 'AllMpi.py')
-    jobfile = os.path.join(run['jobdir'], run['jobname'])
     s = Source(setup, where)
     d = BalrogDir(run)
     seq = " &"
@@ -188,6 +244,7 @@ def Generate_Job(run,balrog,db,tiles,  where, setup, subtiles, subnodes, usesub)
     config = {}
     config['balrog'] = balrog
     config['db'] = db
+    deps = []
 
     if where.upper()=='BNL':
 
@@ -199,89 +256,111 @@ def Generate_Job(run,balrog,db,tiles,  where, setup, subtiles, subnodes, usesub)
         st = 0 
         cmd = """   nodes=(); while read -r line; do found=false; host=$line; for h in "${nodes[@]}"; do if [ "$h" = "$host" ]; then found=true; fi; done; if [ "$found" = "false" ]; then nodes+=("$host"); fi; done < %hostfile%\n"""
 
-        for i in range(len(subtiles)):
-            jsonfile, logdir, num, start = SubConfig(start,i,indexstart, tiles,subtiles,subnodes,run,config, usesub,substr)
+        for i in range(len(subtiles[0])):
+            jsonfile, logdir, num, start = SubConfig(start,i,indexstart, tiles,subtiles[0],subnodes[0],run,config, usesub,substr, run['jobdir'])
 
-            et = st + subnodes[i] - 1
+            et = st + subnodes[0][i] - 1
             cmd = cmd + """   nstart=%i; nend=%i; for i in `seq $nstart $nend`; do for j in `seq 0 %i`; do  if [ $i = $nstart ] && [ $j = 0 ]; then host=${nodes[$i]}; else host="${host},${nodes[$i]}"; fi; done; done;\n"""%(st, et, run['ppn']-1)
             cmd = cmd + '   mpirun -np %i -host $host %s %s %s%s\n' %(num, allmpi, jsonfile, logdir, seq)
 
             if not run['sequential']:
                 st = et + 1
 
-            #ee = ss + subnodes[i]*run['ppn']
-            #cmd = cmd + """   start=%i; end=%i; for i in `seq $start $end`; do h=`sed -n "${i}{p;q;}" %%hostfile%%`; if [ $i = $start ]; then hosts=$h; else hosts="${hosts},${h}"; fi; done;\n"""%(ss,ee)
-            #cmd = cmd + '   mpirun -npernode %i -np %i -host $hosts %s %s %s &\n' %(run['ppn'], num, allmpi, jsonfile, logdir)
-            #ss = ee
-
-            #cmd = cmd + '   mpirun -npernode %i -np %i -hostfile %%hostfile%% %s %s %s\n' %(run['ppn'], num, allmpi, jsonfile, logdir)
-
         cmd = cmd + '   wait\n'
         out = 'command: |\n   %s%s%s%s' %(s, d, cmd, descr)
-        jobfile = '%s.wq' %(jobfile)
+        jobfile = os.path.join(run['jobdir'], '%s.wq' %(run['jobname']))
+        WriteOut(jobfile, out)
+
     
 
-    elif where.upper() in ['CORI', 'EDISON']:
+    elif where.upper() in constants.nersc:
         run['email'] = None
-        descr = "#!/bin/bash -l \n"
 
-        descr = SLURMadd(descr, '--job-name=%s'%(run['jobname']), start='#SBATCH')
-        descr = SLURMadd(descr, '--mail-type=BEGIN,END,TIME_LIMIT_50', start='#SBATCH')
-        descr = SLURMadd(descr, '--partition=%s'%(run['queue']), start='#SBATCH')
-        descr = SLURMadd(descr, '--time=%s'%(run['walltime']), start='#SBATCH')
-
-        if run['asarray']:
-            ofile = os.path.join(run['jobdir'], '%s_%%a'%(substr), '%s-%%A_%%a.out'%(run['jobname']))
-            arrmax = ''
-            if run['arraymax'] is not None:
-                arrmax = '%%%i'%(run['arraymax'])
-            descr = SLURMadd(descr, '--array=1-%i%s'%(len(subtiles),arrmax), start='#SBATCH')
-            maxnodes = np.amax(subnodes)
-            descr = SLURMadd(descr, '--nodes=%i'%(maxnodes), start='#SBATCH')
-            if not (np.all(subnodes==maxnodes)):
-                print 'In job arrays, each subjob must use the same number of nodes. You gave a "non-equally divisible" job, chunked into subjobs of node sizes: %s. Setting job array to use nodes=%i'%(str(subnodes),maxnodes)
-        else:
-            ofile = os.path.join(run['jobdir'], '%s-%%j.out'%(run['jobname']))
-            descr = SLURMadd(descr, '--nodes=%i'%(run['nodes']), start='#SBATCH')
-
-        descr = SLURMadd(descr, '--output=%s'%(ofile), start='#SBATCH')
-        descr = descr + '\n\n'
-        descr =  descr + s + d
-
-        if run['stripe'] is not None:
-            descr = descr + 'if ! [ -d %s ]; then mkdir %s; fi;\n' %(run['outdir'],run['outdir'])
-            descr = descr + 'lfs setstripe %s --count %i\n' %(run['outdir'],run['stripe'])
-
-        indexstart = copy.copy(run['indexstart'])
         start = 0
-        for i in range(len(subtiles)):
-            jsonfile, logdir, num, start = SubConfig(start,i,indexstart, tiles,subtiles,subnodes,run,config, usesub,substr)
-            jdir = os.path.dirname(jsonfile)
+        for k in range(run['ndependencies']):
 
-            if not run['asarray']:
-                descr = descr + 'srun -N %i -n %i %s %s %s%s\n' %(subnodes[i], num, allmpi, jsonfile, logdir,seq)
+            if run['ndependencies'] > 1:
+                jobdir = '%s_%i'%(run['jobdir'],k+1)
+                TryToMake(jobdir)
             else:
-                nodefile = os.path.join(jdir, 'N')
-                npfile = os.path.join(jdir, 'n')
-                with open(nodefile, 'w') as f:
-                    f.write('%i'%(subnodes[i]))
-                with open(npfile, 'w') as f:
-                    f.write('%i'%(num))
-            
-        if run['asarray']:
-            subdir = os.path.join(run['jobdir'], '%s_${SLURM_ARRAY_TASK_ID}'%(substr))
-            descr = descr + 'N=$(head -n 1 %s)\n'%(os.path.join(subdir,'N'))
-            descr = descr + 'n=$(head -n 1 %s)\n'%(os.path.join(subdir,'n'))
-            descr = descr + 'j=%s\n'%(os.path.join(subdir,'config.json'))
-            descr = descr + 'l=%s\n'%(os.path.join(subdir,'runlog'))
-            out = descr + 'srun -N ${N} -n ${n} %s ${j} ${l}' %(allmpi)
-        else:
-            out = descr + 'wait'
-        jobfile = '%s.sl' %(jobfile)
+                jobdir = run['jobdir']
 
+            descr = "#!/bin/bash -l \n"
+            descr = SLURMadd(descr, '--job-name=%s'%(run['jobname']), start='#SBATCH')
+            descr = SLURMadd(descr, '--mail-type=BEGIN,END,TIME_LIMIT_50', start='#SBATCH')
+            descr = SLURMadd(descr, '--partition=%s'%(run['queue']), start='#SBATCH')
+            descr = SLURMadd(descr, '--time=%s'%(run['walltime']), start='#SBATCH')
 
-    with open(jobfile, 'w') as job:
-        job.write(out)
+            if run['asarray']:
+                ofile = os.path.join(jobdir, '%s_%%a'%(substr), '%s-%%A_%%a.out'%(run['jobname']))
+                arrmax = ''
+                if run['arraymax'] is not None:
+                    arrmax = '%%%i'%(run['arraymax'])
+                descr = SLURMadd(descr, '--array=1-%i%s'%(len(subtiles[k]),arrmax), start='#SBATCH')
+                maxnodes = np.amax(subnodes[k])
+                descr = SLURMadd(descr, '--nodes=%i'%(maxnodes), start='#SBATCH')
+                if not (np.all(subnodes[k]==maxnodes)):
+                    print 'In job arrays, each subjob must use the same number of nodes. You gave a "non-equally divisible" job, chunked into subjobs of node sizes: %s. Setting job array to use nodes=%i'%(str(subnodes[k]),maxnodes)
+            else:
+                ofile = os.path.join(jobdir, '%s-%%j.out'%(run['jobname']))
+                descr = SLURMadd(descr, '--nodes=%i'%(run['nodes']), start='#SBATCH')
+
+            descr = SLURMadd(descr, '--output=%s'%(ofile), start='#SBATCH')
+            descr = descr + '\n\n'
+            descr =  descr + s + d
+
+            if run['stripe'] is not None:
+                descr = descr + 'if ! [ -d %s ]; then mkdir %s; fi;\n' %(run['outdir'],run['outdir'])
+                descr = descr + 'lfs setstripe %s --count %i\n' %(run['outdir'],run['stripe'])
+
+            indexstart = copy.copy(run['indexstart'])
+            for i in range(len(subtiles[k])):
+                jsonfile, logdir, num, start = SubConfig(start,i,indexstart, tiles,subtiles[k],subnodes[k],run,config, usesub,substr, jobdir)
+                jdir = os.path.dirname(jsonfile)
+
+                if not run['asarray']:
+                    descr = descr + 'srun -N %i -n %i %s %s %s%s\n' %(subnodes[k][i], num, allmpi, jsonfile, logdir,seq)
+                else:
+                    nodefile = os.path.join(jdir, 'N')
+                    npfile = os.path.join(jdir, 'n')
+                    with open(nodefile, 'w') as f:
+                        f.write('%i'%(subnodes[k][i]))
+                    with open(npfile, 'w') as f:
+                        f.write('%i'%(num))
+                
+            if run['asarray']:
+                subdir = os.path.join(run['jobdir'], '%s_${SLURM_ARRAY_TASK_ID}'%(substr))
+                descr = descr + 'N=$(head -n 1 %s)\n'%(os.path.join(subdir,'N'))
+                descr = descr + 'n=$(head -n 1 %s)\n'%(os.path.join(subdir,'n'))
+                descr = descr + 'j=%s\n'%(os.path.join(subdir,'config.json'))
+                descr = descr + 'l=%s\n'%(os.path.join(subdir,'runlog'))
+                out = descr + 'srun -N ${N} -n ${n} %s ${j} ${l}' %(allmpi)
+            else:
+                out = descr + 'wait'
+
+            jobfile = os.path.join(jobdir, '%s.sl' %(run['jobname']))
+            WriteOut(jobfile, out)
+            deps.append(jobfile)
+
+    if run['ndependencies'] > 1:
+        deps = ' '.join(deps)
+        submit = os.path.join(run['jobdir'], 'submit.sh')
+        t = '    '
+        with open(submit, 'w') as out:
+            out.write('deps="%s"\n'%(deps))
+            out.write('arr=($deps)\n')
+            out.write('for i in "${arr[@]}"; do\n')
+            out.write('%sif [ "$i" = "${arr[0]}" ]; then\n'%(t))
+            out.write('%s%scmd="sbatch $i"\n'%(t,t))
+            out.write('%selse\n'%(t))
+            out.write('%s%scmd="sbatch --dependency=afterok:$dep $i"\n'%(t,t))
+            out.write('%sfi\n'%(t))
+            out.write('%sout="$($cmd)"\n'%(t))
+            out.write('%soutarr=($out)\n'%(t))
+            out.write('%sdep=${outarr[${#outarr[@]}-1]}\n'%(t))
+            out.write('done')
+        os.chmod(submit, 0755)
+        jobfile = submit
 
     return jobfile
 
@@ -307,8 +386,7 @@ def ConservativeDivide(num, den):
 
 def Reallocate(subnodes, subtiles, nodes):
     if nodes < len(subnodes):
-        print 'Cannot divide %i node(s) into %i simultaneous subjobs'%(nodes,len(subnodes))
-        sys.exit(1)
+        Exit( 'Cannot divide %i node(s) into %i simultaneous subjobs'%(nodes,len(subnodes)) )
 
     effective = (subtiles/subnodes) + np.int32(np.mod(subtiles, subnodes) > 0)
 
@@ -341,14 +419,27 @@ def BySub(tiles, run, where):
         nsub = ConservativeDivide(len(tiles),run['npersubjob'])
         usesub = True
 
-    subtiles = np.append(np.array( [run['npersubjob']]*(nsub-1), dtype=np.int32 ), len(tiles)-(nsub-1)*run['npersubjob'])
-    if run['sequential']:
-        subnodes = np.array( [run['nodes']]*len(subtiles) )
-    else:
-        target = ConservativeDivide(len(tiles), run['nodes'])
-        subnodes = (subtiles/target) + np.int32(np.mod(subtiles,target) > 0)
-        subnodes = Reallocate(subnodes, subtiles, run['nodes'])
+    ts = np.append(np.array( [run['npersubjob']]*(nsub-1), dtype=np.int32 ), len(tiles)-(nsub-1)*run['npersubjob'])
+    subtiles = np.array( np.array_split(ts, run['ndependencies']) )
+    subnodes = []
 
+    if run['asarray']:
+        run['nodes'] = run['nodes'] * len(ts)
+    
+    for i in range(run['ndependencies']):
+
+        if run['sequential']:
+            subnodes[i] = np.array( [run['nodes']]*len(subtiles[i]) )
+        else:
+            target = ConservativeDivide(np.sum(subtiles[i]), run['nodes'])
+            sn = (subtiles[i]/target) + np.int32(np.mod(subtiles[i],target) > 0)
+            r = Reallocate(sn, subtiles[i], run['nodes'])
+            subnodes.append(r)
+
+            if (where in constants.nersc) and  (np.sum(subnodes[i] > 1) > 0):
+                print "You're job is going to require more than 1 node for a subjob. Are you sure you want to do this?"
+
+    subnodes = np.array(subnodes)
     return subtiles, subnodes, usesub
 
 
@@ -366,4 +457,4 @@ def GenJob(argv):
 if __name__ == "__main__":
 
     job, where = GenJob(sys.argv)
-    print 'Wrote job file to:', job
+    print 'Wrote job file to:', str(job)
