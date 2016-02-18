@@ -10,42 +10,54 @@ import esutil
 import fitsio
 import numpy.lib.recfunctions as rec
 import suchyta_utils as es
+import suchyta_utils.mpi as mpi
 from mpi4py import MPI
 
 
-def GetPos(num, it[i], args):
+def GetPos(num, it, args):
     if args.seed is not None:
-        np.random.seed(args.seed + it[i])
+        np.random.seed(args.seed + it)
 
-    ra, dec = es.db.UniformRandom(num, ramin=0, ramax=360, decmin=-90, decmax=90)
+    ra, dec = es.balrog.UniformRandom(num, ramin=0, ramax=360, decmin=-90, decmax=90)
     pos = np.empty(num, dtype=[('ra',np.float32), ('dec',np.float32)])
     pos['ra'] = ra
     pos['dec'] = dec
     return pos
 
-
 def FindInTile(pos, ra1, ra2, dec1, dec2):
     cut = (pos['ra'] > ra1) & (pos['ra'] < ra2) & (pos['dec'] > dec1) & (pos['dec'] < dec2)
     return pos[cut]
 
-def GetTileDef(args):
-    t = esutil.io.read(args.tiles)[args.tilecol]
+def GetTileDefs(args, strtype='|S12'):
+    t = esutil.io.read(args.tiles)[args.tilecol][0:2]
     tindex = np.arange(len(t))
-    tiles = np.empty(len(t), dtype=[('tilename','|S12'), ('index', np.int64)])
-    tiles['tilename'] = t
+    tiles = np.empty(len(t), dtype=[('tilename',strtype), ('index', np.int64)])
+    tiles['tilename'] = t.astype(strtype)
     tiles['index'] = np.arange(len(t))
+
+    for tile in tiles['tilename']:
+        outdir = os.path.join(args.outdir, tile)
+        if not os.path.exists(outdir):
+            os.makedirs(outdir)
 
     cur = desdb.connect()
     q = "select urall, uraur, udecll, udecur, tilename from coaddtile order by udecll desc, urall asc"
     arr = cur.quick(q, array=True)
 
-    #index = np.arange(len(tiles))
-    #cut = np.in1d(arr['tilename'], tiles)
+    dt = arr.dtype.descr
+    dt[-1] = ('tilename',strtype)
+    dt = np.dtype(dt)
+    newarr = np.empty(len(arr), dtype=dt)
+    for i in range(len(arr.dtype.names)):
+        name = arr.dtype.names[i]
+        if i == 4:
+            newarr[name] = arr[name].astype(strtype)
+        else:
+            newarr[name] = arr[name]
 
-    tiles = rec.join_by('tilename', arr, tiles, usemask=False)
+    tiles = rec.join_by('tilename', newarr, tiles, usemask=False)
     tiles = np.sort(tiles, order='index')
-
-    return tiles[cut]
+    return tiles
 
 
 def GetArgs():
@@ -66,16 +78,12 @@ def GetArgs():
 
 
     if args.outdir is None:
-        f = os.path.realpath(args.tiles)
-        args.outdir = os.path.join(os.path.dirname(f), '%s-tilepos'%(os.path.basename(args.tiles).rstrip('.fits')) )
+        args.outdir = os.path.join( os.path.dirname(args.tiles), '%s-tilepos'%(os.path.basename(args.tiles).rstrip('.fits')) )
+    args.outdir = os.path.realpath(args.outdir)
 
-    if MPI.COMM_WORLD()==0:
+    if MPI.COMM_WORLD.Get_rank()==0:
         if not os.path.exists(args.outdir):
             os.makedirs(args.outdir)
-        for tile in args.tiles:
-            outdir = os.path.join(args.outdir, tile)
-            if not os.path.exist(outdir):
-                os.makedirs(outdir)
     
     return args
 
@@ -84,16 +92,15 @@ def SetupIterations(args):
     total = int( args.density * 4.0*np.pi * np.power(180./np.pi, 2) )
     fullits = total / args.iterateby
     num = np.array( [total/fullits]*fullits )
-    it = np.arange(num)
+    it = np.arange(len(num))
     leftover = total % args.iterateby
     if (leftover > 0):
         num = np.append(num, leftover)
-        it = np.append(it, it[0]+1)
+        it = np.append(it, it[-1]+1)
     return num, it
 
 
 def CatFiles(args, tilecopy, itcopy):
-    indexstart = 0
     for tile in tilecopy['tilename']:
         for i in range(len(itcopy)):
             f = os.path.join(args.outdir, tile, 'tmp-%i.fits'%(itcopy[i]))
@@ -104,11 +111,22 @@ def CatFiles(args, tilecopy, itcopy):
                 pos = rec.stack_arrays( (pos,new), usemask=False )
         shutil.rmtree(os.path.join(args.outdir, tile))    
         outfile = os.path.join(args.outdir, '%s.fits'%(tile))
-        header = {'density': args.density, 'seed': args.seed, 'iterateby': args.iterateby, 'indexstart': indexstart}
+        s = args.seed
+        if s is None:
+            s = 'None'
+        header = {'density': args.density, 'seed': s, 'itby': args.iterateby}
         esutil.io.write(outfile, pos, clobber=True, header=header)
-        indexstart += len(pos)
         print 'wrote %s'%(outfile)
+    MPI.COMM_WORLD.barrier()
 
+def AddIndexstart(tiles):
+    indexstart = 0
+    for tile in tiles['tilename']:
+        outfile = os.path.join(args.outdir, '%s.fits'%(tile))
+        fits = fitsio.FITS(outfile, 'rw')
+        fits[-1].write_key('istart', indexstart)
+        indexstart += fits[-1].read_header()['NAXIS2']
+        fits.close()
 
 def WriteTmp(args, num, it, tiles):
     for i in range(len(num)):
@@ -117,24 +135,30 @@ def WriteTmp(args, num, it, tiles):
             tilepos = FindInTile(pos, tiles[j]['urall'],tiles[j]['uraur'], tiles[j]['udecll'],tiles[j]['udecur'])
             outfile = os.path.join(args.outdir, tiles[j]['tilename'], 'tmp-%i.fits'%(it[i]))
             esutil.io.write(outfile, tilepos, clobber=True)
+    MPI.COMM_WORLD.barrier()
 
 
 if __name__ == "__main__":
     args = GetArgs() 
 
-    if MPI.COMM_WORLD().Get_rank()==0:
-        num, it = SetupIterations()
+    if MPI.COMM_WORLD.Get_rank()==0:
+        num, it = SetupIterations(args)
         tiles = GetTileDefs(args)
         itcopy = copy.deepcopy(it)
         tilecopy = copy.deepcopy(tiles)
     else:
-        num = None
-        tiles = None
+        num = it = itcopy = tiles = None
    
-    tiles = es.mpi.Broadcast(tiles)
-    num, it = es.mpi.Scatter(num, it)
+    tiles, itcopy = mpi.Broadcast(tiles, itcopy)
+    num, it = mpi.Scatter(num, it)
     WriteTmp(args, num, it, tiles)
-
-    MPI.COMM_WORLD.barrier()
+    
+    '''
     if MPI.COMM_WORLD.Get_rank()==0:
-        CatFiles(args, tilecopy, itcopy):
+        CatFiles(args, tilecopy, itcopy)
+    '''
+    tiles = mpi.Scatter(tiles)
+    CatFiles(args, tiles, itcopy)
+
+    if MPI.COMM_WORLD.Get_rank()==0:
+        AddIndexstart(tilecopy)

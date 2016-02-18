@@ -34,9 +34,7 @@ def Y1A1Setup(run, balrog, tiles):
     run['swarp-config'] = '/gpfs01/astro/workarea/esuchyta/software/Y1A1-config/20150806_default.swarp'
 
     run['balrog'] = '/gpfs01/astro/workarea/esuchyta/git-repos/BalrogDirs/2015-Nov/Balrog/balrog.py'
-    run['db-columns'] = '/gpfs01/astro/workarea/esuchyta/git-repos/BalrogMPI/y1a1_coadd_objects-columns.fits'
-
-    #balrog['pyconfig'] = '/gpfs01/astro/workarea/esuchyta/software/Y1A1-pyconfig/BalrogConfig-OrigSGQ.py'
+    run['db-columns'] = '/gpfs01/astro/workarea/esuchyta/software/Y1A1-config/y1a1_coadd_objects-columns.fits'
     balrog['pyconfig'] = '/gpfs01/astro/workarea/esuchyta/software/Y1A1-pyconfig/Y1-only.py'
 
     balrog['sexnnw'] = '/gpfs01/astro/workarea/esuchyta/software/Y1A1-config/20150806_sex.nnw'
@@ -46,9 +44,7 @@ def Y1A1Setup(run, balrog, tiles):
     balrog['sexconfig'] = '/gpfs01/astro/workarea/esuchyta/software/Y1A1-config/20150806_sex.config'
     balrog['sexpath'] = '/gpfs01/astro/workarea/esuchyta/software/sextractor-2.18.10/install/bin/sex'
 
-    #tiles = esutil.io.read('/gpfs01/astro/workarea/esuchyta/git-repos/BalrogDirs/2015-Nov/BalrogMPI/tiles/spt-sva1+y1a1-overlap-grizY.fits')['tilename']
-    tiles = esutil.io.read('/gpfs01/astro/workarea/esuchyta/git-repos/BalrogDirs/2015-Nov/BalrogMPI/tiles/spt-y1a1-only-grizY.fits')['tilename']
-
+    tiles = esutil.io.read('/gpfs01/astro/workarea/esuchyta/git-repos/BalrogDirs/2015-Nov/BalrogMPI/tiles/spt-y1a1-only-g70-grizY.fits')['tilename']
     return run, balrog, tiles
 
 
@@ -56,26 +52,26 @@ def CustomConfig(run, balrog, db, tiles):
     run, balrog, tiles = Y1A1Setup(run, balrog, tiles)
     run['email'] = 'eric.d.suchyta@gmail.com'
 
-    tstart = 2
-    tend = 10
+    tstart = 0
+    tend = 1
     tiles = tiles[tstart:tend]
     run['sequential'] = False
     run['npersubjob'] = 0
 
-    run['dbname'] = 'y1a1_test'
+    run['dbname'] = 'y1a1_sptn_01'
     run['joblabel'] = '%i:%i' %(tstart, tend)
     run['outdir'] = os.path.join(os.environ['SCRATCH'],'BalrogScratch')
     run['jobdir'] = os.path.join(os.environ['GLOBALDIR'],'BalrogJobs')
 
-    run['nodes'] = 8
+    run['nodes'] = 1
     run['ppn'] = 8
     run['runnum'] = 0 
 
-    run['tiletotal'] = 50
+    run['tiletotal'] = 100000
     run['indexstart'] = tstart * run['tiletotal']
-    balrog['ngal'] = 10
+    balrog['ngal'] = 1000
 
-    run['DBoverwrite'] = True
+    run['DBoverwrite'] = False
     run['verifyindex'] = True
 
     return run, balrog, db, tiles
