@@ -36,7 +36,7 @@ def GetConfig(where, config):
     run = RunConfigurations.RunConfigurations.default
 
     # hide these from user
-    run['DBload'] = 'cx_Oracle'  # ['cx_Oracle', 'sqlldr'] How to write to DB. sqlldr is deprecated, and I don't guarantee it still works.
+    #run['DBload'] = 'cx_Oracle'  # ['cx_Oracle', 'sqlldr'] How to write to DB. sqlldr is deprecated, and I don't guarantee it still works.
     run['bands'] = ['g','r','i','z','Y'] # Bands you'll get measurement catalogs for. I haven't tested changing this -- don't.
     run['dualdetection'] = [1,2,3]  # Use None not to use detection image. Otherwise the indices in the array of bands. I haven't tested changing this -- don't.
     run['intermediate-clean'] = True # Delete an iteration's output Balrog images

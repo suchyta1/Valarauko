@@ -30,8 +30,10 @@ class RunConfigurations:
             'indexstart': None, # None means start from +1 of whatever exists in the DB. (If the DB doesn't exist yet, None will become 0)
             'verifyindex': True, # Check if you're trying to add balrog_index which already exists
 
-            'tiletotal': 100000, # Approximate number of (truth) Balrog galaxies per tile.
-            'fixposseed': None,  # Fix this to an integer to get the same positions every time you run
+            #'tiletotal': 100000, # Approximate number of (truth) Balrog galaxies per tile.
+            #'fixposseed': None,  # Fix this to an integer to get the same positions every time you run
+            'pos': 'tilepos',
+
             'fixwrapseed': None # Fix this to an integer to get the same Balrog sampling realizations each time you run
         }
 
