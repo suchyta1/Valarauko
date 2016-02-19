@@ -176,7 +176,7 @@ def GetPos(RunConfig, tiles):
         ind.append(indexstart)
 
         if RunConfig['downsample'] is None:
-            s = len(pos)
+            s = len(data)
         else:
             s = RunConfig['downsample']
         size.append(s)
