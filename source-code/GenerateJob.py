@@ -39,6 +39,7 @@ def GetConfig(where, config):
     run['email'] = None # Set this to your email if running at BNL to get an email at finish. At NERSC, I've set slurm to send start, 50%, and finish emails automatically
     run['asarray'] = False
     run['ppn'] = None
+    run['downsample'] = None
 
     if where.upper() in constants.nersc:
         run['stripe'] = 2

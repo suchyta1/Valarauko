@@ -53,8 +53,8 @@ def CustomConfig(run, balrog, db, tiles):
     run, balrog, tiles = Y1A1Setup(run, balrog, tiles)
     run['email'] = 'eric.d.suchyta@gmail.com'
 
-    tstart = 3
-    tend = 5
+    tstart = 5
+    tend = 7
     tiles = tiles[tstart:tend]
     run['npersubjob'] = 1
     run['nodes'] = 2
@@ -66,8 +66,8 @@ def CustomConfig(run, balrog, db, tiles):
 
     #run['pos'] = '/gpfs01/astro/workarea/esuchyta/git-repos/BalrogDirs/2015-Nov/BalrogMPI/source-code/test-tiles'
     run['pos'] = '/gpfs01/astro/workarea/esuchyta/software/Y1A1-config/spt-y1a1-only-g70-grizY-pos'
-    balrog['ngal'] = 10
-    run['downsample'] = 50
+    balrog['ngal'] = 1000
+    #run['downsample'] = 50
     run['runnum'] = 0 
 
     run['DBoverwrite'] = False
