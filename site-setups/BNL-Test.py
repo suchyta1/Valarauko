@@ -57,22 +57,19 @@ def CustomConfig(run, balrog, db, tiles):
     run['email'] = 'eric.d.suchyta@gmail.com'
 
     tstart = 0
-    tend = 1
+    tend = 10
     tiles = tiles[tstart:tend]
-    run['sequential'] = False
-    run['npersubjob'] = 1
+    run['npersubjob'] = 2
+    run['nodes'] = 5
 
     run['dbname'] = 'y1a1_test'
     run['joblabel'] = '%i:%i' %(tstart, tend)
     run['outdir'] = os.path.join(os.environ['SCRATCH'],'BalrogScratch')
     run['jobdir'] = os.path.join(os.environ['GLOBALDIR'],'BalrogJobs')
 
-    run['nodes'] = 1
-    run['ppn'] = 8
-    run['runnum'] = 0 
-
-    run['pos'] = '/gpfs01/astro/workarea/esuchyta/git-repos/BalrogDirs/2015-Nov/BalrogMPI/tiles/testpos'
+    run['pos'] = '/gpfs01/astro/workarea/esuchyta/git-repos/BalrogDirs/2015-Nov/BalrogMPI/source-code/test-tiles'
     balrog['ngal'] = 1000
+    run['runnum'] = 0 
 
     run['DBoverwrite'] = True
     run['verifyindex'] = True

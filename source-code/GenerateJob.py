@@ -11,7 +11,6 @@ import copy
 
 updir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 RunConfigurations = imp.load_source('RunConfigurations', os.path.join(updir,'RunConfigurations.py'))
-#import RunConfigurations
 
 
 def Exit(msg):
@@ -36,36 +35,18 @@ def GetConfig(where, config):
     run = RunConfigurations.RunConfigurations.default
 
     # hide these from user
-    #run['DBload'] = 'cx_Oracle'  # ['cx_Oracle', 'sqlldr'] How to write to DB. sqlldr is deprecated, and I don't guarantee it still works.
-    run['bands'] = ['g','r','i','z','Y'] # Bands you'll get measurement catalogs for. I haven't tested changing this -- don't.
-    run['dualdetection'] = [1,2,3]  # Use None not to use detection image. Otherwise the indices in the array of bands. I haven't tested changing this -- don't.
-    run['intermediate-clean'] = True # Delete an iteration's output Balrog images
-    run['tile-clean'] = True  # Delete the entire outdir/run's contents
     run['queue'] = 'regular' # Which queue to use if running at NERSC. 
     run['email'] = None # Set this to your email if running at BNL to get an email at finish. At NERSC, I've set slurm to send start, 50%, and finish emails automatically
-
-    run['balrog_as_function'] = True
-    run['command'] = 'popen' #['system', 'popen']
-    run['useshell'] = False # Only relevant with popen
-    run['retry'] = True
-
-
-    # These are only relevant at NERSC. Ask Eric Suchyta what in the world these ones do. They're a little less trivial, and change the workflow.
-    run['sequential'] = False
     run['asarray'] = False
+    run['ppn'] = None
 
     if where.upper() in constants.nersc:
         run['stripe'] = 2
         run['npersubjob'] = 1
         run['asdependency'] = None
         run['arraymax'] = None
-        if where.upper()=='EDISON':
-            run['ppn'] = 24
-        elif where.upper()=='CORI':
-            run['ppn'] = 32
     else:
-        stripe = None
-        run['npersubjob'] = 0
+        run['npersubjob'] = 1
         run['asdependency'] = False
 
 
@@ -82,46 +63,51 @@ def GetConfig(where, config):
 
     CustomConfig = imp.load_source('CustomConfig', config)
     run, balrog, db, tiles = CustomConfig.CustomConfig(run, balrog, db, tiles)
+
+    # This isn't supported in the new version. At least not yet, if ever.
+    run['doDES'] = False  # Run sextractor without any Balrog galaxies over full images
+
+    # These are supported, but I don't want them to be changed, unless you understand what the consequences mean. Having them here they're not editable in the config file.
+    run['bands'] = ['g','r','i','z','Y'] # Bands you'll get measurement catalogs for. I haven't tested changing this -- don't.
+    run['dualdetection'] = [1,2,3]  # Use None not to use detection image. Otherwise the indices in the array of bands. I haven't tested changing this -- don't.
+    run['intermediate-clean'] = True # Delete an iteration's output Balrog images
+    run['tile-clean'] = True  # Delete the entire outdir/run's contents
+    run['balrog_as_function'] = True
+    run['command'] = 'popen' #['system', 'popen']
+    run['useshell'] = False # Only relevant with popen
+    run['retry'] = True
+
     balrog['systemcmd'] = run['command']
     balrog['retrycmd'] = run['retry']
     balrog['useshell'] = run['useshell']
-    
+   
+
+    mod = len(tiles) % (run['nodes'] * run['npersubjob'])
+    if (mod != 0):
+        Exit( "I only allow you to run a evenly divisible jobs (meaning len(tiles)/(nodes*npersubjob)=integer) in these wrappers because that's easier to understand, and doesn't really let you do any less." )
+    run['ndependencies'] = len(tiles) / (run['nodes'] * run['npersubjob'])
+
     if (where.upper()=='BNL'):
+        if (run['ndependencies'] != 1):
+            Exit( "At BNL, I require len(tiles)/(nodes*npersubjob)=1." )
         if run['asarray']:
-            Exit( 'You cannot do job arrays at BNL. Must use asarray=False.' )
+            Exit( "You cannot do job arrays at BNL. It doesn't exist in wq Must use asarray=False." )
         if run['asdependency']:
-            Exit( 'You cannot do job dependencies with wq. Must use asdependency=False.' )
+            Exit( "You cannot do job dependencies at BNL. They don't exist in wq. Must use asdependency=False." )
 
     if (where.upper() in constants.nersc):
-        if run['asarray'] and run['asdependency']:
-            Exit( "Cannot run asarray and asdependency" )
-
-        if run['sequential']:
-            Exit( "I don't allow you to use sequential at NERSC. This isn't technically impossible, but doesn't really make sense there." )
-
-        mod = len(tiles) % (run['nodes'] * run['npersubjob'])
-        div = len(tiles) / (run['nodes'] * run['npersubjob'])
-
-        if (mod != 0):
-            Exit( "I only allow you to run a evenly divisible jobs at NERSC." )
-        
-        '''
-        if run['npersubjob'] > 1:
-            print "You are using npersubjob > 1. Are you sure you want to do this? You'll need ngal <= 200, and your jobs are going to take A LOT longer."
-        '''
+        if run['asarray']:
+            if run['asdependency']:
+                Exit( "Cannot use asarray and asdependency. These are mutually exclusive." )
+            if (run['nodes'] != 1):
+                Exit( "Job arrays must be run with nodes=1." )
 
         if not run['asarray']:
             if run['asdependency'] is None:
                 run['asdependency'] = True
 
-            if run['asdependency']:
-                run['ndependencies'] = div 
-            else:
-                run['ndependencies'] = 1
-                '''
-                if (use != 1):
-                    print "Your job is going to require nodes running more than one tile. Are you sure you want to do this?"
-                '''
+            if not run['asdependency']:
+                Exit( "Have to choose either asdpendency or asarray. Both are False right now. If you don't say anything about either in your config file, you get asdependency." )
 
     if run['jobdir'] is None:
         run['jobdir'] = os.path.dirname(os.path.realpath(__file__))
@@ -139,8 +125,6 @@ def GetConfig(where, config):
     TryToMake(run['jobdir'])
     TryToMake(run['outdir'])
         
-    # This isn't supported in the new version. At least not yet, if ever.
-    run['doDES'] = False  # Run sextractor without any Balrog galaxies over full images
 
     hours, minutes, seconds = run['walltime'].split(':')
     duration = datetime.timedelta(hours=float(hours), minutes=float(minutes), seconds=float(seconds))
@@ -198,8 +182,8 @@ def WriteJson(config,dirname, tiles,start,end):
     return jsonfile
 
 
-def GetJdir(usesub, dirname, id, substr):
-    if usesub:
+def GetJdir(run, dirname, id, substr):
+    if (run['nodes'] > 1):
         jdir = os.path.join(dirname, '%s_%i'%(substr,id))
     else:
         jdir = dirname
@@ -209,20 +193,17 @@ def GetJdir(usesub, dirname, id, substr):
     return jdir
 
 
-def SubConfig(start,i,indexstart, tiles,subtiles,subnodes,run,config, usesub,substr, jobdir):
-    end = start + subtiles[i]
+def SubConfig(start,i, tiles, run,config, substr, jobdir):
+    end = start + run['npersubjob']
     id = i + 1
-    jdir = GetJdir(usesub, jobdir, id, substr)
+    jdir = GetJdir(run, jobdir, id, substr)
     logdir = os.path.join(jdir, 'runlog')
     
-    run['indexstart'] = indexstart + start*run['tiletotal']
-    run['nodes'] = subnodes[i]
+    #run['nodes'] = 1
     config['run'] = run
     jsonfile = WriteJson(config,jdir, tiles,start,end)
 
-    #num = subnodes[i] * run['ppn']
-    num = run['nodes'] * run['ppn']
-    return jsonfile, logdir, num, end
+    return jsonfile, logdir, end
 
 
 def WriteOut(jobfile, out):
@@ -230,15 +211,13 @@ def WriteOut(jobfile, out):
         job.write(out)
 
 
-def Generate_Job(run,balrog,db,tiles,  where, setup, subtiles, subnodes, usesub):
+def Generate_Job(run,balrog,db,tiles,  where, setup):
 
     thisdir = os.path.dirname(os.path.realpath(__file__))
-    allmpi = os.path.join(thisdir, 'AllMpi.py')
+    allmpi = os.path.join(thisdir, 'RunTileJob.py')
     s = Source(setup, where)
     d = BalrogDir(run)
-    seq = " &"
-    if run['sequential']:
-        seq = ''
+    start = 0
 
     substr = 'subjob'
     config = {}
@@ -247,36 +226,22 @@ def Generate_Job(run,balrog,db,tiles,  where, setup, subtiles, subnodes, usesub)
     deps = []
 
     if where.upper()=='BNL':
-
+        
+        space = "   "
         descr = 'mode: bynode\n' + 'N: %i\n' %(run['nodes']) + 'hostfile: auto\n' + 'job_name: %s' %(run['jobname'])
-        indexstart = copy.copy(run['indexstart'])
-        start = 0
-        #ss = 1
+        indent = '   '
+        cmd = indent + """nodes=(); while read -r line; do found=false; host=$line; for h in "${nodes[@]}"; do if [ "$h" = "$host" ]; then found=true; fi; done; if [ "$found" = "false" ]; then nodes+=("$host"); fi; done < %hostfile%\n"""
+        for i in range(run['nodes']):
+            jsonfile, logdir, start = SubConfig(start,i, tiles, run,config, substr, run['jobdir'])
+            cmd = cmd + space + 'mpirun -np 1 -host ${nodes[%i]} %s %s %s &\n' %(i, allmpi, jsonfile, logdir)
 
-        st = 0 
-        cmd = """   nodes=(); while read -r line; do found=false; host=$line; for h in "${nodes[@]}"; do if [ "$h" = "$host" ]; then found=true; fi; done; if [ "$found" = "false" ]; then nodes+=("$host"); fi; done < %hostfile%\n"""
-
-        for i in range(len(subtiles[0])):
-            jsonfile, logdir, num, start = SubConfig(start,i,indexstart, tiles,subtiles[0],subnodes[0],run,config, usesub,substr, run['jobdir'])
-
-            et = st + subnodes[0][i] - 1
-            cmd = cmd + """   nstart=%i; nend=%i; for i in `seq $nstart $nend`; do for j in `seq 0 %i`; do  if [ $i = $nstart ] && [ $j = 0 ]; then host=${nodes[$i]}; else host="${host},${nodes[$i]}"; fi; done; done;\n"""%(st, et, run['ppn']-1)
-            cmd = cmd + '   mpirun -np %i -host $host %s %s %s%s\n' %(num, allmpi, jsonfile, logdir, seq)
-
-            if not run['sequential']:
-                st = et + 1
-
-        cmd = cmd + '   wait\n'
-        out = 'command: |\n   %s%s%s%s' %(s, d, cmd, descr)
+        cmd = cmd + space + 'wait\n'
+        out = 'command: |\n' + space + '%s%s%s%s' %(s, d, cmd, descr)
         jobfile = os.path.join(run['jobdir'], '%s.wq' %(run['jobname']))
         WriteOut(jobfile, out)
 
-    
-
     elif where.upper() in constants.nersc:
         run['email'] = None
-
-        start = 0
         allnodes = run['nodes']
         for k in range(run['ndependencies']):
 
@@ -298,11 +263,8 @@ def Generate_Job(run,balrog,db,tiles,  where, setup, subtiles, subnodes, usesub)
                 arrmax = ''
                 if run['arraymax'] is not None:
                     arrmax = '%%%i'%(run['arraymax'])
-                descr = SLURMadd(descr, '--array=1-%i%s'%(len(subtiles[k]),arrmax), start='#SBATCH')
-                maxnodes = np.amax(subnodes[k])
-                descr = SLURMadd(descr, '--nodes=%i'%(maxnodes), start='#SBATCH')
-                if not (np.all(subnodes[k]==maxnodes)):
-                    print 'In job arrays, each subjob must use the same number of nodes. You gave a "non-equally divisible" job, chunked into subjobs of node sizes: %s. Setting job array to use nodes=%i'%(str(subnodes[k]),maxnodes)
+                descr = SLURMadd(descr, '--array=1-%i%s'%(len(tiles),arrmax), start='#SBATCH')
+                descr = SLURMadd(descr, '--nodes=%i'%(allnodes), start='#SBATCH')
             else:
                 ofile = os.path.join(jobdir, '%s-%%j.out'%(run['jobname']))
                 descr = SLURMadd(descr, '--nodes=%i'%(allnodes), start='#SBATCH')
@@ -315,28 +277,18 @@ def Generate_Job(run,balrog,db,tiles,  where, setup, subtiles, subnodes, usesub)
                 descr = descr + 'if ! [ -d %s ]; then mkdir %s; fi;\n' %(run['outdir'],run['outdir'])
                 descr = descr + 'lfs setstripe %s --count %i\n' %(run['outdir'],run['stripe'])
 
-            indexstart = copy.copy(run['indexstart'])
-            for i in range(len(subtiles[k])):
-                jsonfile, logdir, num, start = SubConfig(start,i,indexstart, tiles,subtiles[k],subnodes[k],run,config, usesub,substr, jobdir)
+            for i in range(run['nodes']):
+                jsonfile, logdir, start = SubConfig(start,i, tiles, run,config, substr, jobdir)
                 jdir = os.path.dirname(jsonfile)
 
                 if not run['asarray']:
-                    descr = descr + 'srun -N %i -n %i %s %s %s%s\n' %(subnodes[k][i], num, allmpi, jsonfile, logdir,seq)
-                else:
-                    nodefile = os.path.join(jdir, 'N')
-                    npfile = os.path.join(jdir, 'n')
-                    with open(nodefile, 'w') as f:
-                        f.write('%i'%(subnodes[k][i]))
-                    with open(npfile, 'w') as f:
-                        f.write('%i'%(num))
+                    descr = descr + 'srun -N 1 -n 1 %s %s %s &\n' %(allmpi, jsonfile, logdir)
                 
             if run['asarray']:
                 subdir = os.path.join(run['jobdir'], '%s_${SLURM_ARRAY_TASK_ID}'%(substr))
-                descr = descr + 'N=$(head -n 1 %s)\n'%(os.path.join(subdir,'N'))
-                descr = descr + 'n=$(head -n 1 %s)\n'%(os.path.join(subdir,'n'))
                 descr = descr + 'j=%s\n'%(os.path.join(subdir,'config.json'))
                 descr = descr + 'l=%s\n'%(os.path.join(subdir,'runlog'))
-                out = descr + 'srun -N ${N} -n ${n} %s ${j} ${l}' %(allmpi)
+                out = descr + 'srun -N 1 -n 1 %s ${j} ${l}' %(allmpi)
             else:
                 out = descr + 'wait'
 
@@ -378,81 +330,10 @@ def GetWhere(argv):
     return where, setup, config
 
 
-def ConservativeDivide(num, den):
-    inc = 0
-    if (num % den > 0):
-        inc = 1
-    return num/den + inc
-  
-
-
-def Reallocate(subnodes, subtiles, nodes):
-    if nodes < len(subnodes):
-        Exit( 'Cannot divide %i node(s) into %i simultaneous subjobs'%(nodes,len(subnodes)) )
-
-    effective = (subtiles/subnodes) + np.int32(np.mod(subtiles, subnodes) > 0)
-
-    if (np.sum(subnodes) > nodes):
-        changeby = -1
-    else:
-        changeby = 1
-
-    change = 0
-    while np.sum(subnodes) != nodes:
-        new_effective = ConservativeDivide(subtiles[change],subnodes[change]+changeby)
-        if not np.any( np.fabs(effective - new_effective) > 1):
-            subnodes[change] = subnodes[change] + changeby
-
-        change += 1
-        if change==len(subnodes):
-            change = 0
-
-    return subnodes
-
-
-
-def BySub(tiles, run, where):
-    usesub = False
-    if run['npersubjob'] <= 0:
-        nsub = 1
-    elif run['npersubjob'] >= len(tiles):
-        nsub = 1
-    else:
-        nsub = ConservativeDivide(len(tiles),run['npersubjob'])
-        usesub = True
-
-    ts = np.append(np.array( [run['npersubjob']]*(nsub-1), dtype=np.int32 ), len(tiles)-(nsub-1)*run['npersubjob'])
-    subtiles = np.array( np.array_split(ts, run['ndependencies']) )
-    subnodes = []
-
-    if run['asarray']:
-        run['nodes'] = run['nodes'] * len(ts)
-    
-    for i in range(run['ndependencies']):
-
-        if run['sequential']:
-            subnodes[i] = np.array( [run['nodes']]*len(subtiles[i]) )
-        else:
-            target = ConservativeDivide(np.sum(subtiles[i]), run['nodes'])
-            sn = (subtiles[i]/target) + np.int32(np.mod(subtiles[i],target) > 0)
-            r = Reallocate(sn, subtiles[i], run['nodes'])
-            subnodes.append(r)
-
-            if (where in constants.nersc) and  (np.sum(subnodes[i] > 1) > 0):
-                print "You're job is going to require more than 1 node for a subjob. Are you sure you want to do this?"
-
-    subnodes = np.array(subnodes)
-    return subtiles, subnodes, usesub
-
-
 def GenJob(argv):
     where, setup, config = GetWhere(argv)
     run, balrog, db, tiles = GetConfig(where, config)
-    subtiles, subnodes, usesub = BySub(tiles, run, where)
-
-
-
-    job = Generate_Job(run,balrog,db,tiles, where, setup, subtiles, subnodes, usesub)
+    job = Generate_Job(run,balrog,db,tiles, where, setup)
     return job, where
 
 

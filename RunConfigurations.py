@@ -27,11 +27,7 @@ class RunConfigurations:
             'outdir': None,  # The ouput directory for all intermediate work. This should be in the scratch area on the node.
             'jobdir': None,  # The ouput directory for all job files and job logs. This should be in the scratch area on the node.
 
-            'indexstart': None, # None means start from +1 of whatever exists in the DB. (If the DB doesn't exist yet, None will become 0)
             'verifyindex': True, # Check if you're trying to add balrog_index which already exists
-
-            #'tiletotal': 100000, # Approximate number of (truth) Balrog galaxies per tile.
-            #'fixposseed': None,  # Fix this to an integer to get the same positions every time you run
             'pos': 'tilepos',
 
             'fixwrapseed': None # Fix this to an integer to get the same Balrog sampling realizations each time you run
