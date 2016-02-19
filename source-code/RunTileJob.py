@@ -95,7 +95,7 @@ def DropTablesIfNeeded(RunConfig, indexstart, size, tiles):
     for  kind in ['truth', 'nosim', 'sim', 'des']:
         tab = 'balrog_%s_%s' %(RunConfig['dbname'], kind)
 
-        if  (tab.upper() in tables):
+        if (tab.upper() in tables):
             if RunConfig['DBoverwrite']:
                 cur.quick("DROP TABLE %s PURGE" %tab)
             else:
@@ -108,7 +108,7 @@ def DropTablesIfNeeded(RunConfig, indexstart, size, tiles):
                         if np.sum(inboth) > 0:
                             raise Exception("You are trying to add balrog_index(es) which already exist. Setting verifyindex=False is the only way to allow this. But unless you understand what you're doing, and have thought of reasons I haven't, don't duplicate balrog_index")
 
-    return indexstart, write
+    return write
 
 
 def InitCommonToTile(tile,images,psfs,indexstart,bands, config):
@@ -194,7 +194,6 @@ def run_balrog(args):
 
     host = socket.gethostname()
     ild = os.path.join(DerivedConfig['itlogdir'], BalrogConfig['tile'])
-    runbalrog.Mkdir(ild)
     DerivedConfig['itlogfile'] = os.path.join(ild, '%i.log'%it)
     if RunConfig['command']=='popen':
         DerivedConfig['itlog'] = runbalrog.SetupLog(DerivedConfig['itlogfile'], host, '%s_%i'%(BalrogConfig['tile'],it))
@@ -236,6 +235,9 @@ def Run_Balrog(tiles,images,psfs,indexstart,bands,pos, config, write, runlogdir)
             dowrite = False
         Derived, Balrog, Pos, It = TileIterations(tiles[i],images[i],psfs[i],indexstart[i],bands[i],pos[i], config, dowrite)
         Derived['itlogdir'] = os.path.join(runlogdir, 'iterations')
+        ild = os.path.join(Derived['itlogdir'], Balrog['tile'])
+        runbalrog.Mkdir(ild)
+
         args = []
 
         if config['run']['ppn'] is not None:
@@ -256,6 +258,7 @@ def Run_Balrog(tiles,images,psfs,indexstart,bands,pos, config, write, runlogdir)
             derived['outdir'] = os.path.join(derived['workingdir'], 'output', '%i'%it)
             runbalrog.Mkdir(derived['outdir'])
 
+
             balrog['indexstart'] = derived['indexstart']
             if it > 0:
                 balrog['indexstart'] += it*balrog['ngal']
@@ -271,6 +274,10 @@ def Run_Balrog(tiles,images,psfs,indexstart,bands,pos, config, write, runlogdir)
                     derived['bands'] = GetAllBands()
                     runlog.info('Creating database %s'%(config['run']['dbname']))
                     run_balrog( [config['run'], balrog, derived] )
+                else:
+                    derived['bands'] = runbalrog.PrependDet(config['run'])
+                    args.append( [config['run'], balrog, derived] )
+
             else:
                 derived['images'], derived['psfs'] = runbalrog.DownloadImages(derived['indir'], derived['images'], derived['psfs'], config['run'], None, skip=True)
                 derived['bands'] = runbalrog.PrependDet(config['run'])
