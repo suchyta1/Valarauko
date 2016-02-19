@@ -29,7 +29,8 @@ def FindInTile(pos, ra1, ra2, dec1, dec2):
     return pos[cut]
 
 def GetTileDefs(args, strtype='|S12'):
-    t = esutil.io.read(args.tiles)[args.tilecol][0:2]
+    #t = esutil.io.read(args.tiles)[args.tilecol][0:2]
+    t = esutil.io.read(args.tiles)[args.tilecol]
     tindex = np.arange(len(t))
     tiles = np.empty(len(t), dtype=[('tilename',strtype), ('index', np.int64)])
     tiles['tilename'] = t.astype(strtype)

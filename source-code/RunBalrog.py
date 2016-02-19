@@ -44,13 +44,13 @@ def BalrogSystemCall(cmd, DerivedConfig, func=True):
         balrog.SystemCall(args, setup=DerivedConfig['setup'])
 
 
-def Wget(infile, file, DerivedConfig, RunConfig, skip):
+def Wget(infile, file, setup, RunConfig, skip):
     if not skip:
         oscmd = [RunConfig['wget'], '--quiet', '--no-check-certificate', file, '-O', infile]
         done = False
         while not done:
             Remove(infile)
-            balrog.SystemCall(oscmd, setup=DerivedConfig['setup'], delfiles=[infile])
+            balrog.SystemCall(oscmd, setup=setup, delfiles=[infile])
 
             with warnings.catch_warnings():
                 warnings.filterwarnings('error')
@@ -58,17 +58,17 @@ def Wget(infile, file, DerivedConfig, RunConfig, skip):
                     f = pyfits.open(infile, checksum=True)
                     done = True
                 except:
-                    balrog.SysInfoPrint(DerivedConfig['setup'], "wget failed checksum. Retrying")
+                    balrog.SysInfoPrint(setup, "wget failed checksum. Retrying")
 
 
-def Funpack(infile, DerivedConfig, RunConfig, skip):
+def Funpack(infile, setup, RunConfig, skip):
     ufile = infile.replace('.fits.fz', '.fits')
     if not skip:
         oscmd = [RunConfig['funpack'], '-O', ufile, infile]
         done = False
         while not done:
             Remove(ufile) 
-            balrog.SystemCall(oscmd, setup=DerivedConfig['setup'], delfiles=[ufile], keeps=[infile])
+            balrog.SystemCall(oscmd, setup=setup, delfiles=[ufile], keeps=[infile])
 
             with warnings.catch_warnings():
                 warnings.filterwarnings('error')
@@ -76,43 +76,34 @@ def Funpack(infile, DerivedConfig, RunConfig, skip):
                     f = pyfits.open(ufile, checksum=True)
                     done = True
                 except:
-                    balrog.SysInfoPrint(DerivedConfig['setup'], "funpack failed checksum. Retrying")
+                    balrog.SysInfoPrint(setup, "funpack failed checksum. Retrying")
     return ufile
 
 
-def ImageDownload(indir, file, DerivedConfig, RunConfig, skip):
+def ImageDownload(indir, file, setup, RunConfig, skip):
     infile = os.path.join(indir, os.path.basename(file))
-    Wget(infile, file, DerivedConfig, RunConfig, skip)
-    ufile = Funpack(infile, DerivedConfig, RunConfig, skip)
+    Wget(infile, file, setup, RunConfig, skip)
+    ufile = Funpack(infile, setup, RunConfig, skip)
     return ufile
 
 
-def PSFDownload(indir, psf, DerivedConfig, RunConfig, skip):
+def PSFDownload(indir, psf, setup, RunConfig, skip):
     pfile = os.path.join(indir, os.path.basename(psf))
-    if not skip:
-        Remove(pfile)
-        oscmd = ['wget', '--quiet', '--no-check-certificate', psf, '-O', pfile]
-        balrog.SystemCall(oscmd, setup=DerivedConfig['setup'])
-        if not os.path.exists(pfile):
-            return PSFDownload(indir, psf, DerivedConfig, RunConfig, skip)
-        try:
-            f = fitsio.FITS(pfile)
-        except:
-            return PSFDownload(indir, psf, DerivedConfig, RunConfig, skip)
+    Wget(pfile, psf, setup, RunConfig, skip)
     return pfile
 
 
 # Download and uncompress images
-def DownloadImages(indir, images, psfs, RunConfig, DerivedConfig, skip=False):
+def DownloadImages(indir, images, psfs, RunConfig, setup, skip=False):
     useimages = []
 
     for file in images:
-        ufile = ImageDownload(indir, file, DerivedConfig, RunConfig, skip)
+        ufile = ImageDownload(indir, file, setup, RunConfig, skip)
         useimages.append(ufile)
 
     usepsfs = []
     for psf in psfs:
-        pfile = PSFDownload(indir, psf, DerivedConfig, RunConfig, skip)
+        pfile = PSFDownload(indir, psf, setup, RunConfig, skip)
         usepsfs.append(pfile)
 
     return [useimages, usepsfs]
@@ -928,65 +919,17 @@ def RunNormal2(RunConfig, BalrogConfig, DerivedConfig):
 
 
 
-def run_balrog(args):
-    RunConfig, BalrogConfig, DerivedConfig = args
-    it = EnsureInt(DerivedConfig)
-
-    if it==-2:
-        # Minimal Balrog run to create DB tables
-        RunOnlyCreate(RunConfig, BalrogConfig, DerivedConfig)
-
-    elif it==-1:
-        # No simulated galaxies
-        RunDoDES(RunConfig, BalrogConfig, DerivedConfig)
-    else:
-        # Actual Balrog realization
-        RunNormal2(RunConfig, BalrogConfig, DerivedConfig)
-
-    if RunConfig['intermediate-clean']:
-        if it < 0:
-            shutil.rmtree(BalrogConfig['outdir'])
-        else:
-            for band in DerivedConfig['bands']:
-                dir = os.path.join(DerivedConfig['outdir'], band)
-                shutil.rmtree(dir)
-
-
-
-def SetupLog(logfile, host, rank, tile, iteration):
-    log = logging.getLogger('tile = %s, it = %s' %(tile, str(iteration) ))
+def SetupLog(logfile, host, id):
+    log = logging.getLogger('id-%s'%(id))
     log.setLevel(logging.DEBUG)
-    formatter = logging.Formatter('%(asctime)s - %(levelname)s -  %(hostname)s , %(ranknumber)s - %(message)s')
+    formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(hostname)s - %(message)s')
     fh = logging.FileHandler(logfile, mode='w')
     fh.setFormatter(formatter)
     fh.setLevel(logging.DEBUG)
     log.addHandler(fh)
 
-    extra = {'hostname': 'host = %s'%host,
-             'ranknumber': 'rank = %i'%rank}
+    extra = {'hostname': 'host = %s'%host}
     log = logging.LoggerAdapter(log, extra)
     return log
 
 
-def MPIRunBalrog(RunConfig, BalrogConfig, DerivedConfig):
-    Mkdir(DerivedConfig['indir'])
-    Mkdir(DerivedConfig['outdir'])
-
-    host = socket.gethostname()
-    rank = MPI.COMM_WORLD.Get_rank()
-
-    if RunConfig['command']=='popen':
-        DerivedConfig['itlog'] = SetupLog(DerivedConfig['itlogfile'], host, rank, BalrogConfig['tile'], DerivedConfig['iteration'])
-    elif RunConfig['command']=='system':
-        DerivedConfig['itlog'] = DerivedConfig['itlogfile']
-    DerivedConfig['setup'] = balrog.SystemCallSetup(retry=RunConfig['retry'], redirect=DerivedConfig['itlog'], kind=RunConfig['command'], useshell=RunConfig['useshell'])
-
-
-    DerivedConfig['images'], DerivedConfig['psfs'] = DownloadImages(DerivedConfig['indir'], DerivedConfig['images'], DerivedConfig['psfs'], RunConfig, DerivedConfig, skip=DerivedConfig['initialized'])
-
-
-    if (DerivedConfig['iteration']!=-2) and (DerivedConfig['initialized']==False):
-        send = -3
-        MPI.COMM_WORLD.sendrecv([rank,host,send], dest=0, source=0)
-
-    run_balrog( [RunConfig, BalrogConfig, DerivedConfig] )
