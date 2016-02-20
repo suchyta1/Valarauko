@@ -10,8 +10,16 @@ There is a file called [```BuildPos.py```](https://github.com/suchyta1/BalrogMPI
 Run ```BuildPos.py --help``` for the command line arguments. They should be relatively clear.
 If you use the same ```--seed```, ```--pertile```, ```--sampling``` (and ```--iterateby``` if using ```--sampling sphere```),
 with the same file given in ```--tiles```, you'll get the same positions. 
-If you append to the ```--tiles``` file and run again, you'll get ```indexstart``` values which are consistent for the common tiles.
+If you append to the ```--tiles``` file and run again, you'll ultimate generate ```balrog_index``` values which are consistent for the common tiles.
 
+I haven't supplied a script to generate jobs for [```BuildPos.py```](https://github.com/suchyta1/BalrogMPI/blob/nompi/BuildPos.py), 
+because you don't need to do this very often, and it's not very complex. You'll want an ```mpirun``` (or ```srun```, or whatever) something like below.
+
+### Example
+
+```
+mpirun -np 150 -hostfile %hostfile% ./BuildPos.py --sampling sphere --seed 100 --tiles /some/directory/spt-y1a1-only-g70-grizY.fits --outdir /somewhere/spt-y1a1-only-g70-grizY-pos-sphere/
+```
 
 ## Generating the Balrog job
 
