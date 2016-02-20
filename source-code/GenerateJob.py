@@ -18,9 +18,6 @@ def Exit(msg):
     print msg
     sys.exit(1)
 
-class constants:
-    nersc = ['EDISON','CORI']
-
 def TryToMake(dir):
     if not os.path.exists(dir):
         try:
@@ -42,7 +39,7 @@ def GetConfig(where, config):
     run['ppn'] = None
     run['downsample'] = None
 
-    if where.upper() in constants.nersc:
+    if where=='slurm':
         run['stripe'] = 2
         run['npersubjob'] = 1
         run['asdependency'] = None
@@ -89,20 +86,20 @@ def GetConfig(where, config):
         Exit( "I only allow you to run a evenly divisible jobs (meaning len(tiles)/(nodes*npersubjob)=integer) in these wrappers because that's easier to understand, and doesn't really let you do any less." )
     run['ndependencies'] = len(tiles) / (run['nodes'] * run['npersubjob'])
 
-    if (where.upper()=='BNL'):
+    if where=='wq':
         if (run['ndependencies'] != 1):
-            Exit( "At BNL, I require len(tiles)/(nodes*npersubjob)=1." )
+            Exit( "With wq, I require len(tiles)/(nodes*npersubjob)=1. There's basically no reason not to run like this." )
         if run['asarray']:
-            Exit( "You cannot do job arrays at BNL. It doesn't exist in wq Must use asarray=False." )
+            Exit( "You cannot do job arrays with wq. Must use asarray=False." )
         if run['asdependency']:
-            Exit( "You cannot do job dependencies at BNL. They don't exist in wq. Must use asdependency=False." )
+            Exit( "You cannot do job dependencies with wq. Must use asdependency=False." )
 
-    if (where.upper() in constants.nersc):
+    if where=='slurm':
         if run['asarray']:
             if run['asdependency']:
-                Exit( "Cannot use asarray and asdependency. These are mutually exclusive." )
+                Exit( "Cannot use asarray and asdependency. These are mutually exclusive in my SLURM setup." )
             if (run['nodes'] != 1):
-                Exit( "Job arrays must be run with nodes=1." )
+                Exit( "Job arrays must be run with nodes=1 in my scheme." )
 
         if not run['asarray']:
             if run['asdependency'] is None:
@@ -128,6 +125,7 @@ def GetConfig(where, config):
     TryToMake(run['outdir'])
         
 
+    """
     hours, minutes, seconds = run['walltime'].split(':')
     duration = datetime.timedelta(hours=float(hours), minutes=float(minutes), seconds=float(seconds))
     if where.upper()=='EDISON':
@@ -139,6 +137,7 @@ def GetConfig(where, config):
             raise Exception("Walltime %s is too long for %i nodes in the regular queue. Max is 36:00:00." %(run['walltime'], run['nodes']))
         elif (run['queue']=='regular') and (run['nodes'] >= 4097) and (duration.total_seconds() > 12.0*60.0*60.0):
             raise Exception("Walltime %s is too long for %i nodes in the regular queue. Max is 12:00:00." %(run['walltime'], run['nodes']))
+    """
 
     return run, balrog, db, tiles
 
@@ -150,9 +149,9 @@ def EndNERSC(s):
     return '%s\n'%(s)
 
 def GetEnd(s, end):
-    if end.upper()=='BNL':
+    if end=='wq':
         s = EndBNL(s)
-    elif end.upper() in constants.nersc:
+    elif end=='slurm':
         s = EndNERSC(s)
     return s
 
@@ -160,7 +159,7 @@ def GetEnd(s, end):
 def BalrogDir(run):
     dir = os.path.dirname( os.path.realpath(run['balrog']) )
     d = "export PYTHONPATH=%s:${PYTHONPATH}"%(dir)
-    d = GetEnd(d, 'EDISON')
+    d = GetEnd(d, 'slurm')
     return d
 
 def Source(setup, end):
@@ -227,7 +226,7 @@ def Generate_Job(run,balrog,db,tiles,  where, setup):
     config['db'] = db
     deps = []
 
-    if where.upper()=='BNL':
+    if where=='wq':
         
         space = "   "
         descr = 'mode: bynode\n' + 'N: %i\n' %(run['nodes']) + 'hostfile: auto\n' + 'job_name: %s' %(run['jobname'])
@@ -242,7 +241,7 @@ def Generate_Job(run,balrog,db,tiles,  where, setup):
         jobfile = os.path.join(run['jobdir'], '%s.wq' %(run['jobname']))
         WriteOut(jobfile, out)
 
-    elif where.upper() in constants.nersc:
+    elif where=='slurm':
         run['email'] = None
         allnodes = run['nodes']
         for k in range(run['ndependencies']):

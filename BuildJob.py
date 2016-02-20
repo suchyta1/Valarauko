@@ -24,30 +24,25 @@ def Printer():
 def GetArgs():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("-cl", "--cluster", help="Cluster you are (will be) running on", default=None, type=str)
+    parser.add_argument("-sc", "--scheduler", help="Job scheduler you will be running with. slurm and wq are supported, and can be autodetected at NERSC and BNL.", default=None, type=str.lower, choices=['slurm','wq'])
     parser.add_argument("-co", "--config", help="Custom configuration file to use", required=True, type=str)
-    parser.add_argument("-s", "--source", help="A file to source to setup any software needed to build/run the job", default=None, type=str)
+    parser.add_argument("-so", "--source", help="A file to source to setup any software needed to build/run the job", default=None, type=str)
 
     args = parser.parse_args()
     argslog = Printer()
 
     err = False
-    clus = ['astro', 'edison', 'cori']
-    if args.cluster is None:
+    known = [('astro','wq'), ('edison','slurm'), ('cori','slurm')]
+    if args.scheduler is None:
         host = socket.gethostname()
-        for h in clus:
-            if host.lower().startswith(h):
-                args.cluster = h
-        argslog.warning("You didn't give --cluster, but I auto-dectected you're on %s. I'm using that."%(args.cluster))
-    if args.cluster is None:
-        argslog.error("You didn't give --cluster, and I detected your host is %s. That's not one of the known ones I can use from auto-detecting: %s. Tell me what to use with --cluster"%(host, str(clus)))
+        for i in range(len(known)):
+            if host.lower().startswith(known[i][0]):
+                args.scheduler = known[i][1]
+                argslog.warning("You didn't give --scheduler, but I auto-dectected you're on %s. I'm using %s."%(known[i][0],args.scheduler))
+                break
+    if args.scheduler is None:
+        argslog.error("You didn't give --scheduler, and I detected your host is %s. The only default setups I know are: %s. Tell me what to use with --scheduler"%(host, str(known)))
         err = True
-    args.cluser = args.cluster.lower()
-    if args.cluser not in clus:
-        argslog.error("Invalid choice for --cluster: %s. Choose from %s"%(args.cluster,str(clus)))
-        err = True
-    if args.cluster=='astro':
-        args.cluster = 'bnl'
 
     if not os.path.exists(args.config):
         argslog.error("--config given does not exist: %s."%(args.config))
@@ -81,7 +76,7 @@ if __name__ == "__main__":
     cmd = ''
     if args.source is not None:
         cmd = 'source %s && '%(args.source)
-    cmd = '%s%s %s %s'%(cmd, gen, args.cluster, args.config)
+    cmd = '%s%s %s %s'%(cmd, gen, args.scheduler, args.config)
     if args.source is not None:
         cmd = '%s %s'%(cmd, args.source)
 
