@@ -3,8 +3,14 @@
 In the new setup, positions are NOT generated on the fly by the job that actually runs Balrog.
 One creates a set of positions for a set of tiles before doing that run set,
 and then the scripts which run Balrog read these positions.
-These way, one can generate random positions which are trully uniform over the sphere, with nothing enforced on tile scale.
+This way, one can generate random positions which are truly uniform over the sphere, with nothing enforced on tile scale.
 Though, I have built in an option to still run with equal number per tile settings to be "backward compatible".
+
+There is a file called [```BuildPos.py```](https://github.com/suchyta1/BalrogMPI/blob/nompi/BuildPos.py), which generates the positions.
+Run ```BuildPos.py --help``` for the command line arguments. They should be relatively clear.
+If you use the same ```--seed``, ```--pertile```, ```--sampling``` (and ```--iterateby``` if using ```--sampling sphere```),
+with the same file given in ```--tiles```, you'll get the same positions. 
+If you append to the ```--tiles``` file and run again, you'll get ```indexstart``` values which are consistent for the common tiles.
 
 
 ## Generating the Balrog job

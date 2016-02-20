@@ -103,8 +103,8 @@ def GetArgs():
 
 
 def SetupIterations(args):
-    density = args.pertile / (1e4*0.27/3600.)
-    total = int( density * 4.0*np.pi * np.power(180./np.pi, 2) )
+    density = args.pertile / np.power(1.0e4*0.27*np.pi/(3600.0*180.0), 2)
+    total = int( density * 4.0*np.pi )
     fullits = total / args.iterateby
     num = np.array( [total/fullits]*fullits )
     it = np.arange(len(num))
@@ -118,12 +118,20 @@ def SetupIterations(args):
 
 def CatFiles(args, tilecopy, itcopy):
     for tile in tilecopy['tilename']:
+        started = True
         for i in range(len(itcopy)):
             f = os.path.join(args.outdir, tile, 'tmp-%i.fits'%(itcopy[i]))
-            if i == 0:
-                pos = esutil.io.read(f)
+            if not started:
+                try:
+                    pos = esutil.io.read(f)
+                    started = True
+                except IOError:
+                    continue
             else:
-                new = esutil.io.read(f)
+                try:
+                    new = esutil.io.read(f)
+                except IOError:
+                    continue
                 pos = rec.stack_arrays( (pos,new), usemask=False )
         shutil.rmtree(os.path.join(args.outdir, tile))    
         outfile = os.path.join(args.outdir, '%s.fits'%(tile))
