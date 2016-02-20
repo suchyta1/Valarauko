@@ -10,6 +10,8 @@ One can supply a bash script to be sourced to set up all the software at the com
 This is done with the ```--source``` command line argument.
 (See [```site-setups/Edison/y1-source```](https://github.com/suchyta1/BalrogMPI/blob/nompi/site-setups/Edison/y1-config.py) as an example I use on edison.)
 If ```--source``` isn't given, you'll need to have everything set up by default in your rc file.
+To be explicitly clear, the file given will be sourced but when  you're running [```BuildJob.py```](https://github.com/suchyta1/BalrogMPI/blob/nompi/BuildJob.py) itself,
+and in your job submission file. (The former is so it's easier to build your jobs from the command line, without requiring you to manually set things up.)
 
 [```BuildJob.py```](https://github.com/suchyta1/BalrogMPI/blob/nompi/BuildJob.py) takes up to 3 command line arguments.
 ```--source``` was mentioned above.
