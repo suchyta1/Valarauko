@@ -118,7 +118,7 @@ def SetupIterations(args):
 
 def CatFiles(args, tilecopy, itcopy):
     for tile in tilecopy['tilename']:
-        started = True
+        started = False
         for i in range(len(itcopy)):
             f = os.path.join(args.outdir, tile, 'tmp-%i.fits'%(itcopy[i]))
             if not started:
