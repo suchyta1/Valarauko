@@ -1,30 +1,5 @@
 import os
-import numpy as np
-import sys
 import esutil
-
-
-def SVA1Setup(run, balrog):
-    run['release'] = 'sva1_coadd'
-    run['funpack'] = os.path.join(os.environ['BALROG_MPI'], 'software','cfitsio-3.300','funpack')
-    run['swarp'] = os.path.join(os.environ['BALROG_MPI'], 'software','swarp-2.36.1','install-dir','bin','swarp')
-    run['swarp-config'] = os.path.join(os.environ['BALROG_MPI'], 'astro_config', 'sva1', 'default.swarp')
-    run['outdir'] = os.path.join(os.environ['SCRATCH'],'BalrogScratch')
-
-    #run['balrog'] = os.path.join(os.environ['BALROG_MPI'], 'software','Balrog','balrog.py')
-    #balrog['pyconfig'] = os.path.join(os.environ['BALROG_MPI'], 'pyconfig', 'slr2.py')
-    run['balrog'] = '/gpfs01/astro/workarea/esuchyta/git-repos/BalrogDirs/2015-Nov/Balrog/balrog.py'
-    balrog['pyconfig'] = '/gpfs01/astro/workarea/esuchyta/software/SVA1-pyconfig/BalrogConfig-OrigSGQ.py'
-    run['db-columns'] = '/gpfs01/astro/workarea/esuchyta/git-repos/BalrogMPI/sva1_coadd_objects-columns.fits'
-
-    balrog['sexnnw'] = os.path.join(os.environ['BALROG_MPI'], 'astro_config', 'sva1', 'sex.nnw')
-    balrog['sexconv'] = os.path.join(os.environ['BALROG_MPI'], 'astro_config', 'sva1', 'sex.conv')
-    balrog['sexparam'] = os.path.join(os.environ['BALROG_MPI'], 'astro_config', 'sva1', 'sex.param_diskonly')
-    balrog['nosimsexparam'] = os.path.join(os.environ['BALROG_MPI'], 'astro_config', 'sva1', 'sex.param_diskonly')
-    balrog['sexconfig'] = os.path.join(os.environ['BALROG_MPI'], 'astro_config', 'sva1', 'sex.config')
-    balrog['sexpath'] = os.path.join(os.environ['BALROG_MPI'], 'software','sextractor-2.18.10', 'install-dir','bin','sex')
-
-    return run, balrog
 
 
 def Y1A1Setup(run, balrog, tiles):
