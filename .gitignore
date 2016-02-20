@@ -1,4 +1,5 @@
 *.pyc
-old*
 *jobdir
 deprecated
+old
+test
