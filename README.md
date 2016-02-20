@@ -8,7 +8,7 @@ Though, I have built in an option to still run with equal number per tile settin
 
 There is a file called [```BuildPos.py```](https://github.com/suchyta1/BalrogMPI/blob/nompi/BuildPos.py), which generates the positions.
 Run ```BuildPos.py --help``` for the command line arguments. They should be relatively clear.
-If you use the same ```--seed``, ```--pertile```, ```--sampling``` (and ```--iterateby``` if using ```--sampling sphere```),
+If you use the same ```--seed```, ```--pertile```, ```--sampling``` (and ```--iterateby``` if using ```--sampling sphere```),
 with the same file given in ```--tiles```, you'll get the same positions. 
 If you append to the ```--tiles``` file and run again, you'll get ```indexstart``` values which are consistent for the common tiles.
 
