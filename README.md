@@ -14,6 +14,8 @@ If you append to the ```--tiles``` file and run again, you'll ultimate generate 
 
 I haven't supplied a script to generate jobs for [```BuildPos.py```](https://github.com/suchyta1/BalrogMPI/blob/nompi/BuildPos.py), 
 because you don't need to do this very often, and it's not very complex. You'll want an ```mpirun``` (or ```srun```, or whatever) something like below.
+I use ```mpi``` because for ```--sampling sphere```, generating points over the whole sphere can be a lot of points / use a lot of memory, 
+so one iterates, and uses multiple machines/cores.
 
 ### Example
 
