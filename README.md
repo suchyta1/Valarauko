@@ -9,9 +9,10 @@ There are also a lot of dependencies. (I have everything needed installed on the
 One can supply a bash script to be sourced to set up all the software at the computing site.
 This is done with the ```--source``` command line argument.
 
-[BuildJob.py](https://github.com/suchyta1/BalrogMPI/blob/nompi/BuildJob.py) takes up to 3 command line arguments.
+[```BuildJob.py```](https://github.com/suchyta1/BalrogMPI/blob/nompi/BuildJob.py) takes up to 3 command line arguments.
 ```--source``` was mentioned above.
-You'll always need to give ```--config```. This is a python file (see an [example](https://github.com/suchyta1/BalrogMPI/blob/nompi/site-setups/Edison/y1-config.py) I use on edison), 
+You'll always need to give an argument to ```--config```. This is a python file 
+(see [```site-setups/Edison/y1-config.py```](https://github.com/suchyta1/BalrogMPI/blob/nompi/site-setups/Edison/y1-config.py) as an example I use on edison), 
 which sets up configuration dictionaries for all the run parameters.
 You edit a function called ```CustomConfig```.
 In priciple all of these have a default, and you're actually changing the defaults. 
