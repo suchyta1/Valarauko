@@ -78,13 +78,10 @@ def GetFiles2(config):
     return [images, psfs, usetiles, bs, skipped]
             
 
-def GetAllBands():
-    return ['det','g','r','i','z','Y']
-
 
 # Delete the existing DB tables for your run if the names already exist
 def DropTablesIfNeeded(RunConfig, indexstart, size, tiles):
-    allbands = GetAllBands()
+    allbands = runbalrog.GetAllBands()
     cur = desdb.connect()
     user = cur.username
     write = True
@@ -271,7 +268,7 @@ def Run_Balrog(tiles,images,psfs,indexstart,bands,pos, config, write, runlogdir)
                 derived['images'], derived['psfs'] = runbalrog.DownloadImages(derived['indir'], derived['images'], derived['psfs'], config['run'], setup, skip=False)
 
                 if (It[j]==-2):
-                    derived['bands'] = GetAllBands()
+                    derived['bands'] = runbalrog.GetAllBands()
                     runlog.info('Creating database %s'%(config['run']['dbname']))
                     run_balrog( [config['run'], balrog, derived] )
                 else:

@@ -4,27 +4,23 @@ import cx_Oracle
 import copy
 import socket
 import logging
-import datetime
-import time
-import resource
 import shutil
 
 import sys
 import os
 import re
-import subprocess
+import RunTileJob
 
 import astropy.io.fits as pyfits
 import desdb
 import numpy as np
 import numpy.lib.recfunctions as recfunctions
-from mpi4py import MPI
-import AllMpi
 import balrog
-import traceback
-import fitsio
 import warnings
 
+
+def GetAllBands():
+    return ['det','g','r','i','z','Y']
 
 def Remove(file):
     if os.path.lexists(file):
@@ -273,7 +269,7 @@ def GetRelevantCatsBase(it, BalrogConfig, RunConfig, DerivedConfig, sim2nosim=Fa
 def GetRelevantCats2(BalrogConfig, RunConfig, DerivedConfig, allfix=None, missingfix='i', create=False, appendsim=False, sim2nosim=False):
     it = EnsureInt(DerivedConfig)
     bands = DerivedConfig['imbands']
-    allbands = AllMpi.GetAllBands()
+    allbands = GetAllBands()
 
 
     fs = []
@@ -494,7 +490,7 @@ def NewWrite2DB2(bcats, labels, valids, RunConfig, BalrogConfig, DerivedConfig, 
 
     cur = desdb.connect()
     cxcur, con = get_cx_oracle_cursor(DerivedConfig['db'])
-    allbands = AllMpi.GetAllBands()
+    allbands = GetAllBands()
 
     creates = []
     names = []

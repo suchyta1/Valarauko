@@ -9,8 +9,9 @@ import datetime
 import numpy as np
 import copy
 
-updir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
-RunConfigurations = imp.load_source('RunConfigurations', os.path.join(updir,'RunConfigurations.py'))
+thisdir = os.path.dirname(os.path.realpath(__file__))
+updir = os.path.dirname(thisdir)
+RunConfigurations = imp.load_source('RunConfigurations', os.path.join(thisdir,'RunConfigurations.py'))
 
 
 def Exit(msg):
