@@ -1,3 +1,11 @@
+## Generating simulation positions
+
+In the new setup, positions are NOT generated on the fly by the job that actually runs Balrog.
+One creates a set of positions for a set of tiles before doing that run set,
+and then the scripts which run Balrog read these positions.
+These way, one can generate random positions which are trully uniform over the sphere, with nothing enforced on tile scale.
+Though, I have built in an option to still run with equal number per tile settings to be "backward compatible".
+
 
 ## Generating the Balrog job
 
