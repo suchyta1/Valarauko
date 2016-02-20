@@ -22,3 +22,6 @@ Technically speaking all of the entries in the dictionaries have default values,
 but there's essentially no set of defaults which possibly actually makes sense.
 (See [```source-code/RunConfigurations.py```](https://github.com/suchyta1/BalrogMPI/blob/nompi/source-code/RunConfigurations.py) for most of the defaults,
 but some are intentionally more so hidden in [```/source-code/GenerateJob.py```](https://github.com/suchyta1/BalrogMPI/blob/nompi/source-code/GenerateJob.py).)
+
+The third command line argument is ```--scheduler```, which speicifies the work queue you're submitting to. 
+Currently on ```['slurm','wq']``` are accepted. If you're at BNL or NERSC you can leave this field blank, and the script will auto-detect what to do.
