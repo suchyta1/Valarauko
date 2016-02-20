@@ -28,6 +28,8 @@ Currently only ```['slurm','wq']``` are accepted.
 If you're at BNL or NERSC you can forget this even exists, and the script will auto-detect what to do.
 A working example on Edison would look something like:
 
+### Example
+
 ```
 ./BuildJob.py --config site-setups/Edison/y1-config.py --source site-setups/Edison/y1-source.sh
 ```
