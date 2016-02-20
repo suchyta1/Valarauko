@@ -20,3 +20,5 @@ You'll always need to give an argument to ```--config```. This is a python file
 which sets up configuration dictionaries (except ```tiles```, which is an array) for all the run parameters. You edit a function called ```CustomConfig```.
 Technically speaking all of the entries in the dictionaries have default values, and you're changing these,
 but there's essentially no set of defaults which possibly actually makes sense.
+(See [```source-code/RunConfigurations.py```](https://github.com/suchyta1/BalrogMPI/blob/nompi/source-code/RunConfigurations.py) for most of the defaults,
+but some are intentionally more so hidden in [```/source-code/GenerateJob.py```](https://github.com/suchyta1/BalrogMPI/blob/nompi/source-code/GenerateJob.py).)
