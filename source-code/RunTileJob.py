@@ -311,13 +311,3 @@ if __name__ == "__main__":
     write = DropTablesIfNeeded(config['run'], indexstart, size, tiles)
     Run_Balrog(tiles,images,psfs,indexstart,bands,pos, config, write, runlogdir)
 
-
-    # This should be a script at the end of the job
-    """
-    # Send email when the run finishes
-    MPI.COMM_WORLD.barrier()
-    if MPI.COMM_WORLD.Get_rank()==0:
-        SendEmail(RunConfig, sys.argv[1])
-    """
-
-

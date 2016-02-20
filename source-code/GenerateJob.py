@@ -216,6 +216,7 @@ def Generate_Job(run,balrog,db,tiles,  where, setup):
 
     thisdir = os.path.dirname(os.path.realpath(__file__))
     allmpi = os.path.join(thisdir, 'RunTileJob.py')
+    sendmail = os.path.join(thisdir, 'SendEmail.py')
     s = Source(setup, where)
     d = BalrogDir(run)
     start = 0
@@ -237,6 +238,8 @@ def Generate_Job(run,balrog,db,tiles,  where, setup):
             cmd = cmd + space + 'mpirun -np 1 -host ${nodes[%i]} %s %s %s &\n' %(i, allmpi, jsonfile, logdir)
 
         cmd = cmd + space + 'wait\n'
+        if run['email'] is not None:
+            cmd = cmd + space + '%s %s %s\n'%(sendmail, run['email'], run['jobname'])
         out = 'command: |\n' + space + '%s%s%s%s' %(s, d, cmd, descr)
         jobfile = os.path.join(run['jobdir'], '%s.wq' %(run['jobname']))
         WriteOut(jobfile, out)
