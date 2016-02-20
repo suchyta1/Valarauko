@@ -2,7 +2,7 @@ Updated README coming. There have been changes to more or less everything. I'll 
 
 ## Generating the Balrog job
 
-Use [BuildJob.py](https://github.com/suchyta1/BalrogMPI/blob/nompi/BuildJob.py) to build the Balrog jobs to submit to the queue scheduler.
+Use [```BuildJob.py```](https://github.com/suchyta1/BalrogMPI/blob/nompi/BuildJob.py) to build the Balrog jobs to submit to the queue scheduler.
 In principle, these jobs have a practically infinite number of adjustable parameters, but I've attempted to set the defaults to be what you probably want.
 You shouldn't need to ever look at a lot of the settings, so they're indeed hidden from you to start.
 There are also a lot of dependencies. (I have everything needed installed on the astro cluster at BNL and edison at NERSC.)
