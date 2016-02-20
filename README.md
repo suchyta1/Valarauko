@@ -3,5 +3,13 @@ Updated README coming. There have been changes to more or less everything. I'll 
 ## Generating the Balrog job
 
 Use [BuildJob.py](https://github.com/suchyta1/BalrogMPI/blob/nompi/BuildJob.py) to build the Balrog jobs to submit to the queue scheduler.
-In priciple, these jobs have a practically infinite number of adjustable parameters, but I've attempted to set the defaults to be what you probably want,
-particularly if you're running at BNL or NERSC, which is probably the case. (Only crazy people like me venture to set up stuff like this on new systems.)
+In principle, these jobs have a practically infinite number of adjustable parameters, but I've attempted to set the defaults to be what you probably want.
+You shouldn't need to ever look at a lot of the settings, so they're indeed hidden from you to start.
+There are also a lot of dependencies; I have everything you need installed on the astro cluster at BNL and edison at NERSC.
+One can supply a bash script to be sourced to set up all the software at the computing site.
+
+[BuildJob.py](https://github.com/suchyta1/BalrogMPI/blob/nompi/BuildJob.py) takes up to 3 command line arguments.
+You'll always need to give ```--config```. This is a python file ([see and example I use on edison](https://github.com/suchyta1/BalrogMPI/blob/nompi/site-setups/Edison/y1-config.py)), 
+which sets up configuration dictionaries for all the run parameters.
+This is done in a function called ```CustomConfig```.
+In priciple all of these have a default, and you're actually changing the defaults. 
