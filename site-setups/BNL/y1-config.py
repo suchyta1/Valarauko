@@ -45,6 +45,7 @@ def Y1A1Setup(run, balrog, tiles):
     balrog['sexpath'] = '/gpfs01/astro/workarea/esuchyta/software/sextractor-2.18.10/install/bin/sex'
 
     tiles = esutil.io.read('/gpfs01/astro/workarea/esuchyta/git-repos/BalrogDirs/2015-Nov/BalrogMPI/tiles/spt-y1a1-only-g70-grizY.fits')['tilename']
+
     return run, balrog, tiles
 
 
@@ -55,21 +56,18 @@ def CustomConfig(run, balrog, db, tiles):
     tstart = 0
     tend = 1
     tiles = tiles[tstart:tend]
-    run['sequential'] = False
-    run['npersubjob'] = 0
+    run['npersubjob'] = 1
+    run['nodes'] = 1
 
-    run['dbname'] = 'y1a1_sptn_01'
+    run['dbname'] = 'y1a1_btest'
     run['joblabel'] = '%i:%i' %(tstart, tend)
     run['outdir'] = os.path.join(os.environ['SCRATCH'],'BalrogScratch')
     run['jobdir'] = os.path.join(os.environ['GLOBALDIR'],'BalrogJobs')
 
-    run['nodes'] = 1
-    run['ppn'] = 8
+    run['pos'] = '/gpfs01/astro/workarea/esuchyta/software/Y1A1-config/spt-y1a1-only-g70-grizY-pos'
+    balrog['ngal'] = 10
+    run['downsample'] = 50
     run['runnum'] = 0 
-
-    run['tiletotal'] = 100000
-    run['indexstart'] = tstart * run['tiletotal']
-    balrog['ngal'] = 1000
 
     run['DBoverwrite'] = False
     run['verifyindex'] = True

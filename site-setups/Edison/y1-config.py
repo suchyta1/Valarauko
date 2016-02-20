@@ -40,7 +40,7 @@ def CustomConfig(run, balrog, db, tiles):
     
     baseout = '/scratch3/scratchdirs/esuchyta/'
     #baseout = '/scratch1/scratchdirs/esuchyta'
-    run['dbname'] = 'y1a1_test1'
+    run['dbname'] = 'y1a1_etest'
     run['joblabel'] = '%i:%i' %(tstart, tend)
     run['jobdir'] = os.path.join(baseout, 'BalrogJobs')
     run['outdir'] = os.path.join(baseout, 'BalrogScratch')
