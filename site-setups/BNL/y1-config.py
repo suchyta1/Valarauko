@@ -44,7 +44,7 @@ def CustomConfig(run, balrog, db, tiles):
     run['downsample'] = 50
     run['runnum'] = 0 
 
-    run['DBoverwrite'] = False
+    run['DBoverwrite'] = True
     run['verifyindex'] = True
 
     return run, balrog, db, tiles
