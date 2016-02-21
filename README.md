@@ -73,3 +73,10 @@ A working example on Edison would look something like:
 ```
 ./BuildJob.py --config site-setups/Edison/y1-config.py --source site-setups/Edison/y1-source.sh
 ```
+
+### Need to Know Parameters
+
+* `nodes` -- how many nodes your job will use
+* `npersubjob` -- number of tiles to run on each node
+
+`nodes`/`npersubjob` must be an intger with [SLURM](http://slurm.schedmd.com/documentation.html), and equal to 1 if you're using [wq](https://github.com/esheldon/wq).
