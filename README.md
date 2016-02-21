@@ -18,7 +18,8 @@ I haven't supplied a script to generate jobs for [```BuildPos.py```](https://git
 because you don't need to do this very often, and it's not very complex. You'll want an ```mpirun``` (or ```srun```, or whatever) something like below.
 I use ```mpi``` because for ```--sampling sphere```, generating points over the whole sphere can be a lot of points / use a lot of memory, 
 so one iterates, and uses multiple machines/cores.
-(I could add code to only generate within the RA/DEC boundaries the tiles actually occupy, to make this more efficient, but I haven't done that yet.)
+I could add code to only generate within the RA/DEC boundaries the tiles actually occupy, to make this more efficient, but I haven't done that yet.
+At the moment, tiles which wrap around zero will confuse the code. I'll come up with a fix for this.
 
 ### Example
 
