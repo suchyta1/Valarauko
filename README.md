@@ -19,7 +19,7 @@ Right now I have everything installed on the [Astro cluster](https://wiki.bnl.go
 and [Edison](http://www.nersc.gov/users/computational-systems/edison/) at NERSC.
 It's more or less installed on [Cori](http://www.nersc.gov/users/computational-systems/cori/) too, 
 (unless the hpcp modules changed there too), but I'm getting very slow performance there for some reason, so I'm not using Cori.
-See [below](https://github.com/suchyta1/Valarauko#generating-the-balrog-job) about integrating the software into the `Balrog` runtime.
+See [below](https://github.com/suchyta1/Valarauko#generating-the-balrog-job) about integrating the software setup into the `Balrog` runtime.
 
 
 ## Generating simulation positions
@@ -40,7 +40,7 @@ If you append to the `--tiles` file and run again, you'll ultimate generate `bal
 
 I haven't supplied a script to generate jobs for `BuildPos.py`, 
 because you likely don't need to do this very often, and at any rate, it's not very complex. You'll want an `mpirun` (or `srun`, or whatever) something like below.
-I use `mpi` because for `--sampling sphere`, generating points over the whole sphere can be a lot of points / use a lot of memory, 
+I use `mpi` because for `--density` sampling, generating points over the whole sphere can be a lot of points / use a lot of memory, 
 so one iterates, and uses multiple machines/cores.
 I could add code to only generate within the RA/DEC boundaries the tiles actually occupy, to make this more efficient, but I haven't done that yet.
 At the moment, tiles which wrap around zero will confuse the code. I'll come up with a fix for this.
@@ -80,7 +80,7 @@ but some are intentionally more so hidden in [`/source-code/GenerateJob.py`](htt
 The third command line argument is `--scheduler`, which speicifies the work queue you're submitting to. 
 Currently only `['slurm','wq']` are accepted. 
 [`SLURM`](http://slurm.schedmd.com/documentation.html) is the schduler at NERSC,
-and [`wq`](https://github.com/suchyta1/Valarauko#generating-the-balrog-job) is scheduler at BNL.
+and [`wq`](https://github.com/suchyta1/Valarauko#generating-the-balrog-job) is the scheduler at BNL.
 If you're at BNL or NERSC you can forget this even exists, and the script will auto-detect what to do.
 A working example on Edison would look something like:
 
