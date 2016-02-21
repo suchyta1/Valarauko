@@ -78,7 +78,8 @@ A working example on Edison would look something like:
 
 I've tried the make the names of the parameters understandable. The best way to get a feel for what's going on is to 
 look at an example [e.g. here](https://github.com/suchyta1/BalrogMPI/blob/master/site-setups/Edison/y1-config.py) in the repository.
-Here's some explanations
+Some explanations are below. The `balrog` dictionary entries are command line arguments to [Balrog](https://github.com/emhuff/Balrog).
+You almost definitely don't need to worry about `db`.
 
 * `dbname` -- the DB tables you'll write to. You'll get tables with this names, appended with `['truth','sim','nosim']` (and empty `'des'`).
 * `jobdir` -- where output job files write
@@ -102,4 +103,5 @@ This will generate a shell script that submits the dependent jobs.
 
 * `DBoverwrite` -- overwrite the existing `dbname` if it already exists.
 
-Also, unless you're running small test jobs, and you understand what you're doing, don't mess with the cleanings parameters. You can easily fill entire disks if you do.
+Also, unless you're running small test jobs, and you understand what you're doing, don't mess with the hidden cleaning parameters. 
+You can easily fill entire disks if you do.
