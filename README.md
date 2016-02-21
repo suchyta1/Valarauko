@@ -76,7 +76,12 @@ A working example on Edison would look something like:
 
 ### Need to Know Parameters
 
-* `nodes` -- how many nodes your job will use
-* `npersubjob` -- number of tiles to run on each node
+* `tiles` -- a list of DES coadd tilenames
+* `nodes` -- how many nodes your job will use.
+* `npersubjob` -- number of tiles to run on each node. (In each job file.)
 
-`nodes`/`npersubjob` must be an intger with [SLURM](http://slurm.schedmd.com/documentation.html), and equal to 1 if you're using [wq](https://github.com/esheldon/wq).
+`len(tiles) / (nodes*npersubjob)` must be an intger with [SLURM](http://slurm.schedmd.com/documentation.html), and equal to 1 if you're using [wq](https://github.com/esheldon/wq).
+
+* `asdependency` (default = True) -- `if len(tiles) / (nodes*npersubjob) = N`, where `N > 1` split the workload into `N` jobs, where each is dependent on the previous. 
+This will generate a shell script that submits the dependent jobs.
+
