@@ -11,7 +11,9 @@ You'll need to setup your [`.netrc`](https://github.com/esheldon/desdb#access-to
 
 ## Installation
 
-The package doesn't require any installation itself, per se. But there are about a gazillion dependencies you need for this to actually run,
+You can ask me about this if it's relevant. Having everything setup is somewhat non-trivial.
+The package doesn't itself really require any building -- just cloning the code --
+but there are about a gazillion dependencies you need for the code to actually successfully run,
 most of which are python modules. If you're trying to get this working somewhere, probably I know about it and am helping you anyway.
 Right now I have it installed on the [Astro cluster](https://wiki.bnl.gov/astro/index.php/Computing) at BNL, 
 and [Edison](http://www.nersc.gov/users/computational-systems/edison/) at NERSC.
