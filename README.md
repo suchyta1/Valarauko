@@ -107,13 +107,13 @@ You almost definitely don't need to worry about the `db` dictionary. Most things
 * `npersubjob` -- number of tiles to run on each node (in each job file). Tiles on the same node run sequentially.
 
 `len(tiles)/(nodes*npersubjob)` must be an intger with [`SLURM`](http://slurm.schedmd.com/documentation.html), and equal to 1 if you're using [`wq`](https://github.com/esheldon/wq)
-or a [`SLURM` job array](http://slurm.schedmd.com/job_array.html).
+or a `SLURM` job array.
 
 #### `SLURM` only
 
 * `asdependency (default=True)` -- `if len(tiles)/(nodes*npersubjob)==N`, where `N > 1`, split the workload into `N` jobs, where each is dependent on the previous. 
 This will generate a shell script that submits the dependent jobs.
-* `asarray` -- Submit subjobs (i.e. each node running `npersubjob` tiles) as part of a `SLURM` job array. 
+* `asarray` -- Submit subjobs (i.e. each node running `npersubjob` tiles) as part of a [`SLURM` job array](http://slurm.schedmd.com/job_array.html). 
 * `arraymax` -- sets max number of simultaneous running subjobs in an array.
 
 #### Dangerous (but can be useful)
