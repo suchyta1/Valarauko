@@ -10,7 +10,7 @@ whih are not exactly equal area, so one ends up with slightly non-uniform sampli
 
 There is a file called [```BuildPos.py```](https://github.com/suchyta1/BalrogMPI/blob/nompi/BuildPos.py), which generates the positions.
 Run ```BuildPos.py --help``` for the command line arguments. They should be relatively clear.
-If you use the same ```--seed```, ```--density/--pertile```, (and ```--iterateby``` if using ```--density```),
+If you use the same ```--seed```, ```--density```/```--pertile```, (and ```--iterateby``` if using ```--density```),
 with the same file given in ```--tiles```, you'll get the same positions. 
 If you append to the ```--tiles``` file and run again, you'll ultimate generate ```balrog_index``` values which are consistent for the common tiles.
 
@@ -23,7 +23,9 @@ so one iterates, and uses multiple machines/cores.
 ### Example
 
 ```
-mpirun -np 150 -hostfile %hostfile% ./BuildPos.py --sampling sphere --seed 100 --tiles /some/directory/spt-y1a1-only-g70-grizY.fits --outdir /somewhere/spt-y1a1-only-g70-grizY-pos-sphere/
+mpirun -np 150 -hostfile %hostfile% ./BuildPos.py --density 200000 --seed 100  \
+--tiles /some/directory/spt-y1a1-only-g70-grizY.fits \
+--outdir /somewhere/spt-y1a1-only-g70-grizY-pos-sphere/
 ```
 
 ## Generating the Balrog job
