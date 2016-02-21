@@ -81,7 +81,6 @@ look at an example [e.g. here](https://github.com/suchyta1/BalrogMPI/blob/master
 Here's some explanations
 
 * `dbname` -- the DB tables you'll write to. You'll get tables with this names, appended with `['truth','sim','nosim']` (and empty `'des'`).
-
 * `tiles` -- a list of DES coadd tilenames
 * `nodes` -- how many nodes your job will use.
 * `npersubjob` -- number of tiles to run on each node (in each job file). Tiles on the same node run sequentially.
