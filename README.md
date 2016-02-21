@@ -92,7 +92,8 @@ You almost definitely don't need to worry about the `db` dictionary. Most things
 * `nodes` -- how many nodes your job will use.
 * `npersubjob` -- number of tiles to run on each node (in each job file). Tiles on the same node run sequentially.
 
-`len(tiles)/(nodes*npersubjob)` must be an intger with [SLURM](http://slurm.schedmd.com/documentation.html), and equal to 1 if you're using [wq](https://github.com/esheldon/wq).
+`len(tiles)/(nodes*npersubjob)` must be an intger with [SLURM](http://slurm.schedmd.com/documentation.html), and equal to 1 if you're using [wq](https://github.com/esheldon/wq)
+or a [SLURM job array](http://slurm.schedmd.com/job_array.html).
 
 #### SLURM only
 

@@ -41,7 +41,7 @@ def CustomConfig(run, balrog, db, tiles):
     run['outdir'] = os.path.join(os.environ['SCRATCH'],'BalrogScratch')
     run['jobdir'] = os.path.join(os.environ['GLOBALDIR'],'BalrogJobs')
 
-    balrog['ngal'] = 10
+    balrog['ngal'] = 1000
     run['runnum'] = 0 
 
     run['DBoverwrite'] = True
