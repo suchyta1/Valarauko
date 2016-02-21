@@ -77,7 +77,7 @@ A working example on Edison would look something like:
 ### Need to Know Parameters
 
 I've tried the make the names of the parameters understandable. The best way to get a feel for what's going on is to 
-look at an example [e.g. here](https://github.com/suchyta1/BalrogMPI/blob/master/site-setups/Edison/y1-config.py) in the repository.
+look at an example ([e.g. here](https://github.com/suchyta1/BalrogMPI/blob/master/site-setups/Edison/y1-config.py)) in the repository.
 Some explanations are below. The `balrog` dictionary entries are command line arguments to [Balrog](https://github.com/emhuff/Balrog).
 You almost definitely don't need to worry about `db`.
 
