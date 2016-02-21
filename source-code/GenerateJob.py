@@ -199,12 +199,17 @@ def SubConfig(start,i, tiles, run,config, substr, jobdir):
     id = i + 1
     jdir = GetJdir(run, jobdir, id, substr)
     logdir = os.path.join(jdir, 'runlog')
+    run['runlogdir'] = logdir
     
     #run['nodes'] = 1
+    if i==0:
+        run['isfirst'] = True
+    else:
+        run['isfirst'] = False
     config['run'] = run
     jsonfile = WriteJson(config,jdir, tiles,start,end)
 
-    return jsonfile, logdir, end
+    return jsonfile, end
 
 
 def WriteOut(jobfile, out):
@@ -229,13 +234,14 @@ def Generate_Job(run,balrog,db,tiles,  where, setup):
 
     if where=='wq':
         
+        run['touchfile'] = os.path.join(run['jobdir'],'ok')
         space = "   "
         descr = 'mode: bynode\n' + 'N: %i\n' %(run['nodes']) + 'hostfile: auto\n' + 'job_name: %s' %(run['jobname'])
-        indent = '   '
-        cmd = indent + """nodes=(); while read -r line; do found=false; host=$line; for h in "${nodes[@]}"; do if [ "$h" = "$host" ]; then found=true; fi; done; if [ "$found" = "false" ]; then nodes+=("$host"); fi; done < %hostfile%\n"""
+        cmd = space + """nodes=(); while read -r line; do found=false; host=$line; for h in "${nodes[@]}"; do if [ "$h" = "$host" ]; then found=true; fi; done; if [ "$found" = "false" ]; then nodes+=("$host"); fi; done < %hostfile%\n"""
+        cmd = cmd + space + """if [ -f %s ]; then rm %s; fi;\n"""%(run['touchfile'], run['touchfile'])
         for i in range(run['nodes']):
-            jsonfile, logdir, start = SubConfig(start,i, tiles, run,config, substr, run['jobdir'])
-            cmd = cmd + space + 'mpirun -np 1 -host ${nodes[%i]} %s %s %s &\n' %(i, allmpi, jsonfile, logdir)
+            jsonfile, start = SubConfig(start,i, tiles, run,config, substr, run['jobdir'])
+            cmd = cmd + space + 'mpirun -np 1 -host ${nodes[%i]} %s %s &\n' %(i, allmpi, jsonfile)
 
         cmd = cmd + space + 'wait\n'
         if run['email'] is not None:
@@ -248,6 +254,9 @@ def Generate_Job(run,balrog,db,tiles,  where, setup):
         run['email'] = None
         allnodes = run['nodes']
         for k in range(run['ndependencies']):
+            
+            if k > 0:
+                run['DBoverwrite'] = False
 
             if run['ndependencies'] > 1:
                 run['jobname'] = '%s_dep_%'%(run['jobname'],k+1)
@@ -255,6 +264,7 @@ def Generate_Job(run,balrog,db,tiles,  where, setup):
                 TryToMake(jobdir)
             else:
                 jobdir = run['jobdir']
+            run['touchfile'] = os.path.join(jobdir,'ok')
 
             descr = "#!/bin/bash -l \n"
             descr = SLURMadd(descr, '--job-name=%s'%(run['jobname']), start='#SBATCH')
@@ -280,13 +290,14 @@ def Generate_Job(run,balrog,db,tiles,  where, setup):
             if run['stripe'] is not None:
                 descr = descr + 'if ! [ -d %s ]; then mkdir %s; fi;\n' %(run['outdir'],run['outdir'])
                 descr = descr + 'lfs setstripe %s --count %i\n' %(run['outdir'],run['stripe'])
+            desr = descr + """if [ -f %s ]; then rm %s; fi;\n"""%(run['touchfile'], run['touchfile'])
 
             for i in range(run['nodes']):
-                jsonfile, logdir, start = SubConfig(start,i, tiles, run,config, substr, jobdir)
+                jsonfile, start = SubConfig(start,i, tiles, run,config, substr, jobdir)
                 jdir = os.path.dirname(jsonfile)
 
                 if not run['asarray']:
-                    descr = descr + 'srun -N 1 -n 1 %s %s %s &\n' %(allmpi, jsonfile, logdir)
+                    descr = descr + 'srun -N 1 -n 1 %s %s &\n' %(allmpi, jsonfile)
                 
             if run['asarray']:
                 subdir = os.path.join(run['jobdir'], '%s_${SLURM_ARRAY_TASK_ID}'%(substr))

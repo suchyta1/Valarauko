@@ -78,32 +78,72 @@ def GetFiles2(config):
     return [images, psfs, usetiles, bs, skipped]
             
 
+def WaitExistence(donenum, RunConfig, runlog):
+    cur = desdb.connect()
+    user = cur.username
+    
+    runlog.info('Making sure that the tables I need exist, and waiting for the first process if necessary...')
+    done = False
+    while not done:
+        count = 0
+        cur = desdb.connect()
+        user = cur.username
+        arr = cur.quick("select table_name from dba_tables where owner='%s'" %(user.upper()), array=True)
+        tables = arr['table_name']
+
+        for  kind in ['truth', 'nosim', 'sim', 'des']:
+            tab = 'balrog_%s_%s' %(RunConfig['dbname'], kind)
+            if (tab.upper() in tables):
+                count += 1
+        if count==donenum:
+            done = True
+    runlog.info('Ok')
+
 
 # Delete the existing DB tables for your run if the names already exist
-def DropTablesIfNeeded(RunConfig, indexstart, size, tiles):
+def DropTablesIfNeeded(RunConfig, indexstart, size, tiles, runlog):
     allbands = runbalrog.GetAllBands()
     cur = desdb.connect()
     user = cur.username
-    write = True
 
     arr = cur.quick("select table_name from dba_tables where owner='%s'" %(user.upper()), array=True)
     tables = arr['table_name']
+    kinds = ['truth', 'nosim', 'sim', 'des']
 
-    for  kind in ['truth', 'nosim', 'sim', 'des']:
-        tab = 'balrog_%s_%s' %(RunConfig['dbname'], kind)
+    write = False
+    test = 'balrog_%s_%s' %(RunConfig['dbname'], kinds[0])
+    exists = (test.upper() in tables)
+    
+    if not RunConfig['DBoverwrite']:
+        if exists:
+            if RunConfig['verifyindex']:
+                runlog.info("Verifying no duplicate balrog_indexes...")
+                for i in range(len(tiles)):
+                    arr = cur.quick("select balrog_index from %s where tilename='%s'"%(test,tiles[i]), array=True)
+                    this = np.arange(indexstart[i], indexstart[i]+size[i], 1)
+                    inboth = np.in1d(np.int64(this), np.int64(arr['balrog_index']))
+                    if np.sum(inboth) > 0:
+                        raise Exception("You are trying to add balrog_index(es) which already exist. Setting verifyindex=False is the only way to allow this. But unless you understand what you're doing, and have thought of reasons I haven't, don't duplicate balrog_index")
+                runlog.info("Ok")
+        else:
+            if RunConfig['isfirst']:
+                write = True
 
-        if (tab.upper() in tables):
-            if RunConfig['DBoverwrite']:
+    elif (not RunConfig['isfirst']):
+        runlog.info("You gave DBoverwrite=True. I'm waiting for the first process, to ensure that the %s tables have been deleted."%(RunConfig['dbname']))
+        while True:
+            if os.path.exists(RunConfig['touchfile']):
+                break
+
+    else:
+        write = True
+        if exists:
+            runlog.warning("You gave DBoverwrite=True, and %s exists. I'm going to remove tables.'"%(RunConfig['dbname']))
+            for kind in kinds:
+                tab = 'balrog_%s_%s' %(RunConfig['dbname'], kind)
                 cur.quick("DROP TABLE %s PURGE" %tab)
-            else:
-                write = False
-                if (kind=='truth') and RunConfig['verifyindex']:
-                    for i in range(len(tiles)):
-                        arr = cur.quick("select balrog_index from %s where tilename='%s'"%(tab,tiles[i]), array=True)
-                        this = np.arange(indexstart[i], indexstart[i]+size[i], 1)
-                        inboth = np.in1d(np.int64(this), np.int64(arr['balrog_index']))
-                        if np.sum(inboth) > 0:
-                            raise Exception("You are trying to add balrog_index(es) which already exist. Setting verifyindex=False is the only way to allow this. But unless you understand what you're doing, and have thought of reasons I haven't, don't duplicate balrog_index")
+                runlog.warning("Deleted %s"%(tab))
+        open(RunConfig['touchfile'],'a').close()
 
     return write
 
@@ -219,10 +259,7 @@ def run_balrog(args):
                 shutil.rmtree(dir)
 
 
-def Run_Balrog(tiles,images,psfs,indexstart,bands,pos, config, write, runlogdir):
-    host = socket.gethostname()
-    rfile = os.path.join(runlogdir, 'common.log')
-    runlog = runbalrog.SetupLog(rfile, host, '%s-all'%(host))
+def Run_Balrog(tiles,images,psfs,indexstart,bands,pos, config, write, runlogdir, runlog):
 
     for i in range(len(tiles)):
         runlog.info('Setting up tile %s'%(tiles[i]))
@@ -270,15 +307,21 @@ def Run_Balrog(tiles,images,psfs,indexstart,bands,pos, config, write, runlogdir)
                 if (It[j]==-2):
                     derived['bands'] = runbalrog.GetAllBands()
                     runlog.info('Creating database %s'%(config['run']['dbname']))
-                    run_balrog( [config['run'], balrog, derived] )
+                    run_balrog( [copy.copy(config['run']), balrog, derived] )
                 else:
                     derived['bands'] = runbalrog.PrependDet(config['run'])
-                    args.append( [config['run'], balrog, derived] )
+                    args.append( [copy.copy(config['run']), balrog, derived] )
 
             else:
                 derived['images'], derived['psfs'] = runbalrog.DownloadImages(derived['indir'], derived['images'], derived['psfs'], config['run'], None, skip=True)
                 derived['bands'] = runbalrog.PrependDet(config['run'])
-                args.append( [config['run'], balrog, derived] )
+                args.append( [copy.copy(config['run']), balrog, derived] )
+
+
+        if not config['run']['isfirst']:
+            cur = desdb.connect()
+            user = cur.username
+            WaitExistence(4, config['run'], runlog)
 
         runlog.info('Doing all the Balrog iterations for tile %s'%(tiles[i]))
         runlog.info('Found %i iterations'%(len(args)))
@@ -295,19 +338,26 @@ def Run_Balrog(tiles,images,psfs,indexstart,bands,pos, config, write, runlogdir)
         shutil.rmtree(dir)
         runlog.info('removed %s' %(dir) )
 
+def OpenRunLog(runlogdir):
+    if os.path.exists(runlogdir):
+        shutil.rmtree(runlogdir)
+    os.makedirs(runlogdir)
+    host = socket.gethostname()
+    rfile = os.path.join(runlogdir, 'common.log')
+    runlog = runbalrog.SetupLog(rfile, host, '%s-all'%(host))
+    return runlog
+
 
 if __name__ == "__main__":
   
     with open(sys.argv[1]) as jsonfile:
         config = json.load(jsonfile)
 
-    runlogdir = sys.argv[2]
-    if os.path.exists(runlogdir):
-        shutil.rmtree(runlogdir)
-    os.makedirs(runlogdir)
+    runlogdir = config['run']['runlogdir']
+    runlog = OpenRunLog(runlogdir)
 
     images, psfs, tiles, bands, skipped = GetFiles2(config)
     pos, indexstart, size = GetPos(config['run'], tiles)
-    write = DropTablesIfNeeded(config['run'], indexstart, size, tiles)
-    Run_Balrog(tiles,images,psfs,indexstart,bands,pos, config, write, runlogdir)
+    write = DropTablesIfNeeded(config['run'], indexstart, size, tiles, runlog)
+    Run_Balrog(tiles,images,psfs,indexstart,bands,pos, config, write, runlogdir, runlog)
 
