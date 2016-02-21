@@ -5,10 +5,12 @@ One creates a set of positions for a set of tiles before doing that run set,
 and then the scripts which run Balrog read these positions.
 This way, one can generate random positions which are truly uniform over the sphere, with nothing enforced on tile scale.
 Though, I have built in an option to still run with equal number per tile settings to be "backward compatible".
+(This uses ```--pertile```, but I don't recommend using this. Objects are placed into the "unique areas" defined by DESDM,
+whih are not exactly equal area, so one ends up with slightly non-uniform sampling.)
 
 There is a file called [```BuildPos.py```](https://github.com/suchyta1/BalrogMPI/blob/nompi/BuildPos.py), which generates the positions.
 Run ```BuildPos.py --help``` for the command line arguments. They should be relatively clear.
-If you use the same ```--seed```, ```--pertile```, ```--sampling``` (and ```--iterateby``` if using ```--sampling sphere```),
+If you use the same ```--seed```, ```--density/--pertile```, (and ```--iterateby``` if using ```--density```),
 with the same file given in ```--tiles```, you'll get the same positions. 
 If you append to the ```--tiles``` file and run again, you'll ultimate generate ```balrog_index``` values which are consistent for the common tiles.
 
