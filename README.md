@@ -76,6 +76,12 @@ A working example on Edison would look something like:
 
 ### Need to Know Parameters
 
+I've tried the make the names of the parameters understandable. The best way to get a feel for what's going on is to 
+look at an example [e.g. here](https://github.com/suchyta1/BalrogMPI/blob/master/site-setups/Edison/y1-config.py) in the repository.
+Here's some explanations
+
+* `dbname` -- the DB tables you'll write to. You'll get tables with this names, appended with `['truth','sim','nosim']` (and empty `'des'`).
+
 * `tiles` -- a list of DES coadd tilenames
 * `nodes` -- how many nodes your job will use.
 * `npersubjob` -- number of tiles to run on each node (in each job file). Tiles on the same node run sequentially.
