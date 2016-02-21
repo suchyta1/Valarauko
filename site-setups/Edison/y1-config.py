@@ -26,13 +26,13 @@ def Y1A1Setup(run, balrog, tiles):
 def CustomConfig(run, balrog, db, tiles):
     run, balrog, tiles = Y1A1Setup(run, balrog, tiles)
 
-    tstart = 0
-    tend = 1
+    tstart = 100
+    tend = 120
     tiles = tiles[tstart:tend]
 
-    run['nodes'] = 1
-    run['walltime'] = '00:30:00'
-    run['queue'] = 'debug'
+    run['nodes'] = 10
+    run['walltime'] = '05:00:00'
+    run['queue'] = 'regular'
     run['runnum'] = 0     
     
     run['npersubjob'] = 1
@@ -40,13 +40,12 @@ def CustomConfig(run, balrog, db, tiles):
     
     #baseout = '/scratch3/scratchdirs/esuchyta/'
     baseout = os.environ['SCRATCH']
-    run['dbname'] = 'y1a1_etest'
+    run['dbname'] = 'y1a1_test2'
     run['joblabel'] = '%i:%i' %(tstart, tend)
     run['jobdir'] = os.path.join(baseout, 'BalrogJobs')
     run['outdir'] = os.path.join(baseout, 'BalrogScratch')
 
-    balrog['ngal'] = 10
-    run['downsample'] = 50
+    balrog['ngal'] = 1000
     run['runnum'] = 0 
 
     run['DBoverwrite'] = True

@@ -259,7 +259,7 @@ def Generate_Job(run,balrog,db,tiles,  where, setup):
                 run['DBoverwrite'] = False
 
             if run['ndependencies'] > 1:
-                run['jobname'] = '%s_dep_%'%(run['jobname'],k+1)
+                run['jobname'] = '%s_dep_%i'%(run['jobname'],k+1)
                 jobdir = os.path.join(run['jobdir'], 'dep_%i'%(k+1))
                 TryToMake(jobdir)
             else:
@@ -290,7 +290,7 @@ def Generate_Job(run,balrog,db,tiles,  where, setup):
             if run['stripe'] is not None:
                 descr = descr + 'if ! [ -d %s ]; then mkdir %s; fi;\n' %(run['outdir'],run['outdir'])
                 descr = descr + 'lfs setstripe %s --count %i\n' %(run['outdir'],run['stripe'])
-            desr = descr + """if [ -f %s ]; then rm %s; fi;\n"""%(run['touchfile'], run['touchfile'])
+            descr = descr + """if [ -f %s ]; then rm %s; fi;\n"""%(run['touchfile'], run['touchfile'])
 
             for i in range(run['nodes']):
                 jsonfile, start = SubConfig(start,i, tiles, run,config, substr, jobdir)
