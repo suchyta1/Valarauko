@@ -79,13 +79,14 @@ A working example on Edison would look something like:
 I've tried the make the names of the parameters understandable. The best way to get a feel for what's going on is to 
 look at an example ([e.g. here](https://github.com/suchyta1/BalrogMPI/blob/master/site-setups/Edison/y1-config.py)) in the repository.
 Some explanations are below. The `balrog` dictionary entries are command line arguments to [Balrog](https://github.com/emhuff/Balrog).
-You almost definitely don't need to worry about `db`.
+You almost definitely don't need to worry about the `db` dictionary. Most things are part of `run`.
 
 * `dbname` -- the DB tables you'll write to. You'll get tables with this names, appended with `['truth','sim','nosim']` (and empty `'des'`).
 * `jobdir` -- where output job files write
 * `outdir` -- where output temporary files (images, etc.) write. Set this to somewhere on the scratch disk.
 * `ngal` -- number of Balrog objects per realization
 * `pos` -- directory with positoin files generated for the Balrog run set from [`BuildPos.py`](https://github.com/suchyta1/BalrogMPI/blob/master/BuildPos.py)
+* `release` -- the release name of the coadd dataset from DESDM.
 * `tiles` -- a list of DES coadd tilenames
 * `nodes` -- how many nodes your job will use.
 * `npersubjob` -- number of tiles to run on each node (in each job file). Tiles on the same node run sequentially.
@@ -105,3 +106,9 @@ This will generate a shell script that submits the dependent jobs.
 
 Also, unless you're running small test jobs, and you understand what you're doing, don't mess with the hidden cleaning parameters. 
 You can easily fill entire disks if you do.
+
+#### Extra needed inputs
+
+* `db-columns` -- what fields to populate in the output DB. I'm getting this by describing the DESDM tables.
+* Paths to the wanted versions of `balrog`, `sextractor`, `swarp`, `wget`, `funpack`. The default is try to use something in your $PATH.
+* Configuration files for `sextractor` and `swarp`
