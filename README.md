@@ -84,6 +84,7 @@ You almost definitely don't need to worry about the `db` dictionary. Most things
 * `dbname` -- the DB tables you'll write to. You'll get tables with this names, appended with `['truth','sim','nosim']` (and empty `'des'`).
 * `jobdir` -- where output job files write
 * `outdir` -- where output temporary files (images, etc.) write. Set this to somewhere on the scratch disk.
+* `pyconfig` -- the [Balrog](https://github.com/emhuff/Balrog) `--pyconfig` file.
 * `ngal` -- number of Balrog objects per realization
 * `pos` -- directory with positoin files generated for the Balrog run set from [`BuildPos.py`](https://github.com/suchyta1/BalrogMPI/blob/master/BuildPos.py)
 * `release` -- the release name of the coadd dataset from DESDM.
@@ -110,5 +111,5 @@ You can easily fill entire disks if you do.
 #### Extra needed inputs
 
 * `db-columns` -- what fields to populate in the output DB. I'm getting this by describing the DESDM tables.
-* Paths to the wanted versions of `balrog`, `sextractor`, `swarp`, `wget`, `funpack`. The default is try to use something in your $PATH.
-* Configuration files for `sextractor` and `swarp`
+* Paths to the wanted versions of `balrog`, `sextractor`, `swarp`, `wget`, `funpack`. The default is try to find something in your `$PATH`.
+* Configuration files for `sextractor` and `swarp`. Having defaults for these doesn't really make sense.
