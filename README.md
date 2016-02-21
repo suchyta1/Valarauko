@@ -83,7 +83,6 @@ Here's some explanations
 * `dbname` -- the DB tables you'll write to. You'll get tables with this names, appended with `['truth','sim','nosim']` (and empty `'des'`).
 * `jobdir` -- where output job files write
 * `outdir` -- where output temporary files (images, etc.) write. Set this to somewhere on the scratch disk.
-
 * `ngal` -- number of Balrog objects per realization
 * `pos` -- directory with positoin files generated for the Balrog run set from [`BuildPos.py`](https://github.com/suchyta1/BalrogMPI/blob/master/BuildPos.py)
 * `tiles` -- a list of DES coadd tilenames
