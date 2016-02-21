@@ -79,7 +79,7 @@ but some are intentionally more so hidden in [`/source-code/GenerateJob.py`](htt
 
 The third command line argument is `--scheduler`, which speicifies the work queue you're submitting to. 
 Currently only `['slurm','wq']` are accepted. 
-['SLURM'](http://slurm.schedmd.com/documentation.html) is the schduler at NERSC,
+[`SLURM`](http://slurm.schedmd.com/documentation.html) is the schduler at NERSC,
 and [`wq`](https://github.com/suchyta1/Valarauko#generating-the-balrog-job) is scheduler at BNL.
 If you're at BNL or NERSC you can forget this even exists, and the script will auto-detect what to do.
 A working example on Edison would look something like:
