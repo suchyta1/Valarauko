@@ -37,7 +37,7 @@ You shouldn't need to ever look at a lot of the settings, so they're indeed hidd
 There are also a lot of dependencies. (I have everything needed installed on the Astro cluster at BNL and Edison at NERSC.)
 One can supply a bash script to be sourced to set up all the software at the computing site.
 This is done with the ```--source``` command line argument.
-(See [```site-setups/Edison/y1-source```](https://github.com/suchyta1/BalrogMPI/blob/nompi/site-setups/Edison/y1-config.py) as an example I use on Edison.)
+(See [```site-setups/Edison/y1-source```](https://github.com/suchyta1/BalrogMPI/blob/nompi/site-setups/Edison/y1-source.sh) as an example I use on Edison.)
 If ```--source``` isn't given, you'll need to have everything set up by default in your rc file.
 To be explicitly clear, the file given will be sourced both when  you're running [```BuildJob.py```](https://github.com/suchyta1/BalrogMPI/blob/nompi/BuildJob.py) itself,
 and in your output job submission file. (The former is so it's easier to build your jobs from the command line, without requiring you to manually set things up.)
