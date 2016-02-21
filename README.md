@@ -9,6 +9,11 @@ parallelizing on the node with python's [`multiprocessing.Pool()`](https://docs.
 Files are automatically downloaded from the DESDM file server, and results are pushed to the user's space in the `dessci` DB. 
 You'll need to setup your [`.netrc`](https://github.com/esheldon/desdb#access-to-servers) file for any of this to work.
 
+## Installation
+
+The package doesn't require any installation itself, per se. But there are about a gazillion dependencies you need for this to actually run,
+most of which are python modules. If you're trying to get this working somewhere, probably I know about it and am helping you anyway.
+
 
 ## Generating simulation positions
 
