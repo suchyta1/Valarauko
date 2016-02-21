@@ -11,15 +11,15 @@ You'll need to setup your [`.netrc`](https://github.com/esheldon/desdb#access-to
 
 ## Installation
 
-You can ask me about this if it's relevant. Having everything setup is somewhat non-trivial.
+You can ask me if this is relevant for you; if you're trying to get this working somewhere, probably I know about it and am helping you anyway.
+In short, having everything setup is somewhat non-trivial.
 The package doesn't itself really require any building -- just cloning the code --
-but there are about a gazillion dependencies you need for the code to actually successfully run,
-most of which are python modules. If you're trying to get this working somewhere, probably I know about it and am helping you anyway.
-Right now I have it installed on the [Astro cluster](https://wiki.bnl.gov/astro/index.php/Computing) at BNL, 
+but there are about a gazillion dependencies you need for the code to actually successfully run, most of which are python modules. 
+Right now I have everything installed on the [Astro cluster](https://wiki.bnl.gov/astro/index.php/Computing) at BNL, 
 and [Edison](http://www.nersc.gov/users/computational-systems/edison/) at NERSC.
 It's more or less installed on [Cori](http://www.nersc.gov/users/computational-systems/cori/) too, 
-(unless the hpcp modules changed there too), but I'm getting very slow performance there for some reason,
-so I'm not using Cori.
+(unless the hpcp modules changed there too), but I'm getting very slow performance there for some reason, so I'm not using Cori.
+See [below](https://github.com/suchyta1/Valarauko#generating-the-balrog-job) about integrating the software into the Balrog runtime.
 
 
 ## Generating simulation positions
