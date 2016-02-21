@@ -3,8 +3,8 @@
 > The last etymology, appearing in the invented languages Quendi and Eldar, derives Balrog as the Sindarin translation of the Quenya form Valarauko (Demon of Might). 
 > This etymology was published in The Silmarillion. -- [Wikipedia](https://en.wikipedia.org/wiki/Balrog)
 
-Contained here is python code to intended to run [Balrog](https://github.com/emhuff/Balrog) en-masse over DES coadds.
-The generated Balrog jobs run each tile on a separate node, 
+Contained here is python code to intended to run [`Balrog`](https://github.com/emhuff/Balrog) en-masse over DES coadds.
+The generated `Balrog` jobs run each tile on a separate node, 
 parallelizing on the node with python's [`multiprocessing.Pool()`](https://docs.python.org/2/library/multiprocessing.html#module-multiprocessing.pool).
 Files are automatically downloaded from the DESDM file server, and results are pushed to the user's space in the `dessci` DB. 
 You'll need to setup your [`.netrc`](https://github.com/esheldon/desdb#access-to-servers) file for any of this to work.
@@ -13,20 +13,20 @@ You'll need to setup your [`.netrc`](https://github.com/esheldon/desdb#access-to
 
 You can ask me if this is relevant for you; if you're trying to get this working somewhere, probably I know about it and am helping you anyway.
 In short, having everything setup is somewhat non-trivial.
-The package doesn't itself really require any building -- just cloning the code --
+The package itself doesn't really require any building -- just cloning the code --
 but there are about a gazillion dependencies you need for the code to actually successfully run, most of which are python modules. 
 Right now I have everything installed on the [Astro cluster](https://wiki.bnl.gov/astro/index.php/Computing) at BNL, 
 and [Edison](http://www.nersc.gov/users/computational-systems/edison/) at NERSC.
 It's more or less installed on [Cori](http://www.nersc.gov/users/computational-systems/cori/) too, 
 (unless the hpcp modules changed there too), but I'm getting very slow performance there for some reason, so I'm not using Cori.
-See [below](https://github.com/suchyta1/Valarauko#generating-the-balrog-job) about integrating the software into the Balrog runtime.
+See [below](https://github.com/suchyta1/Valarauko#generating-the-balrog-job) about integrating the software into the `Balrog` runtime.
 
 
 ## Generating simulation positions
 
-In the new setup, positions are NOT generated on the fly by the job that actually runs Balrog.
+In the new setup, positions are NOT generated on the fly by the job that actually runs `Balrog`.
 One creates a set of positions for a set of tiles before doing that run set,
-and then the scripts which run Balrog read these positions.
+and then the scripts which run `Balrog` read these positions.
 This way, one can generate random positions which are truly uniform over the sphere, with nothing enforced on tile scale.
 Though, I have built in an option to still run with equal number per tile settings to be "backward compatible".
 (This uses `--pertile`, but I don't recommend using this. Objects are placed into the "unique areas" defined by DESDM,
@@ -53,9 +53,9 @@ mpirun -np 150 -hostfile %hostfile% ./BuildPos.py --density 200000 --seed 100  \
 --outdir /somewhere/spt-y1a1-only-g70-grizY-pos-sphere/
 ```
 
-## Generating the Balrog job
+## Generating the `Balrog` job
 
-Use [`BuildJob.py`](https://github.com/suchyta1/BalrogMPI/blob/master/BuildJob.py) to build the Balrog jobs to submit to the queue scheduler.
+Use [`BuildJob.py`](https://github.com/suchyta1/BalrogMPI/blob/master/BuildJob.py) to build the `Balrog` jobs to submit to the queue scheduler.
 In principle, these jobs have a practically infinite number of adjustable parameters, but for many of them I've set the defaults to be what you probably want.
 You shouldn't need to ever look at a lot of the settings, so they're indeed hidden from you to start.
 
@@ -98,9 +98,9 @@ You almost definitely don't need to worry about the `db` dictionary. Most things
 * `dbname` -- the DB tables you'll write to. You'll get tables with this names, appended with `['truth','sim','nosim']` (and empty `'des'`).
 * `jobdir` -- where output job files write
 * `outdir` -- where output temporary files (images, etc.) write. Set this to somewhere on the scratch disk.
-* `pyconfig` -- the Balrog `--pyconfig` file.
-* `ngal` -- number of Balrog objects per realization
-* `pos` -- directory with positoin files generated for the Balrog run set from `BuildPos.py`
+* `pyconfig` -- the `Balrog` `--pyconfig` file.
+* `ngal` -- number of `Balrog` objects per realization
+* `pos` -- directory with positoin files generated for the `Balrog` run set from `BuildPos.py`
 * `release` -- the release name of the coadd dataset from DESDM.
 * `tiles` -- a list of DES coadd tilenames
 * `nodes` -- how many nodes your job will use.
