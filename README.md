@@ -7,6 +7,7 @@ Contained here is python code to intended to run [Balrog](https://github.com/emh
 The generated Balrog jobs run each tile on a separate node, 
 parallelizing on the node with python's [`multiprocessing.Pool()`](https://docs.python.org/2/library/multiprocessing.html#module-multiprocessing.pool).
 Files are automatically downloaded from the DESDM file server, and results are pushed to the user's space in the `dessci` DB. 
+You'll need to setup your [`.netrc`](https://github.com/esheldon/desdb#access-to-servers) file for any of this to work.
 
 
 ## Generating simulation positions
