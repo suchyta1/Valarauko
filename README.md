@@ -92,13 +92,13 @@ A working example on Edison would look something like:
 
 I've tried the make the names of the parameters understandable. The best way to get a feel for what's going on is to 
 look at an example ([e.g. here](https://github.com/suchyta1/BalrogMPI/blob/master/site-setups/Edison/y1-config.py)) in the repository.
-Some explanations are below. The `balrog` dictionary entries are command line arguments to [Balrog](https://github.com/emhuff/Balrog).
+Some explanations are below. The `balrog` dictionary entries are command line arguments to Balrog.
 You almost definitely don't need to worry about the `db` dictionary. Most things are part of `run`.
 
 * `dbname` -- the DB tables you'll write to. You'll get tables with this names, appended with `['truth','sim','nosim']` (and empty `'des'`).
 * `jobdir` -- where output job files write
 * `outdir` -- where output temporary files (images, etc.) write. Set this to somewhere on the scratch disk.
-* `pyconfig` -- the [Balrog](https://github.com/emhuff/Balrog) `--pyconfig` file.
+* `pyconfig` -- the Balrog `--pyconfig` file.
 * `ngal` -- number of Balrog objects per realization
 * `pos` -- directory with positoin files generated for the Balrog run set from `BuildPos.py`
 * `release` -- the release name of the coadd dataset from DESDM.
