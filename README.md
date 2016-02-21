@@ -98,3 +98,8 @@ This will generate a shell script that submits the dependent jobs.
 * `asarray` -- Submit subjobs (i.e. each node running `npersubjob` tiles) as part of a [SLURM job array](http://slurm.schedmd.com/job_array.html). 
 * `arraymax` -- sets max number of simultaneous running subjobs in an array.
 
+#### Dangerous (but can be useful)
+
+* `DBoverwrite` -- overwrite the existing `dbname` if it already exists.
+
+Also, unless you're running small test jobs, and you understand what you're doing, don't mess with the cleanings parameters. You can easily fill entire disks if you do.
