@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import sys
 import os
 import numpy as np
 import argparse
@@ -24,7 +25,12 @@ def GetHeader(args):
     s = args.seed
     if s is None:
         s = 'None'
-    header = {'samp':args.sampling, 'pertile': args.pertile, 'seed': s, 'itby': args.iterateby}
+    
+    if args.pertile is not None:
+        header = {'pertile': args.pertile, 'seed': s}
+    elif args.density is not None:
+        header = {'density': args.density, 'seed': s, 'itby': args.iterateby}
+
     return header
 
 def GetPos(num, it, args):
@@ -47,7 +53,7 @@ def GetTileDefs(args, strtype='|S12'):
     tiles['tilename'] = t.astype(strtype)
     tiles['index'] = np.arange(len(t))
 
-    if args.sampling=='sphere':
+    if args.density is not None:
         for tile in tiles['tilename']:
             outdir = os.path.join(args.outdir, tile)
             if not os.path.exists(outdir):
@@ -77,22 +83,26 @@ def GetArgs():
     parser = argparse.ArgumentParser()
 
     # These affect the random number generations, so would have to be set identically to a previous run to get the same results.
-    parser.add_argument("-sa", "--sampling", help="How to sample: equal number per tile, or realizations over full sphere", default='sphere', type=str, choices=['sphere','tile'])
-    parser.add_argument("-p", "--pertile", help="(Average) number per tile", default=100000, type=int)
     parser.add_argument("-s", "--seed", help="Seed for random number generator, so you can get the same positions again if you add to your tile list", default=None, type=int)
-    parser.add_argument("-i", "--iterateby", help="Only relevant with --sampling sphere. Number of sphere points per random realization iteratition. Reducing lessens memory consumption at cost of run time.", default=int(1e8), type=int)
+    parser.add_argument("-p", "--pertile", help="Number per tile, unique area. We had been doing this, but it's slightly wrong. I don't recommend this. It's for backwards compatibility.", default=None, type=int)
+    parser.add_argument("-d", "--density", help="Density of objects in number/deg^2", default=None, type=float)
+    parser.add_argument("-i", "--iterateby", help="Only relevant with --density. Number of sphere points per random realization iteratition. Reducing lessens memory consumption at cost of run time.", default=int(1e8), type=int)
 
     # The tile list affects the indexstart that gets written. If you give a tile list that has extra tiles appended compared to before, the new indexstarts will be consistent before what was appended.
     parser.add_argument("-t", "--tiles", help="FITS file with tile list", required=True, type=str)
 
     parser.add_argument("-tc", "--tilecol", help="Column in FITS file with tile names", default='tilename', type=str)
     parser.add_argument("-o", "--outdir", help="Output directory to save position files", default=None, type=str)
-
     args = parser.parse_args()
+   
+    if (args.density is not None) and (args.pertile is not None):
+        raise Exception('Cannot give a value for both --density and --pertile')
 
+    if (args.density is None) and (args.pertile is None):
+        raise Exception('Must give value for either --density or --pertile')
 
     if args.outdir is None:
-        args.outdir = os.path.join( os.path.dirname(args.tiles), '%s-tilepos'%(os.path.basename(args.tiles).rstrip('.fits')) )
+        raise Exception('no --outdir given')
     args.outdir = os.path.realpath(args.outdir)
 
     if MPI.COMM_WORLD.Get_rank()==0:
@@ -103,8 +113,7 @@ def GetArgs():
 
 
 def SetupIterations(args):
-    density = args.pertile / np.power(1.0e4*0.27*np.pi/(3600.0*180.0), 2)
-    total = int( density * 4.0*np.pi )
+    total = int( args.density * np.power(180.0/np.pi, 2.0) * 4.0*np.pi )
     fullits = total / args.iterateby
     num = np.array( [total/fullits]*fullits )
     it = np.arange(len(num))
@@ -181,7 +190,7 @@ if __name__ == "__main__":
         tiles = None
 
       
-    if args.sampling=='sphere':
+    if args.density is not None:
         if MPI.COMM_WORLD.Get_rank()==0:
             num, it = SetupIterations(args)
             itcopy = copy.deepcopy(it)
