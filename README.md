@@ -13,7 +13,8 @@ You'll need to setup your [`.netrc`](https://github.com/esheldon/desdb#access-to
 
 The package doesn't require any installation itself, per se. But there are about a gazillion dependencies you need for this to actually run,
 most of which are python modules. If you're trying to get this working somewhere, probably I know about it and am helping you anyway.
-Right now I have it installed on the Astro cluster at BNL, and Edison at NERSC.
+Right now I have it installed on the [Astro cluster](https://wiki.bnl.gov/astro/index.php/Computing) at BNL, 
+and [Edison](http://www.nersc.gov/users/computational-systems/edison/) at NERSC.
 It's more or less installed on Cori too, (unless the hpcp modules changed there too), but I'm getting very slow performance there for some reason,
 so I'm not using Cori.
 
