@@ -13,6 +13,9 @@ You'll need to setup your [`.netrc`](https://github.com/esheldon/desdb#access-to
 
 The package doesn't require any installation itself, per se. But there are about a gazillion dependencies you need for this to actually run,
 most of which are python modules. If you're trying to get this working somewhere, probably I know about it and am helping you anyway.
+Right now I have it installed on the Astro cluster at BNL, and Edison at NERSC.
+It's more or less installed on Cori too, (unless the hpcp modules changed there too), but I'm getting very slow performance there for some reason,
+so I'm not using Cori.
 
 
 ## Generating simulation positions
@@ -51,7 +54,8 @@ mpirun -np 150 -hostfile %hostfile% ./BuildPos.py --density 200000 --seed 100  \
 Use [`BuildJob.py`](https://github.com/suchyta1/BalrogMPI/blob/master/BuildJob.py) to build the Balrog jobs to submit to the queue scheduler.
 In principle, these jobs have a practically infinite number of adjustable parameters, but for many of them I've set the defaults to be what you probably want.
 You shouldn't need to ever look at a lot of the settings, so they're indeed hidden from you to start.
-There are also a lot of dependencies. (I have everything needed installed on the Astro cluster at BNL and Edison at NERSC.)
+
+As I mentioned above, there are also a lot of dependencies which need to be set up. 
 One can supply a bash script to be sourced to set up all the software at the computing site.
 This is done with the `--source` command line argument.
 (See [`site-setups/Edison/y1-source`](https://github.com/suchyta1/BalrogMPI/blob/master/site-setups/Edison/y1-source.sh) as an example I use on Edison.)
