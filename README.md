@@ -4,6 +4,9 @@
 > This etymology was published in The Silmarillion. -- [Wikipedia](https://en.wikipedia.org/wiki/Balrog)
 
 Contained here is python code to intended to run [Balrog](https://github.com/emhuff/Balrog) en-masse over DES coadds.
+The generated Balrog jobs run each tile on a separate node, 
+parallelizing on the node with python's ```[multiprocessing.Pool()](https://docs.python.org/2/library/multiprocessing.html#module-multiprocessing.pool)```.
+Files are automatically downloaded from the DESDM file server, and results are pushed to the user's space in the `dessci` DB. 
 
 
 ## Generating simulation positions
