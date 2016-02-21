@@ -333,10 +333,12 @@ def Run_Balrog(tiles,images,psfs,indexstart,bands,pos, config, write, runlogdir,
             shutil.rmtree(dir)
             runlog.info('removed %s' %(dir) )
 
+    '''
     dir = config['run']['outdir']
     if config['run']['tile-clean'] and os.path.exists(dir):
         shutil.rmtree(dir)
         runlog.info('removed %s' %(dir) )
+    '''
 
 def OpenRunLog(runlogdir):
     if os.path.exists(runlogdir):
