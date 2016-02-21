@@ -36,7 +36,7 @@ If you use the same `--seed`, `--density`/`--pertile`, (and `--iterateby` if usi
 with the same file given in `--tiles`, you'll get the same positions. 
 If you append to the `--tiles` file and run again, you'll ultimate generate `balrog_index` values which are consistent for the common tiles.
 
-I haven't supplied a script to generate jobs for [`BuildPos.py`](https://github.com/suchyta1/BalrogMPI/blob/master/BuildPos.py), 
+I haven't supplied a script to generate jobs for `BuildPos.py`, 
 because you likely don't need to do this very often, and at any rate, it's not very complex. You'll want an `mpirun` (or `srun`, or whatever) something like below.
 I use `mpi` because for `--sampling sphere`, generating points over the whole sphere can be a lot of points / use a lot of memory, 
 so one iterates, and uses multiple machines/cores.
@@ -62,10 +62,10 @@ One can supply a bash script to be sourced to set up all the software at the com
 This is done with the `--source` command line argument.
 (See [`site-setups/Edison/y1-source`](https://github.com/suchyta1/BalrogMPI/blob/master/site-setups/Edison/y1-source.sh) as an example I use on Edison.)
 If `--source` isn't given, you'll need to have everything set up by default in your rc file.
-To be explicitly clear, the file given will be sourced both when  you're running [`BuildJob.py`](https://github.com/suchyta1/BalrogMPI/blob/master/BuildJob.py) itself,
+To be explicitly clear, the file given will be sourced both when  you're running `BuildJob.py`,
 and in your output job submission file. (The former is so it's easier to build your jobs from the command line, without requiring you to manually set things up.)
 
-[`BuildJob.py`](https://github.com/suchyta1/BalrogMPI/blob/master/BuildJob.py) takes up to 3 command line arguments.
+`BuildJob.py` takes up to 3 command line arguments.
 `--source` was mentioned above.
 You'll always need to give an argument to `--config`. This is a python file 
 (see [`site-setups/Edison/y1-config.py`](https://github.com/suchyta1/BalrogMPI/blob/master/site-setups/Edison/y1-config.py) as an example I use on Edison), 
@@ -98,7 +98,7 @@ You almost definitely don't need to worry about the `db` dictionary. Most things
 * `outdir` -- where output temporary files (images, etc.) write. Set this to somewhere on the scratch disk.
 * `pyconfig` -- the [Balrog](https://github.com/emhuff/Balrog) `--pyconfig` file.
 * `ngal` -- number of Balrog objects per realization
-* `pos` -- directory with positoin files generated for the Balrog run set from [`BuildPos.py`](https://github.com/suchyta1/BalrogMPI/blob/master/BuildPos.py)
+* `pos` -- directory with positoin files generated for the Balrog run set from `BuildPos.py`
 * `release` -- the release name of the coadd dataset from DESDM.
 * `tiles` -- a list of DES coadd tilenames
 * `nodes` -- how many nodes your job will use.
