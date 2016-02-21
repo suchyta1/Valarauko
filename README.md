@@ -17,7 +17,7 @@ and then the scripts which run Balrog read these positions.
 This way, one can generate random positions which are truly uniform over the sphere, with nothing enforced on tile scale.
 Though, I have built in an option to still run with equal number per tile settings to be "backward compatible".
 (This uses `--pertile`, but I don't recommend using this. Objects are placed into the "unique areas" defined by DESDM,
-whih are not exactly equal area, so one ends up with slightly non-uniform sampling.)
+which are not exactly equal area, so one ends up with slightly non-uniform sampling.)
 
 There is a file called [`BuildPos.py`](https://github.com/suchyta1/BalrogMPI/blob/master/BuildPos.py), which generates the positions.
 Run `BuildPos.py --help` for the command line arguments. They should be relatively clear.
@@ -113,3 +113,10 @@ You can easily fill entire disks if you do.
 * `db-columns` -- what fields to populate in the output DB. I'm getting this by describing the DESDM tables.
 * Paths to the wanted versions of `balrog`, `sextractor`, `swarp`, `wget`, `funpack`. The default is try to find something in your `$PATH`.
 * Configuration files for `sextractor` and `swarp`. Having defaults for these doesn't really make sense.
+
+
+## What else?
+
+If you look in [`aux`](https://github.com/suchyta1/Valarauko/tree/master/aux), you'll find
+scripts that give an idea of how I've generated some of the auxilary needed inputs, such as the column names to use, or sets of tiles.
+The [`tiles`](https://github.com/suchyta1/Valarauko/tree/master/tiles) directory has some tile lists.
