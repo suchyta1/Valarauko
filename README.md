@@ -1,7 +1,10 @@
-# Valarauko -- Super-parallel DES coadd implementation of Balrog.
+# Valarauko 
 
 > The last etymology, appearing in the invented languages Quendi and Eldar, derives Balrog as the Sindarin translation of the Quenya form Valarauko (Demon of Might). 
 > This etymology was publishe in The Silmarillion.
+
+Contained here is python code to intended to run [Balrog](https://github.com/emhuff/Balrog) en-masse over DES coadds.
+
 
 ## Generating simulation positions
 
