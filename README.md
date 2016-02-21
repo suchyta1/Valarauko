@@ -79,6 +79,8 @@ but some are intentionally more so hidden in [`/source-code/GenerateJob.py`](htt
 
 The third command line argument is `--scheduler`, which speicifies the work queue you're submitting to. 
 Currently only `['slurm','wq']` are accepted. 
+['SLURM'](http://slurm.schedmd.com/documentation.html) is the schduler at NERSC,
+and [`wq`](https://github.com/suchyta1/Valarauko#generating-the-balrog-job) is scheduler at BNL.
 If you're at BNL or NERSC you can forget this even exists, and the script will auto-detect what to do.
 A working example on Edison would look something like:
 
@@ -106,7 +108,7 @@ You almost definitely don't need to worry about the `db` dictionary. Most things
 * `nodes` -- how many nodes your job will use.
 * `npersubjob` -- number of tiles to run on each node (in each job file). Tiles on the same node run sequentially.
 
-`len(tiles)/(nodes*npersubjob)` must be an intger with [`SLURM`](http://slurm.schedmd.com/documentation.html), and equal to 1 if you're using [`wq`](https://github.com/esheldon/wq)
+`len(tiles)/(nodes*npersubjob)` must be an intger with `SLURM`, and equal to 1 if you're using `wq`
 or a `SLURM` job array.
 
 #### `SLURM` only
