@@ -200,6 +200,7 @@ def SubConfig(start,i, tiles, run,config, substr, jobdir):
     jdir = GetJdir(run, jobdir, id, substr)
     logdir = os.path.join(jdir, 'runlog')
     run['runlogdir'] = logdir
+    run['exitfile'] = os.path.join(jdir, 'exit')
     
     #run['nodes'] = 1
     if i==0:
@@ -215,6 +216,13 @@ def SubConfig(start,i, tiles, run,config, substr, jobdir):
 def WriteOut(jobfile, out):
     with open(jobfile, 'w') as job:
         job.write(out)
+
+
+def CheckFails(exitfiles, space=''):
+    files = ' '.join(exitfiles)
+    check = """%sfails=0; files=""; for f in %s; do read -r result < $f; if [ "$result" = "1" ]; then let "fails+=1"; if [ $fails = "1" ]; then files="$f"; else files="${files},${f}"; fi; fi; done;\n"""%(space,files)
+    exit = """%sif [ $fails = "0" ]; then echo "job succeeded"; code=0; else echo "job failed -- $fails failures -- bad exit files: $files"; code=1; fi\n"""%(space)
+    return check, exit
 
 
 def Generate_Job(run,balrog,db,tiles,  where, setup):
@@ -239,13 +247,22 @@ def Generate_Job(run,balrog,db,tiles,  where, setup):
         descr = 'mode: bynode\n' + 'N: %i\n' %(run['nodes']) + 'hostfile: auto\n' + 'job_name: %s' %(run['jobname'])
         cmd = space + """nodes=(); while read -r line; do found=false; host=$line; for h in "${nodes[@]}"; do if [ "$h" = "$host" ]; then found=true; fi; done; if [ "$found" = "false" ]; then nodes+=("$host"); fi; done < %hostfile%\n"""
         cmd = cmd + space + """if [ -f %s ]; then rm %s; fi;\n"""%(run['touchfile'], run['touchfile'])
+
+        exits = []
         for i in range(run['nodes']):
             jsonfile, start = SubConfig(start,i, tiles, run,config, substr, run['jobdir'])
             cmd = cmd + space + 'mpirun -np 1 -host ${nodes[%i]} %s %s &\n' %(i, allmpi, jsonfile)
+            exits.append('"%s"'%(run['exitfile']))
 
         cmd = cmd + space + 'wait\n'
+
+        check,exit = CheckFails(exits, space=space)
+        cmd  = cmd + check
+        cmd = cmd + exit
         if run['email'] is not None:
-            cmd = cmd + space + '%s %s %s\n'%(sendmail, run['email'], run['jobname'])
+            cmd = cmd + space + '%s %s %s $code\n'%(sendmail, run['email'], run['jobname'])
+        cmd = cmd + space + 'exit $code\n'
+
         out = 'command: |\n' + space + '%s%s%s%s' %(s, d, cmd, descr)
         jobfile = os.path.join(run['jobdir'], '%s.wq' %(run['jobname']))
         WriteOut(jobfile, out)
@@ -304,8 +321,19 @@ def Generate_Job(run,balrog,db,tiles,  where, setup):
                 descr = descr + 'j=%s\n'%(os.path.join(subdir,'config.json'))
                 descr = descr + 'l=%s\n'%(os.path.join(subdir,'runlog'))
                 out = descr + 'srun -N 1 -n 1 %s ${j} ${l}' %(allmpi)
+            '''
             else:
-                out = descr + 'wait'
+                out = descr + 'wait\n'
+                check,exit = CheckFails(exits, space='')
+                out = out + check
+                out = out + exit
+                out = out + 'exit $code\n'
+            '''
+            out = descr + 'wait\n'
+            check,exit = CheckFails(exits, space='')
+            out = out + check
+            out = out + exit
+            out = out + 'exit $code\n'
 
             jobfile = os.path.join(jobdir, '%s.sl' %(run['jobname']))
             WriteOut(jobfile, out)

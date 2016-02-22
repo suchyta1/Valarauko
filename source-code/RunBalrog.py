@@ -35,9 +35,12 @@ def BalrogSystemCall(cmd, DerivedConfig, func=True):
         msg = 'Doing Balrog as function: \n%s\n'%(' '.join(cmd[2:]))
         balrog.SysInfoPrint(DerivedConfig['setup'], msg, level='info')
         #balrog.BalrogFunction(args=cmd[3:], systemredirect=DerivedConfig['itlog'], excredirect=DerivedConfig['itlog'])
-        balrog.BalrogFunction(args=cmd[3:], syslog=DerivedConfig['itlog'])
+        ret = balrog.BalrogFunction(args=cmd[3:], syslog=DerivedConfig['itlog'])
     else:
-        balrog.SystemCall(args, setup=DerivedConfig['setup'])
+        ret = balrog.SystemCall(args, setup=DerivedConfig['setup'])
+
+    if (ret != 0):
+        raise Exception('Balrog failed')
 
 
 def Wget(infile, file, setup, RunConfig, skip):
@@ -915,14 +918,21 @@ def RunNormal2(RunConfig, BalrogConfig, DerivedConfig):
 
 
 
-def SetupLog(logfile, host, id):
+def SetupLog(logfile, host, id, stream=False):
     log = logging.getLogger('id-%s'%(id))
     log.setLevel(logging.DEBUG)
+
     formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(hostname)s - %(message)s')
     fh = logging.FileHandler(logfile, mode='w')
     fh.setFormatter(formatter)
     fh.setLevel(logging.DEBUG)
     log.addHandler(fh)
+
+    if stream:
+        sh = logging.StreamHandler(stream=sys.stderr)
+        sh.setFormatter(formatter)
+        sh.setLevel(logging.ERROR)
+        log.addHandler(sh)
 
     extra = {'hostname': 'host = %s'%host}
     log = logging.LoggerAdapter(log, extra)

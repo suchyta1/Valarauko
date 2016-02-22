@@ -346,20 +346,31 @@ def OpenRunLog(runlogdir):
     os.makedirs(runlogdir)
     host = socket.gethostname()
     rfile = os.path.join(runlogdir, 'common.log')
-    runlog = runbalrog.SetupLog(rfile, host, '%s-all'%(host))
+    runlog = runbalrog.SetupLog(rfile, host, '%s-all'%(host), stream=True)
     return runlog
 
 
 if __name__ == "__main__":
-  
+
     with open(sys.argv[1]) as jsonfile:
         config = json.load(jsonfile)
-
     runlogdir = config['run']['runlogdir']
     runlog = OpenRunLog(runlogdir)
 
-    images, psfs, tiles, bands, skipped = GetFiles2(config)
-    pos, indexstart, size = GetPos(config['run'], tiles)
-    write = DropTablesIfNeeded(config['run'], indexstart, size, tiles, runlog)
-    Run_Balrog(tiles,images,psfs,indexstart,bands,pos, config, write, runlogdir, runlog)
+    if os.path.exists(config['run']['exitfile']):
+        os.remove(config['run']['exitfile'])
 
+    try:
+        images, psfs, tiles, bands, skipped = GetFiles2(config)
+        pos, indexstart, size = GetPos(config['run'], tiles)
+        write = DropTablesIfNeeded(config['run'], indexstart, size, tiles, runlog)
+        Run_Balrog(tiles,images,psfs,indexstart,bands,pos, config, write, runlogdir, runlog)
+        exit = 0
+    except:
+        balrogmodule.RaiseException(runlog, fulltraceback=True, sendto=None, ascmd=False)
+        exit = 1
+
+    with open(config['run']['exitfile'],'w') as f:
+        f.write('%i'%(exit))
+
+    sys.exit(exit)
