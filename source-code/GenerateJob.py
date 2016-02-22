@@ -239,6 +239,7 @@ def Generate_Job(run,balrog,db,tiles,  where, setup):
     config['balrog'] = balrog
     config['db'] = db
     deps = []
+    exits = []
 
     if where=='wq':
         
@@ -248,7 +249,6 @@ def Generate_Job(run,balrog,db,tiles,  where, setup):
         cmd = space + """nodes=(); while read -r line; do found=false; host=$line; for h in "${nodes[@]}"; do if [ "$h" = "$host" ]; then found=true; fi; done; if [ "$found" = "false" ]; then nodes+=("$host"); fi; done < %hostfile%\n"""
         cmd = cmd + space + """if [ -f %s ]; then rm %s; fi;\n"""%(run['touchfile'], run['touchfile'])
 
-        exits = []
         for i in range(run['nodes']):
             jsonfile, start = SubConfig(start,i, tiles, run,config, substr, run['jobdir'])
             cmd = cmd + space + 'mpirun -np 1 -host ${nodes[%i]} %s %s &\n' %(i, allmpi, jsonfile)
@@ -312,6 +312,7 @@ def Generate_Job(run,balrog,db,tiles,  where, setup):
             for i in range(run['nodes']):
                 jsonfile, start = SubConfig(start,i, tiles, run,config, substr, jobdir)
                 jdir = os.path.dirname(jsonfile)
+                exits.append('"%s"'%(run['exitfile']))
 
                 if not run['asarray']:
                     descr = descr + 'srun -N 1 -n 1 %s %s &\n' %(allmpi, jsonfile)
