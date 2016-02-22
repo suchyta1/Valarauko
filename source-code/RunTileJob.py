@@ -294,7 +294,7 @@ def Run_Balrog(tiles,images,psfs,indexstart,bands,pos, config, write, runlogdir,
 
 
             balrog['indexstart'] = derived['indexstart']
-            if it > 0:
+            if it >= 0:
                 balrog['indexstart'] += it*balrog['ngal']
                 balrog['ngal'] = len(derived['pos'])
             balrog['seed'] = balrog['indexstart'] + derived['seedoffset']

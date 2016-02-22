@@ -30,18 +30,19 @@ def CustomConfig(run, balrog, db, tiles):
     run['email'] = 'eric.d.suchyta@gmail.com'
 
     tstart = 100
-    tend = 110
+    tend = 102
     tiles = tiles[tstart:tend]
     run['npersubjob'] = 1
-    run['nodes'] = 10
+    run['nodes'] = 2
 
-    #run['dbname'] = 'y1a1_btest'
-    run['dbname'] = 'y1a1_test2'
+    run['dbname'] = 'y1a1_btest'
+    #run['dbname'] = 'y1a1_test2'
     run['joblabel'] = '%i:%i' %(tstart, tend)
     run['outdir'] = os.path.join(os.environ['SCRATCH'],'BalrogScratch')
     run['jobdir'] = os.path.join(os.environ['GLOBALDIR'],'BalrogJobs')
 
-    balrog['ngal'] = 1000
+    run['downsample'] = 50
+    balrog['ngal'] = 10
     run['runnum'] = 0 
 
     run['DBoverwrite'] = True
