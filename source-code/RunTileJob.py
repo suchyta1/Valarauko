@@ -84,10 +84,8 @@ def WaitExistence(donenum, RunConfig, runlog):
     
     runlog.info('Making sure that the tables I need exist, and waiting for the first process if necessary...')
     done = False
-    while not done:
+    while True:
         count = 0
-        cur = desdb.connect()
-        user = cur.username
         arr = cur.quick("select table_name from dba_tables where owner='%s'" %(user.upper()), array=True)
         tables = arr['table_name']
 
@@ -96,7 +94,11 @@ def WaitExistence(donenum, RunConfig, runlog):
             if (tab.upper() in tables):
                 count += 1
         if count==donenum:
-            done = True
+            break
+
+        if os.path.exists(RunConfig['failfile']):
+            raise Exception("The first process failed before the DBs we need have been created. Exiting.")
+
     runlog.info('Ok')
 
 
@@ -132,6 +134,8 @@ def DropTablesIfNeeded(RunConfig, indexstart, size, tiles, runlog):
     elif (not RunConfig['isfirst']):
         runlog.info("You gave DBoverwrite=True. I'm waiting for the first process, to ensure that the %s tables have been deleted."%(RunConfig['dbname']))
         while True:
+            if os.path.exists(RunConfig['failfile']):
+                raise Exception("The first process failed before we can be sure that the DB is as we want it.")
             if os.path.exists(RunConfig['touchfile']):
                 break
 
@@ -233,30 +237,36 @@ def run_balrog(args):
     ild = os.path.join(DerivedConfig['itlogdir'], BalrogConfig['tile'])
     DerivedConfig['itlogfile'] = os.path.join(ild, '%i.log'%it)
     if RunConfig['command']=='popen':
-        DerivedConfig['itlog'] = runbalrog.SetupLog(DerivedConfig['itlogfile'], host, '%s_%i'%(BalrogConfig['tile'],it))
+        DerivedConfig['itlog'] = runbalrog.SetupLog(DerivedConfig['itlogfile'], host, '%s_%i'%(BalrogConfig['tile'],it), stream=True)
     elif RunConfig['command']=='system':
         DerivedConfig['itlog'] = DerivedConfig['itlogfile']
     DerivedConfig['setup'] = balrogmodule.SystemCallSetup(retry=RunConfig['retry'], redirect=DerivedConfig['itlog'], kind=RunConfig['command'], useshell=RunConfig['useshell'])
 
 
-    if it==-2:
-        # Minimal Balrog run to create DB tables
-        runbalrog.RunOnlyCreate(RunConfig, BalrogConfig, DerivedConfig)
+    try:
+        if it==-2:
+            # Minimal Balrog run to create DB tables
+            runbalrog.RunOnlyCreate(RunConfig, BalrogConfig, DerivedConfig)
 
-    elif it==-1:
-        # No simulated galaxies
-        runbalrog.RunDoDES(RunConfig, BalrogConfig, DerivedConfig)
-    else:
-        # Actual Balrog realization
-        runbalrog.RunNormal2(RunConfig, BalrogConfig, DerivedConfig)
-
-    if RunConfig['intermediate-clean']:
-        if it < 0:
-            shutil.rmtree(BalrogConfig['outdir'])
+        elif it==-1:
+            # No simulated galaxies
+            runbalrog.RunDoDES(RunConfig, BalrogConfig, DerivedConfig)
         else:
-            for band in DerivedConfig['bands']:
-                dir = os.path.join(DerivedConfig['outdir'], band)
-                shutil.rmtree(dir)
+            # Actual Balrog realization
+            runbalrog.RunNormal2(RunConfig, BalrogConfig, DerivedConfig)
+
+        if RunConfig['intermediate-clean']:
+            if it < 0:
+                shutil.rmtree(BalrogConfig['outdir'])
+            else:
+                for band in DerivedConfig['bands']:
+                    dir = os.path.join(DerivedConfig['outdir'], band)
+                    shutil.rmtree(dir)
+    except:
+        msg = 'Problem running iteration %s of tile %s'%(str(DerivedConfig['iteration']),BalrogConfig['tile'])
+        balrogmodule.SysInfoPrint(DerivedConfig['setup'], msg, level='error')
+        balrogmodule.RaiseException(None, fulltraceback=True, sendto=DerivedConfig['setup'], message='Getting traceback inside Pool')
+        raise Exception(msg)
 
 
 def Run_Balrog(tiles,images,psfs,indexstart,bands,pos, config, write, runlogdir, runlog):
@@ -303,6 +313,7 @@ def Run_Balrog(tiles,images,psfs,indexstart,bands,pos, config, write, runlogdir,
                 runlog.info('Downloading tile data for tile %s'%(tiles[i]))
                 setup = balrogmodule.SystemCallSetup(retry=config['run']['retry'], redirect=runlog, kind=config['run']['command'], useshell=config['run']['useshell'])
                 derived['images'], derived['psfs'] = runbalrog.DownloadImages(derived['indir'], derived['images'], derived['psfs'], config['run'], setup, skip=False)
+                #derived['images'], derived['psfs'] = runbalrog.DownloadImages(derived['indir'], derived['images'], derived['psfs'], config['run'], setup, skip=True)
 
                 if (It[j]==-2):
                     derived['bands'] = runbalrog.GetAllBands()
@@ -367,8 +378,11 @@ if __name__ == "__main__":
         Run_Balrog(tiles,images,psfs,indexstart,bands,pos, config, write, runlogdir, runlog)
         exit = 0
     except:
-        balrogmodule.RaiseException(runlog, fulltraceback=True, sendto=None, ascmd=False)
+        balrogmodule.RaiseException(runlog, fulltraceback=True, sendto=None, message='Getting traceback outside Pool')
         exit = 1
+        if config['run']['isfirst']:
+            open(config['run']['failfile'],'a').close()
+            
 
     with open(config['run']['exitfile'],'w') as f:
         f.write('%i'%(exit))

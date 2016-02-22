@@ -244,10 +244,12 @@ def Generate_Job(run,balrog,db,tiles,  where, setup):
     if where=='wq':
         
         run['touchfile'] = os.path.join(run['jobdir'],'ok')
+        run['failfile'] = os.path.join(run['jobdir'],'fail')
         space = "   "
         descr = 'mode: bynode\n' + 'N: %i\n' %(run['nodes']) + 'hostfile: auto\n' + 'job_name: %s' %(run['jobname'])
         cmd = space + """nodes=(); while read -r line; do found=false; host=$line; for h in "${nodes[@]}"; do if [ "$h" = "$host" ]; then found=true; fi; done; if [ "$found" = "false" ]; then nodes+=("$host"); fi; done < %hostfile%\n"""
         cmd = cmd + space + """if [ -f %s ]; then rm %s; fi;\n"""%(run['touchfile'], run['touchfile'])
+        cmd = cmd + space + """if [ -f %s ]; then rm %s; fi;\n"""%(run['failfile'], run['failfile'])
 
         for i in range(run['nodes']):
             jsonfile, start = SubConfig(start,i, tiles, run,config, substr, run['jobdir'])
@@ -282,6 +284,7 @@ def Generate_Job(run,balrog,db,tiles,  where, setup):
             else:
                 jobdir = run['jobdir']
             run['touchfile'] = os.path.join(jobdir,'ok')
+            run['failfile'] = os.path.join(jobdir,'fail')
 
             descr = "#!/bin/bash -l \n"
             descr = SLURMadd(descr, '--job-name=%s'%(run['jobname']), start='#SBATCH')
@@ -308,6 +311,7 @@ def Generate_Job(run,balrog,db,tiles,  where, setup):
                 descr = descr + 'if ! [ -d %s ]; then mkdir %s; fi;\n' %(run['outdir'],run['outdir'])
                 descr = descr + 'lfs setstripe %s --count %i\n' %(run['outdir'],run['stripe'])
             descr = descr + """if [ -f %s ]; then rm %s; fi;\n"""%(run['touchfile'], run['touchfile'])
+            descr = descr + """if [ -f %s ]; then rm %s; fi;\n"""%(run['failfile'], run['failfile'])
 
             for i in range(run['nodes']):
                 jsonfile, start = SubConfig(start,i, tiles, run,config, substr, jobdir)
