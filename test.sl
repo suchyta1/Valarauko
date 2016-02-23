@@ -4,7 +4,7 @@
 #SBATCH --job-name=multitest
 #SBATCH --mail-type=BEGIN,END
 #SBATCH --partition=debug
-#SBATCH --time=00:05:00
+#SBATCH --time=00:01:00
 #SBATCH --nodes=1
 #SBATCH --output=/scratch1/scratchdirs/esuchyta/BalrogJobs/shifter-tests/multitest-%j.out
 
