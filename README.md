@@ -9,9 +9,11 @@ parallelizing on the node with python's [`multiprocessing.Pool()`](https://docs.
 Files are automatically downloaded from the DESDM file server, and results are pushed to the user's space in the `dessci` DB. 
 You'll need to setup your [`.netrc`](https://github.com/esheldon/desdb#access-to-servers) file for any of this to work.
 
-The code puts the Balrog objects in the `r, i, z` coadd images, then builds the `riz` detection image, with [`swarp`](http://www.astromatic.net/software/swarp).
-It also draws into the `g` and `Y` images, then runs [`sextractor`](http://www.astromatic.net/software/sextractor) over each band using the `riz` Balrog image for detection.
-All of this is done with code that amounts to wrappers around Balrog itself, and `swarp` and `sextractor` can be configured in the same was as DESDM.
+The code puts the `Balrog` objects in the `r, i, z` coadd images, then builds the `riz` detection image, with [`swarp`](http://www.astromatic.net/software/swarp).
+It also draws into the `g` and `Y` images, then runs [`sextractor`](http://www.astromatic.net/software/sextractor) over each band using the `riz` `Balrog` image for detection.
+All of this is done with code that amounts to wrappers around `Balrog` itself, and `swarp` and `sextractor` can be configured in the same was as DESDM.
+We're also doing `nosim` runs over each band, running `sextractor` prior to inserting the `Balrog` objects.
+For both the `nosim` and usual `sim` calls we even run `sextractor` using the dectection as a measurement image.
 
 
 ## Installation
