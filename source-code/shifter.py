@@ -9,21 +9,18 @@ import datetime
 import numpy as np
 import copy
 
-
-def GetShifter(version):
-    if version=='esuchyta/balrog-docker:v1':
-        return Y1A1shifter()
-
-
 class Y1A1shifter(object):
-    def __init__(self, run, balrog):
-        runroot = '/Valarauko-job/runroot'
-        outroot = '/Valarauko-job/outroot'
-        slrroot = '/Valarauko-job/slrroot'
-        netrc = 'root/.netrc'
-        thisdir = '/software/Valarauko/source-code'
 
-        site = os.path.join(codedir, 'site-setups', 'shifter', 'y1a1')
+    def __init__(self, run, balrog):
+        self.runroot = '/Valarauko-job/runroot'
+        self.outroot = '/Valarauko-job/outroot'
+        self.slrroot = '/Valarauko-job/slrroot'
+        self.posroot = '/Valarauko-job/posroot'
+        self.netrc = 'root/.netrc'
+
+        gitdir = '/software/Valarauko'
+        self.thisdir = os.path.join(gitdir, 'source-code')
+        site = os.path.join(gitdir, 'site-setups', 'shifter', 'y1a1')
         balrog['pyconfig'] = os.path.join(site, 'balrog-config.py')
 
         astroconfig = os.path.join(site, 'astro_config')
@@ -37,3 +34,9 @@ class Y1A1shifter(object):
         other = os.path.join(site, 'other')
         run['release'] = 'y1a1_coadd'
         run['db-columns'] = os.path.join(other, 'y1a1_coadd_objects-columns.fits')
+
+
+def GetShifter(run, balrog):
+    if run['shifter']=='esuchyta/balrog-docker:v1':
+        return Y1A1shifter(run, balrog)
+

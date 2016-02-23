@@ -12,7 +12,7 @@ import copy
 thisdir = os.path.dirname(os.path.realpath(__file__))
 updir = os.path.dirname(thisdir)
 RunConfigurations = imp.load_source('RunConfigurations', os.path.join(thisdir,'RunConfigurations.py'))
-RunConfigurations = imp.load_source('shifter', os.path.join(thisdir,'shifter.py'))
+shiftermodule = imp.load_source('shifter', os.path.join(thisdir,'shifter.py'))
 
 def Exit(msg):
     print msg
@@ -96,7 +96,7 @@ def GetConfig(where, config):
   
     if (run['shifter'] is not None):
         print "You're using shifter, super cool. I've detected shifter=%s. I'm configuring a bunch of stuff for you automatically that I don't let you overwrite."%(run['shifter'])
-        shifter, run, balrog = shifter.GetShifter(shifter)
+        shifter = shiftermodule.GetShifter(run,balrog)
         if run['slr'] is None:
             Exit( "You need to set the slr directory with shifter, because I can't make this public" )
     else:
@@ -233,6 +233,7 @@ def SubConfig(start,i, tiles, run,config, substr, jobdir,sjobdir, shifter):
         runcopy['exitfile'] = os.path.join(sjdir, 'exit')
         runcopy['touchfile'] = os.path.join(sjobdir,'ok')
         runcopy['failfile'] = os.path.join(sjobdir,'fail')
+        runcopy['pos'] = shifter.posroot
     else:
         runcopy = copy.copy(run)
         runcopy['runlogdir'] = os.path.join(jdir, 'runlog')
@@ -246,7 +247,7 @@ def SubConfig(start,i, tiles, run,config, substr, jobdir,sjobdir, shifter):
     config['run'] = runcopy
     jsonfile = WriteJson(config,jdir, tiles,start,end)
 
-    if run['shifter'] is not None:
+    if shifter is not None:
         jsonfile = os.path.join(sjdir, 'config.json')
 
     return jsonfile, end
@@ -295,7 +296,7 @@ def Generate_Job(run,balrog,db,tiles,  where, setup, shifter):
         cmd = cmd + space + """if [ -f %s ]; then rm %s; fi;\n"""%(run['failfile'], run['failfile'])
 
         for i in range(run['nodes']):
-            jsonfile, start = SubConfig(start,i, tiles, run,config, substr, run['jobdir'],'')
+            jsonfile, start = SubConfig(start,i, tiles, run,config, substr, run['jobdir'],'', shifter)
             cmd = cmd + space + 'mpirun -np 1 -host ${nodes[%i]} %s %s &\n' %(i, allmpi, jsonfile)
             exits.append('"%s"'%(run['exitfile']))
 
@@ -337,7 +338,7 @@ def Generate_Job(run,balrog,db,tiles,  where, setup, shifter):
                 img = '--image=docker:%s'%(run['shifter'])
                 descr = SLURMadd(descr, img, start='#SBATCH')
                 netrc = os.path.join(os.environ['HOME'], '.netrc')
-                scmds = 'shifter %s --volume=%s:%s --volume=%s:%s --volume=%s:%s --volume=%s:%s'%(img, jobdir,shiter.runroot, run['outdir'],shifter.outroot, netrc,shifter.netrc, run['slr'],shifter.slrroot)
+                scmds = 'shifter %s --volume=%s:%s --volume=%s:%s --volume=%s:%s --volume=%s:%s --volume=%s:%s'%(img, jobdir,shifter.runroot, run['outdir'],shifter.outroot, netrc,shifter.netrc, run['slr'],shifter.slrroot, run['pos'],shifter.posroot)
 
             descr = SLURMadd(descr, '--job-name=%s'%(run['jobname']), start='#SBATCH')
             descr = SLURMadd(descr, '--mail-type=BEGIN,END,TIME_LIMIT_50', start='#SBATCH')
@@ -366,7 +367,7 @@ def Generate_Job(run,balrog,db,tiles,  where, setup, shifter):
             descr = descr + """if [ -f %s ]; then rm %s; fi;\n"""%(run['failfile'], run['failfile'])
 
             for i in range(run['nodes']):
-                jsonfile, start = SubConfig(start,i, tiles, run,config, substr, jobdir,sjobdir)
+                jsonfile, start = SubConfig(start,i, tiles, run,config, substr, jobdir,sjobdir, shifter)
                 jdir = os.path.dirname(jsonfile)
                 exits.append('"%s"'%(run['exitfile']))
 

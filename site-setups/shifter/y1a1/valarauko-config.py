@@ -2,14 +2,10 @@ import os
 import esutil
 
 
-def Y1A1Setup(run, balrog, tiles):
-    return run, balrog, tiles
-
-
 # change the defaults if you want
 def CustomConfig(run, balrog, db, tiles):
-    run, balrog, tiles = Y1A1Setup(run, balrog, tiles)
 
+    dir = '/scratch1/scratchdirs/esuchyta/software/balrog_config/y1a1/'
     tiles = esutil.io.read(os.path.join(dir, 'spt-y1a1-only-g70-grizY.fits'))['tilename']
     tstart = 0
     tend = 1
@@ -31,7 +27,6 @@ def CustomConfig(run, balrog, db, tiles):
     run['jobdir'] = os.path.join(baseout, 'BalrogJobs')
     run['outdir'] = os.path.join(baseout, 'BalrogScratch')
 
-    dir = '/scratch1/scratchdirs/esuchyta/software/balrog_config/y1a1/'
     run['shifter'] = 'esuchyta/balrog-docker:v1'
     run['slr'] = '/scratch1/scratchdirs/esuchyta/software/balrog_config/y1a1/'
     run['pos'] = os.path.join(dir,'spt-y1a1-only-g70-grizY-pos')
