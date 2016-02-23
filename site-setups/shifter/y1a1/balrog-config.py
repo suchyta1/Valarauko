@@ -35,8 +35,7 @@ def ByBand(band, args):
 
 def CustomParseArgs(args):
     args.ext = 1
-    #args.catalog = os.path.join(os.environ['BALROG_CONFIG'], 'CMC_originalR_v1.fits')
-    args.catalog = os.path.join(os.environ['Y1A1_DIR'], 'CMC_originalR_v1.fits')
+    args.catalog = '/software/Valarauko/site-setups/shifter/y1a1/other/CMC-morphology.fits'
 
     args.mag = ByBand(args.band, args)
     if args.ngal > 0:
@@ -63,8 +62,7 @@ def GetYCoords(args):
 
 
 def SLRshift(args):
-    #slr = es.slr.SLR(release='y1a1', area='wide', slrdir=os.environ['BALROG_CONFIG'], balrogprint=args.syslog)
-    slr = es.slr.SLR(release='y1a1', area='wide', slrdir=os.environ['Y1A1_DIR'], balrogprint=args.syslog)
+    slr = es.slr.SLR(release='y1a1', area='wide', slrdir='/Valarauko-job/slrroot', balrogprint=args.syslog)
     slr_shift = slr.GetMagShifts(args.band, args.ra, args.dec)
     ok = (slr_shift < 99)
     return slr_shift, ok

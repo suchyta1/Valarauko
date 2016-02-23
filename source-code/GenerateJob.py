@@ -51,6 +51,7 @@ def GetConfig(where, config):
     run['ppn'] = None
     run['downsample'] = None
     run['shifter'] = None
+    run['slr'] = None
 
     if where=='slurm':
         run['stripe'] = 2
@@ -96,6 +97,8 @@ def GetConfig(where, config):
     if (run['shifter'] is not None):
         print "You're using shifter, super cool. I've detected shifter=%s. I'm configuring a bunch of stuff for you automatically that I don't let you overwrite."%(run['shifter'])
         shifter, run, balrog = shifter.GetShifter(shifter)
+        if run['slr'] is None:
+            Exit( "You need to set the slr directory with shifter, because I can't make this public" )
     else:
         shifter = None
 
@@ -334,8 +337,7 @@ def Generate_Job(run,balrog,db,tiles,  where, setup, shifter):
                 img = '--image=docker:%s'%(run['shifter'])
                 descr = SLURMadd(descr, img, start='#SBATCH')
                 netrc = os.path.join(os.environ['HOME'], '.netrc')
-                inetrc = '/root/.netrc'
-                scmds = 'shifter %s --volume=%s:%s --volume=%s:%s --volume=%s:%s '%(img, jobdir,shiter.runroot, run['outdir'],shifter.outroot, netrc,shifter.netrc)
+                scmds = 'shifter %s --volume=%s:%s --volume=%s:%s --volume=%s:%s --volume=%s:%s'%(img, jobdir,shiter.runroot, run['outdir'],shifter.outroot, netrc,shifter.netrc, run['slr'],shifter.slrroot)
 
             descr = SLURMadd(descr, '--job-name=%s'%(run['jobname']), start='#SBATCH')
             descr = SLURMadd(descr, '--mail-type=BEGIN,END,TIME_LIMIT_50', start='#SBATCH')
