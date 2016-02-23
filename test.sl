@@ -1,5 +1,6 @@
 #!/bin/bash -l 
 
+#SBATCH --image=docker:esuchyta/balrog-docker:v1
 #SBATCH --job-name=multitest
 #SBATCH --mail-type=BEGIN,END
 #SBATCH --partition=debug
