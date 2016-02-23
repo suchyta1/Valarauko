@@ -137,3 +137,5 @@ You can easily fill entire disks if you do.
 If you look in [`aux`](https://github.com/suchyta1/Valarauko/tree/master/aux), you'll find
 scripts that give an idea of how I've generated some of the auxilary needed inputs, such as the column names to use, or sets of tiles.
 The [`tiles`](https://github.com/suchyta1/Valarauko/tree/master/tiles) directory has some tile lists.
+
+Take a look at the [issues page](https://github.com/suchyta1/Valarauko/issues). These aren't really bugs, and knowing some of the issues can help you understand key points.
