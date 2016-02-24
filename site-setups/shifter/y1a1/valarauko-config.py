@@ -22,7 +22,7 @@ def CustomConfig(run, balrog, db, tiles):
     
     baseout = '/scratch3/scratchdirs/esuchyta/'
     #baseout = os.environ['SCRATCH']
-    run['dbname'] = 'y1a1_etest2'
+    run['dbname'] = 'y1a1_etest'
     run['joblabel'] = '%i-%i' %(tstart, tend)
     run['jobdir'] = os.path.join(baseout, 'BalrogJobs')
     run['outdir'] = os.path.join(baseout, 'BalrogScratch')
@@ -31,7 +31,8 @@ def CustomConfig(run, balrog, db, tiles):
     run['slr'] = '/scratch1/scratchdirs/esuchyta/software/balrog_config/y1a1/'
     run['pos'] = os.path.join(dir,'spt-y1a1-only-g70-grizY-pos')
 
-    run['downsample'] = 50
+    run['fixwrapseed'] = 100
+    run['downsample'] = 100
     balrog['ngal'] = 10
     run['runnum'] = 0 
 
