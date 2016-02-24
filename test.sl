@@ -14,8 +14,8 @@
 #lfs setstripe /scratch1/scratchdirs/esuchyta/BalrogScratch/y1a1_etest-0:1 --count 2
 
 srun -N 1 -n 1 shifter /bin/bash -c "echo $PATH"
-#srun -N 1 -n 1 shifter --volume=/scratch1/scratchdirs/esuchyta/BalrogJobs/shifter-tests/:/testdir/ /software/Valarauko/run-test.sh
-srun -N 1 -n 1 shifter --volume=/scratch1/scratchdirs/esuchyta/BalrogJobs/shifter-tests/:/testdir/ /bin/bash -c "source ~/.bashrc; /software/Valarauko/TestMulti.py"
+srun -N 1 -n 1 shifter --volume=/scratch1/scratchdirs/esuchyta/BalrogJobs/shifter-tests/:/testdir/ /software/Valarauko/run-test.sh
+#srun -N 1 -n 1 shifter --volume=/scratch1/scratchdirs/esuchyta/BalrogJobs/shifter-tests/:/testdir/ /bin/bash -c "source ~/.bashrc && python /software/Valarauko/TestMulti.py"
 #srun -N 1 -n 1 shifter --volume=/scratch1/scratchdirs/esuchyta/BalrogJobs/shifter-tests/:/testdir/ /bin/bash -l "/software/Valarauko/TestMulti.py"
 
 #wait
