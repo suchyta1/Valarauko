@@ -35,7 +35,7 @@ def ByBand(band, args):
 
 def CustomParseArgs(args):
     args.ext = 1
-    args.catalog = '/software/Valarauko/site-setups/shifter/y1a1/other/CMC-morphology.fits'
+    args.catalog = '/software/Valarauko/site-setups/shifter/y1a1/other/CMC_morphology.fits'
 
     args.mag = ByBand(args.band, args)
     if args.ngal > 0:
