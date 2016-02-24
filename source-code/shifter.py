@@ -16,7 +16,7 @@ class Y1A1shifter(object):
         self.outroot = '/Valarauko-job/outroot'
         self.slrroot = '/Valarauko-job/slrroot'
         self.posroot = '/Valarauko-job/posroot'
-        self.netrc = 'root/.netrc'
+        self.homeroot = '/home/user/site'
 
         gitdir = '/software/Valarauko'
         self.thisdir = os.path.join(gitdir, 'source-code')

@@ -336,8 +336,8 @@ def Generate_Job(run,balrog,db,tiles,  where, setup, shifter):
             if run['shifter'] is not None:
                 img = '--image=docker:%s'%(run['shifter'])
                 descr = SLURMadd(descr, img, start='#SBATCH')
-                netrc = os.path.join(os.environ['HOME'], '.netrc')
-                scmds = 'shifter %s --volume=%s:%s --volume=%s:%s --volume=%s:%s --volume=%s:%s --volume=%s:%s'%(img, jobdir,shifter.jobroot, run['outdir'],shifter.outroot, netrc,shifter.netrc, run['slr'],shifter.slrroot, run['pos'],shifter.posroot)
+                netrc = os.path.join(os.environ['HOME'])
+                scmds = 'shifter %s --volume=%s:%s --volume=%s:%s --volume=%s:%s --volume=%s:%s --volume=%s:%s'%(img, jobdir,shifter.jobroot, run['outdir'],shifter.outroot, netrc,shifter.homeroot, run['slr'],shifter.slrroot, run['pos'],shifter.posroot)
 
             descr = SLURMadd(descr, '--job-name=%s'%(run['jobname']), start='#SBATCH')
             descr = SLURMadd(descr, '--mail-type=BEGIN,END,TIME_LIMIT_50', start='#SBATCH')
