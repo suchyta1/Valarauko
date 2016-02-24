@@ -159,7 +159,7 @@ def InitCommonToTile(tile,images,psfs,indexstart,bands, config):
                    'db': config['db'],
                    'imbands': bands}
         if config['run']['fixwrapseed'] != None:
-            derived['seedoffset'] = RunConfig['fixwrapseed']
+            derived['seedoffset'] = config['run']['fixwrapseed']
         else:
             derived['seedoffset'] = np.random.randint(10000)
 
