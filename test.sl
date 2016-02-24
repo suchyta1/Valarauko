@@ -4,7 +4,7 @@
 #SBATCH --job-name=multitest
 #SBATCH --mail-type=BEGIN,END
 #SBATCH --partition=debug
-#SBATCH --time=00:01:00
+#SBATCH --time=00:02:00
 #SBATCH --nodes=1
 #SBATCH --output=/scratch1/scratchdirs/esuchyta/BalrogJobs/shifter-tests/multitest-%j.out
 
@@ -15,7 +15,7 @@
 
 srun -N 1 -n 1 shifter /bin/bash -c "echo $PATH"
 #srun -N 1 -n 1 shifter --volume=/scratch1/scratchdirs/esuchyta/BalrogJobs/shifter-tests/:/testdir/ /software/Valarauko/run-test.sh
-#srun -N 1 -n 1 shifter --volume=/scratch1/scratchdirs/esuchyta/BalrogJobs/shifter-tests/:/testdir/ /bin/bash -c "source ~/.bashrc; /software/Valarauko/TestMulti.py"
-srun -N 1 -n 1 shifter --volume=/scratch1/scratchdirs/esuchyta/BalrogJobs/shifter-tests/:/testdir/ /bin/bash -l "/software/Valarauko/TestMulti.py"
+srun -N 1 -n 1 shifter --volume=/scratch1/scratchdirs/esuchyta/BalrogJobs/shifter-tests/:/testdir/ /bin/bash -c "source ~/.bashrc; /software/Valarauko/TestMulti.py"
+#srun -N 1 -n 1 shifter --volume=/scratch1/scratchdirs/esuchyta/BalrogJobs/shifter-tests/:/testdir/ /bin/bash -l "/software/Valarauko/TestMulti.py"
 
 #wait
