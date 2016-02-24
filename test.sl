@@ -15,6 +15,6 @@
 
 srun -N 1 -n 1 shifter echo $PATH
 srun -N 1 -n 1 shifter /bin/bash -c "echo $PATH"
-srun -N 1 -n 1 shifter --volume=/scratch1/scratchdirs/esuchyta/BalrogJobs/shifter-tests/:/testdir/ /software/Valarauko/TestMulti.py
+srun -N 1 -n 1 shifter --volume=/scratch1/scratchdirs/esuchyta/BalrogJobs/shifter-tests/:/testdir/ /software/Valarauko/run-test.sh
 
 #wait
