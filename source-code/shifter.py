@@ -12,7 +12,7 @@ import copy
 class Y1A1shifter(object):
 
     def __init__(self, run, balrog):
-        self.runroot = '/Valarauko-job/runroot'
+        self.jobroot = '/Valarauko-job/jobroot'
         self.outroot = '/Valarauko-job/outroot'
         self.slrroot = '/Valarauko-job/slrroot'
         self.posroot = '/Valarauko-job/posroot'
