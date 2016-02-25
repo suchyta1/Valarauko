@@ -30,8 +30,8 @@ def CustomConfig(run, balrog, db, tiles):
     run, balrog, tiles = Y1A1Setup(run, balrog, tiles)
     run['email'] = 'eric.d.suchyta@gmail.com'
 
-    tstart = 0
-    tend = 2
+    tstart = 1
+    tend = 3
     tiles = tiles[tstart:tend]
     run['npersubjob'] = 1
     run['nodes'] = 2
@@ -48,7 +48,7 @@ def CustomConfig(run, balrog, db, tiles):
     balrog['ngal'] = 10
     run['runnum'] = 0 
 
-    run['DBoverwrite'] = True
+    run['DBoverwrite'] = False
     run['duplicate'] = 'error'
 
     return run, balrog, db, tiles

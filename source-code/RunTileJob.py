@@ -102,18 +102,19 @@ def WaitExistence(RunConfig, runlog):
 def CheckDup(RunConfig, runlog):
     done = False
     ok, fail, exit = GetSubFiles(config['run'])
-    runlog.info("Making sure other other processes haven't failed very basic checks...")
+    runlog.info("Making sure I can continue based your duplicate settings...")
     while not done:
         okcount = 0
         for i in range(RunConfig['nodes']):
-            if os.path.exists(RunConfig['failfile']):
-                raise Exception("The first process failed, and even though DBs exist, I'm still exiting.")
             if os.path.exists(fail[i]):
-                raise Exception('found that subjob %i had duplicates, and you gave duplicate=error. Exiting.'%(i+1))
+                raise Exception('Found that subjob %i had duplicates, and you gave duplicate=error. Exiting.'%(i+1))
             if os.path.exists(ok[i]):
                 okcount += 1
         if okcount==RunConfig['nodes']:
             done = True
+
+    if os.path.exists(RunConfig['failfile']):
+        raise Exception("The first process failed in a way which has nothing to do with duplicates, but I'm still exiting.")
     runlog.info('Ok')
 
 
@@ -151,8 +152,8 @@ def DropTablesIfNeeded(RunConfig, indexstart, size, tiles, runlog):
                     this = np.arange(indexstart[i], indexstart[i]+size[i], 1)
                     inboth = np.in1d(np.int64(this), np.int64(arr['balrog_index']))
                     if np.sum(inboth) > 0:
-                        raise Exception("You are trying to add balrog_index(es) which already exist, and you've flagged duplicate=error. Killing the subjob")
                         open(RunConfig['dupfailfile'],'a').close()
+                        raise Exception("You are trying to add balrog_index(es) which already exist, and you've flagged duplicate=error. Killing the subjob")
                 runlog.info("Ok")
 
         else:
@@ -360,7 +361,6 @@ def Run_Balrog(tiles,images,psfs,indexstart,bands,pos, config, write, runlogdir,
 
         if not config['run']['isfirst']:
             WaitExistence(config['run'], runlog)
-        CheckDup(config['run'], runlog)
 
         runlog.info('Doing all the Balrog iterations for tile %s'%(tiles[i]))
         runlog.info('Found %i iterations'%(len(args)))
@@ -458,6 +458,7 @@ if __name__ == "__main__":
         images, psfs, tiles, bands, skipped = GetFiles2(config)
         pos, indexstart, size = GetPos(config['run'], tiles)
         write = DropTablesIfNeeded(config['run'], indexstart, size, tiles, runlog)
+        CheckDup(config['run'], runlog)
         Run_Balrog(tiles,images,psfs,indexstart,bands,pos, config, write, runlogdir, runlog)
         exit = 0
     except:
