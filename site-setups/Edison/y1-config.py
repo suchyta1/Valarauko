@@ -27,10 +27,10 @@ def CustomConfig(run, balrog, db, tiles):
     run, balrog, tiles = Y1A1Setup(run, balrog, tiles)
 
     tstart = 0
-    tend = 4
+    tend = 1
     tiles = tiles[tstart:tend]
 
-    run['nodes'] = 2
+    run['nodes'] = 1
     run['ppn'] = 24
     run['walltime'] = '00:30:00'
     run['queue'] = 'debug'
@@ -41,13 +41,17 @@ def CustomConfig(run, balrog, db, tiles):
     
     #baseout = '/scratch3/scratchdirs/esuchyta/'
     baseout = os.environ['SCRATCH']
-    run['dbname'] = 'y1a1_etest'
+    run['dbname'] = 'y1a1_etest2'
     run['joblabel'] = '%i:%i' %(tstart, tend)
     run['jobdir'] = os.path.join(baseout, 'BalrogJobs')
     run['outdir'] = os.path.join(baseout, 'BalrogScratch')
 
+<<<<<<< HEAD
     run['intermediate-clean'] = False
     run['tile-clean'] = False
+=======
+    run['shifter'] = 'esuchyta/balrog-docker:v1'
+>>>>>>> 2210da1135267a0c81e81b30cddc226205b8f855
     run['downsample'] = 50
     balrog['ngal'] = 10
     run['runnum'] = 0 
