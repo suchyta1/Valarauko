@@ -13,6 +13,7 @@ thisdir = os.path.dirname(os.path.realpath(__file__))
 updir = os.path.dirname(thisdir)
 RunConfigurations = imp.load_source('RunConfigurations', os.path.join(thisdir,'RunConfigurations.py'))
 shiftermodule = imp.load_source('shifter', os.path.join(thisdir,'shifter.py'))
+runtile = imp.load_source('runtile', os.path.join(thisdir,'RunTileJob.py'))
 
 def Exit(msg):
     print msg
@@ -54,7 +55,7 @@ def GetConfig(where, config):
     run['slr'] = None
 
     run['DBoverwrite'] =  False  # Overwrite DB tables with same names (if they exist). False means append into existing tables. Regardless, the tables will be created if they don't exist.
-    run['replacement'] = False
+    run['duplicate'] = None
     #'verifyindex': True, # Check if you're trying to add balrog_index which already exists
 
     if where=='slurm':
@@ -203,47 +204,46 @@ def SLURMadd(str, val, start='#SBATCH'):
 
 
 def WriteJson(config,dirname, tiles,start,end):
-    jsonfile = os.path.join(dirname, 'config.json')
+    jsonfile = os.path.join(dirname, '%s.json'%(runtile.Files.json))
     config['tiles'] = list(tiles[start:end])
     with open(jsonfile, 'w') as outfile:
         json.dump(config, outfile)
     return jsonfile
 
 
-def GetJdir(run, dirname, id, substr, skip=False):
-    if (run['nodes'] > 1):
-        jdir = os.path.join(dirname, '%s_%i'%(substr,id))
-    else:
-        jdir = dirname
 
-    if (not skip) and  (not os.path.exists(jdir)):
+
+def StartJsonDir(run, dirname, id):
+    jdir = runtile.GetJsonDir(run, dirname, id)
+    if (not os.path.exists(jdir)):
         os.makedirs(jdir)
-
     return jdir
 
 
-def SubConfig(start,i, tiles, run,config, substr, jobdir,sjobdir, shifter):
+def SubConfig(start,i, tiles, run,config, jobdir,sjobdir, shifter):
     runcopy = copy.copy(run)
-
-
     end = start + run['npersubjob']
     id = i + 1
 
-    jdir = GetJdir(run, jobdir, id, substr)
+    jdir = StartJsonDir(run, jobdir, id)
     if shifter is not None:
-        sjdir = GetJdir(run, sjobdir, id, substr, skip=True)
+        sjdir = runtile.GetJsondir(run, sjobdir, id)
         runcopy = NewPath(runcopy, shifter)
-        runcopy['runlogdir'] = os.path.join(sjdir, 'runlog')
-        runcopy['exitfile'] = os.path.join(sjdir, 'exit')
-        runcopy['touchfile'] = os.path.join(sjobdir,'ok')
-        runcopy['failfile'] = os.path.join(sjobdir,'fail')
+        runcopy['runlogdir'] = os.path.join(sjdir, runtile.Files.runlog)
+        runcopy['exitfile'] = os.path.join(sjdir, runtile.Files.exit)
+        runcopy['touchfile'] = os.path.join(sjobdir, runtile.Files.cok)
+        runcopy['failfile'] = os.path.join(sjobdir, runtile.Files.cfail)
+        runcopy['dupokfile'] = os.path.join(sjdir, runtile.Files.dupok)
+        runcopy['dupfailfile'] = os.path.join(sjdir, runtile.Files.dupfail)
         runcopy['pos'] = shifter.posroot
     else:
         runcopy = copy.copy(run)
-        runcopy['runlogdir'] = os.path.join(jdir, 'runlog')
-        runcopy['exitfile'] = os.path.join(jdir, 'exit')
+        runcopy['runlogdir'] = os.path.join(jdir, runtile.Files.runlog)
+        runcopy['exitfile'] = os.path.join(jdir,  runtile.Files.exit)
+        runcopy['dupokfile'] = os.path.join(jdir, runtile.Files.dupok)
+        runcopy['dupfailfile'] = os.path.join(jdir, runtile.Files.dupfail)
     
-    run['exitfile'] = os.path.join(jdir, 'exit')
+    run['exitfile'] = os.path.join(jdir, runtile.Files.exit)
     if i==0:
         runcopy['isfirst'] = True
     else:
@@ -269,6 +269,31 @@ def CheckFails(exitfiles, space=''):
     return check, exit
 
 
+
+def GetDepDir(run, k=0):
+    if run['ndependencies'] > 1:
+        return os.path.join(jdir, 'dep_%i'%(k+1))
+    else:
+        return jdir
+
+def FindCreateFiles(run):
+    run['touchfile'] = os.path.join(run['jobdir'], runtile.Files.cok)
+    run['failfile'] = os.path.join(run['jobdir'],'fail')
+
+def GetDepJobDir(run, shifter, k=0, jroot = ''):
+    if shifter is not None:
+        jroot = shifter.jobroot
+    jobdir = GetDepDir(run['jobdir'], k=k)
+    sjobdir = GetDepDir(jroot, k=k)
+
+    if run['ndependencies'] > 1:
+        run['jobname'] = '%s_dep_%i'%(run['jobname'],k+1)
+        TryToMake(jobdir)
+    
+    FindCreateFiles(run)
+    return jobdir, sjobdir
+
+
 def Generate_Job(run,balrog,db,tiles,  where, setup, shifter):
 
     if run['shifter'] is None:
@@ -282,7 +307,6 @@ def Generate_Job(run,balrog,db,tiles,  where, setup, shifter):
     d = BalrogDir(run)
     start = 0
 
-    substr = 'subjob'
     config = {}
     config['balrog'] = balrog
     config['db'] = db
@@ -291,19 +315,15 @@ def Generate_Job(run,balrog,db,tiles,  where, setup, shifter):
 
     if where=='wq':
         
-        run['touchfile'] = os.path.join(run['jobdir'],'ok')
-        run['failfile'] = os.path.join(run['jobdir'],'fail')
+        FindCreateFiles(run)
         space = "   "
         descr = 'mode: bynode\n' + 'N: %i\n' %(run['nodes']) + 'hostfile: auto\n' + 'job_name: %s' %(run['jobname'])
         cmd = space + """nodes=(); while read -r line; do found=false; host=$line; for h in "${nodes[@]}"; do if [ "$h" = "$host" ]; then found=true; fi; done; if [ "$found" = "false" ]; then nodes+=("$host"); fi; done < %hostfile%\n"""
-        cmd = cmd + space + """if [ -f %s ]; then rm %s; fi;\n"""%(run['touchfile'], run['touchfile'])
-        cmd = cmd + space + """if [ -f %s ]; then rm %s; fi;\n"""%(run['failfile'], run['failfile'])
 
         for i in range(run['nodes']):
-            jsonfile, start = SubConfig(start,i, tiles, run,config, substr, run['jobdir'],'', shifter)
+            jsonfile, start = SubConfig(start,i, tiles, run,config, run['jobdir'],'', shifter)
             cmd = cmd + space + 'mpirun -np 1 -host ${nodes[%i]} %s %s &\n' %(i, allmpi, jsonfile)
             exits.append('"%s"'%(run['exitfile']))
-
         cmd = cmd + space + 'wait\n'
 
         check,exit = CheckFails(exits, space=space)
@@ -324,17 +344,7 @@ def Generate_Job(run,balrog,db,tiles,  where, setup, shifter):
             
             if k > 0:
                 run['DBoverwrite'] = False
-
-            if run['ndependencies'] > 1:
-                run['jobname'] = '%s_dep_%i'%(run['jobname'],k+1)
-                jobdir = os.path.join(run['jobdir'], 'dep_%i'%(k+1))
-                sjobdir = os.path.join(shifter.jobroot,'dep_%i'%(k+1))
-                TryToMake(jobdir)
-            else:
-                jobdir = run['jobdir']
-                sjobdir = shifter.jobroot
-            run['touchfile'] = os.path.join(jobdir,'ok')
-            run['failfile'] = os.path.join(jobdir,'fail')
+            jobdir, sjobdir = GetDepJobDir(run, shifter, k)
 
             descr = "#!/bin/bash -l \n"
             if run['shifter'] is not None:
@@ -349,7 +359,7 @@ def Generate_Job(run,balrog,db,tiles,  where, setup, shifter):
             descr = SLURMadd(descr, '--time=%s'%(run['walltime']), start='#SBATCH')
 
             if run['asarray']:
-                ofile = os.path.join(jobdir, '%s_%%a'%(substr), '%s-%%A_%%a.out'%(run['jobname']))
+                ofile = os.path.join(jobdir, '%s_%%a'%(runtile.Files.substr), '%s-%%A_%%a.out'%(run['jobname']))
                 arrmax = ''
                 if run['arraymax'] is not None:
                     arrmax = '%%%i'%(run['arraymax'])
@@ -366,11 +376,9 @@ def Generate_Job(run,balrog,db,tiles,  where, setup, shifter):
             if run['stripe'] is not None:
                 descr = descr + 'if ! [ -d %s ]; then mkdir %s; fi;\n' %(run['outdir'],run['outdir'])
                 descr = descr + 'lfs setstripe %s --count %i\n' %(run['outdir'],run['stripe'])
-            descr = descr + """if [ -f %s ]; then rm %s; fi;\n"""%(run['touchfile'], run['touchfile'])
-            descr = descr + """if [ -f %s ]; then rm %s; fi;\n"""%(run['failfile'], run['failfile'])
 
             for i in range(run['nodes']):
-                jsonfile, start = SubConfig(start,i, tiles, run,config, substr, jobdir,sjobdir, shifter)
+                jsonfile, start = SubConfig(start,i, tiles, run,config, runtile.Files.substr, jobdir,sjobdir, shifter)
                 jdir = os.path.dirname(jsonfile)
                 exits.append('"%s"'%(run['exitfile']))
 
@@ -383,22 +391,15 @@ def Generate_Job(run,balrog,db,tiles,  where, setup, shifter):
                 
             if run['asarray']:
                 if run['shifter'] is None:
-                    subdir = os.path.join(jobdir, '%s_${SLURM_ARRAY_TASK_ID}'%(substr))
+                    subdir = os.path.join(jobdir, '%s_${SLURM_ARRAY_TASK_ID}'%(runtile.Files.substr))
                 else:
-                    subdir = os.path.join(sjobdir, '%s_${SLURM_ARRAY_TASK_ID}'%(substr))
+                    subdir = os.path.join(sjobdir, '%s_${SLURM_ARRAY_TASK_ID}'%(runtile.Files.substr))
 
                 descr = descr + 'j=%s\n'%(os.path.join(subdir,'config.json'))
                 #descr = descr + 'l=%s\n'%(os.path.join(subdir,'runlog'))
                 #out = descr + 'srun -N 1 -n 1 %s ${j} ${l}' %(allmpi)
                 out = descr + 'srun -N 1 -n 1 %s /bin/bash -c "source /home/user/.bashrc; %s ${j}"' %(scmds, allmpi)
-            '''
-            else:
-                out = descr + 'wait\n'
-                check,exit = CheckFails(exits, space='')
-                out = out + check
-                out = out + exit
-                out = out + 'exit $code\n'
-            '''
+
             out = descr + 'wait\n'
             check,exit = CheckFails(exits, space='')
             out = out + check

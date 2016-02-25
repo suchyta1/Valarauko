@@ -31,10 +31,10 @@ def CustomConfig(run, balrog, db, tiles):
     run['email'] = 'eric.d.suchyta@gmail.com'
 
     tstart = 0
-    tend = 1
+    tend = 2
     tiles = tiles[tstart:tend]
     run['npersubjob'] = 1
-    run['nodes'] = 1
+    run['nodes'] = 2
 
     run['dbname'] = 'y1a1_btest'
     run['joblabel'] = '%i-%i' %(tstart, tend)
@@ -48,7 +48,7 @@ def CustomConfig(run, balrog, db, tiles):
     balrog['ngal'] = 10
     run['runnum'] = 0 
 
-    run['DBoverwrite'] = False
-    run['replacement'] = True
+    run['DBoverwrite'] = True
+    run['duplicate'] = 'error'
 
     return run, balrog, db, tiles

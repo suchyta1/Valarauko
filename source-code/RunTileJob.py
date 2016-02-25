@@ -83,23 +83,38 @@ def WaitExistence(donenum, RunConfig, runlog):
     user = cur.username
     
     runlog.info('Making sure that the tables I need exist, and waiting for the first process if necessary...')
-    done = False
     while True:
+        if os.path.exists(RunConfig['failfile']):
+            raise Exception("The first process failed, Doesn't matter if DBs exist. Exiting.")
         count = 0
         arr = cur.quick("select table_name from dba_tables where owner='%s'" %(user.upper()), array=True)
         tables = arr['table_name']
-
         for  kind in ['truth', 'nosim', 'sim', 'des']:
             tab = 'balrog_%s_%s' %(RunConfig['dbname'], kind)
             if (tab.upper() in tables):
                 count += 1
         if count==donenum:
             break
-
-        if os.path.exists(RunConfig['failfile']):
-            raise Exception("The first process failed before the DBs we need have been created. Exiting.")
-
     runlog.info('Ok')
+
+
+    done = False
+    ok, fail, exit = GetSubFiles(config['run'])
+    runlog.info("Making sure other other processes haven't failed very basic checks...")
+    while not done:
+        okcount = 0
+        for i in range(RunConfig['nodes']):
+
+            if os.path.exists(RunConfig['failfile']):
+                raise Exception("The first process failed, and even though DBs exist, I'm still exiting.")
+            if os.path.exists(fail[i]):
+                raise Exception('found that subjob %i had duplicates, and you gave duplicate=error. Exiting.'%(i+1))
+            if os.path.exists(ok[i]):
+                okcount += 1
+        if okcount==RunConfig['nodes']:
+            done = True
+    runlog.info('Ok')
+
 
 
 # Delete the existing DB tables for your run if the names already exist
@@ -118,7 +133,7 @@ def DropTablesIfNeeded(RunConfig, indexstart, size, tiles, runlog):
     
     if not RunConfig['DBoverwrite']:
         if exists:
-            if RunConfig['replacement']:
+            if RunConfig['duplicate'] == 'replace':
                 runlog.info("Replacing existing entries in DB which match this run's balrog_indexes, if necessary...")
                 for i in range(len(tiles)):
                     for kind in kinds[0:3]:
@@ -128,17 +143,16 @@ def DropTablesIfNeeded(RunConfig, indexstart, size, tiles, runlog):
                 cur.commit()
                 runlog.info("Done")
 
-            '''
-            if RunConfig['verifyindex']:
+            if RunConfig['duplicate'] == 'error':
                 runlog.info("Verifying no duplicate balrog_indexes...")
                 for i in range(len(tiles)):
                     arr = cur.quick("select balrog_index from %s where tilename='%s'"%(test,tiles[i]), array=True)
                     this = np.arange(indexstart[i], indexstart[i]+size[i], 1)
                     inboth = np.in1d(np.int64(this), np.int64(arr['balrog_index']))
                     if np.sum(inboth) > 0:
-                        raise Exception("You are trying to add balrog_index(es) which already exist. Setting verifyindex=False is the only way to allow this. But unless you understand what you're doing, and have thought of reasons I haven't, don't duplicate balrog_index")
+                        raise Exception("You are trying to add balrog_index(es) which already exist, and you've flagged duplicate=error. Killing the subjob")
+                        open(RunConfig['dupfailfile'],'a').close()
                 runlog.info("Ok")
-            '''
 
         else:
             if RunConfig['isfirst']:
@@ -162,6 +176,7 @@ def DropTablesIfNeeded(RunConfig, indexstart, size, tiles, runlog):
                 runlog.warning("Deleted %s"%(tab))
         open(RunConfig['touchfile'],'a').close()
 
+    open(RunConfig['dupokfile'],'a').close()
     return write
 
 
@@ -374,15 +389,70 @@ def OpenRunLog(runlogdir):
     return runlog
 
 
-if __name__ == "__main__":
 
+class Files:
+    substr = 'subjob'
+    cok = 'createok'
+    cfail = 'createfail'
+    dupok = 'dupok'
+    dupfail = 'dupfail'
+    exit = 'exit'
+    json = 'config'
+    runlog = 'runlog'
+
+
+def GetJsonDir(run, dirname, id):
+    if (run['nodes'] > 1):
+        jdir = os.path.join(dirname, '%s_%i'%(Files.substr,id))
+    else:
+        jdir = dirname
+    return jdir
+
+
+
+def GetSubFiles(RunConfig):
+    okfiles = []
+    failfiles = []
+    exitfiles = []
+
+    dir = os.path.dirname(RunConfig['touchfile'])
+    for i in range(RunConfig['nodes']):
+        sdir = GetJsonDir(RunConfig, dir, i)
+        okfiles.append(os.path.join(sdir, Files.dupok))
+        failfiles.append(os.path.join(sdir, Files.dupfail))
+        exitfiles.append(os.path.join(sdir, Files.exit))
+
+    return okfiles, failfiles, exitfiles
+
+
+def RemoveIfNeeded(runlog, *args):
+    for arg in args:
+        if os.path.exists(arg):
+            os.remove(arg)
+            runlog.info('Removed %s'%(arg))
+
+def BlockIfExists(*args):
+    for arg in args:
+        while True:
+            if not os.path.exists(arg):
+                break
+
+def RemoveCheckFiles(config, runlog):
+    if config['run']['isfirst']:
+        RemoveIfNeeded(runlog, config['run']['touchfile'], config['run']['failfile'])
+    BlockIfExists(config['run']['touchfile'], config['run']['failfile'])
+    RemoveIfNeeded(runlog, config['run']['dupokfile'], config['run']['dupfailfile'], config['run']['exitfile'])
+    sub = GetSubFiles(config['run'])
+    for s in sub:
+        BlockIfExists(*s) 
+
+if __name__ == "__main__":
+    
     with open(sys.argv[1]) as jsonfile:
         config = json.load(jsonfile)
     runlogdir = config['run']['runlogdir']
     runlog = OpenRunLog(runlogdir)
-
-    if os.path.exists(config['run']['exitfile']):
-        os.remove(config['run']['exitfile'])
+    RemoveCheckFiles(config, runlog)
 
     try:
         images, psfs, tiles, bands, skipped = GetFiles2(config)
