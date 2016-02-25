@@ -31,13 +31,13 @@ def CustomConfig(run, balrog, db, tiles):
     run['email'] = 'eric.d.suchyta@gmail.com'
 
     tstart = 0
-    tend = 2
+    tend = 1
     tiles = tiles[tstart:tend]
     run['npersubjob'] = 1
-    run['nodes'] = 2
+    run['nodes'] = 1
 
-    run['dbname'] = 'y1a1_btest3'
-    run['joblabel'] = '%i:%i' %(tstart, tend)
+    run['dbname'] = 'y1a1_btest'
+    run['joblabel'] = '%i-%i' %(tstart, tend)
     run['outdir'] = os.path.join(os.environ['SCRATCH'],'BalrogScratch')
     run['jobdir'] = os.path.join(os.environ['GLOBALDIR'],'BalrogJobs')
 
@@ -48,7 +48,7 @@ def CustomConfig(run, balrog, db, tiles):
     balrog['ngal'] = 10
     run['runnum'] = 0 
 
-    run['DBoverwrite'] = True
-    run['verifyindex'] = True
+    run['DBoverwrite'] = False
+    run['replacement'] = True
 
     return run, balrog, db, tiles
