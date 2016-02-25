@@ -46,6 +46,8 @@ def CustomConfig(run, balrog, db, tiles):
     run['jobdir'] = os.path.join(baseout, 'BalrogJobs')
     run['outdir'] = os.path.join(baseout, 'BalrogScratch')
 
+    run['intermediate-clean'] = False
+    run['tile-clean'] = False
     run['downsample'] = 50
     balrog['ngal'] = 10
     run['runnum'] = 0 

@@ -36,11 +36,13 @@ def CustomConfig(run, balrog, db, tiles):
     run['npersubjob'] = 1
     run['nodes'] = 2
 
-    run['dbname'] = 'y1a1_btest2'
+    run['dbname'] = 'y1a1_btest3'
     run['joblabel'] = '%i:%i' %(tstart, tend)
     run['outdir'] = os.path.join(os.environ['SCRATCH'],'BalrogScratch')
     run['jobdir'] = os.path.join(os.environ['GLOBALDIR'],'BalrogJobs')
 
+    run['intermediate-clean'] = False # Delete an iteration's output Balrog images
+    run['tile-clean'] = False  # Delete the entire outdir/run's contents
     run['fixwrapseed'] = 100
     run['downsample'] = 50
     balrog['ngal'] = 10
