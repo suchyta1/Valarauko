@@ -22,12 +22,9 @@ class RunConfigurations:
             'release': 'sva1_coadd',
             'db-columns': 'sva1_coadd_objects-columns.fits',
             'dbname': 'debug',  # DB tables will look like <username>.balrog_<label>_<type>_<band>
-            'DBoverwrite': False,  # Overwrite DB tables with same names (if they exist). False means append into existing tables. Regardless, the tables will be created if they don't exist.
 
             'outdir': None,  # The ouput directory for all intermediate work. This should be in the scratch area on the node.
             'jobdir': None,  # The ouput directory for all job files and job logs. This should be in the scratch area on the node.
-
-            'verifyindex': True, # Check if you're trying to add balrog_index which already exists
             'pos': 'tilepos',
 
             'fixwrapseed': None # Fix this to an integer to get the same Balrog sampling realizations each time you run

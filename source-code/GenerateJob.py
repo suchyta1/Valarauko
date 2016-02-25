@@ -53,6 +53,10 @@ def GetConfig(where, config):
     run['shifter'] = None
     run['slr'] = None
 
+    run['DBoverwrite'] =  False  # Overwrite DB tables with same names (if they exist). False means append into existing tables. Regardless, the tables will be created if they don't exist.
+    run['replacement'] = False
+    #'verifyindex': True, # Check if you're trying to add balrog_index which already exists
+
     if where=='slurm':
         run['stripe'] = 2
         run['npersubjob'] = 1

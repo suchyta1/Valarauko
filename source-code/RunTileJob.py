@@ -118,6 +118,14 @@ def DropTablesIfNeeded(RunConfig, indexstart, size, tiles, runlog):
     
     if not RunConfig['DBoverwrite']:
         if exists:
+            if RunConfig['replacement']:
+                runlog.info("Replacing existing entries in DB which match this run's balrog_indexes, if necessary...")
+                for tab in kinds:
+                    tab = 'balrog_%s_%s' %(RunConfig['dbname'], kind)
+                    arr = cur.quick("delete from %s where tilename in %s"%(tab,str(tuple(tiles))), array=True)
+                runlog.info("Done")
+
+            '''
             if RunConfig['verifyindex']:
                 runlog.info("Verifying no duplicate balrog_indexes...")
                 for i in range(len(tiles)):
@@ -127,6 +135,7 @@ def DropTablesIfNeeded(RunConfig, indexstart, size, tiles, runlog):
                     if np.sum(inboth) > 0:
                         raise Exception("You are trying to add balrog_index(es) which already exist. Setting verifyindex=False is the only way to allow this. But unless you understand what you're doing, and have thought of reasons I haven't, don't duplicate balrog_index")
                 runlog.info("Ok")
+            '''
         else:
             if RunConfig['isfirst']:
                 write = True
