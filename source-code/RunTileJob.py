@@ -417,7 +417,7 @@ def GetSubFiles(RunConfig):
 
     dir = os.path.dirname(RunConfig['touchfile'])
     for i in range(RunConfig['nodes']):
-        sdir = GetJsonDir(RunConfig, dir, i)
+        sdir = GetJsonDir(RunConfig, dir, i+1)
         okfiles.append(os.path.join(sdir, Files.dupok))
         failfiles.append(os.path.join(sdir, Files.dupfail))
         exitfiles.append(os.path.join(sdir, Files.exit))
