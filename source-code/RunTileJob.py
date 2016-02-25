@@ -78,10 +78,11 @@ def GetFiles2(config):
     return [images, psfs, usetiles, bs, skipped]
             
 
-def WaitExistence(donenum, RunConfig, runlog):
+def WaitExistence(RunConfig, runlog):
     cur = desdb.connect()
     user = cur.username
-    
+   
+    donenum = 4
     runlog.info('Making sure that the tables I need exist, and waiting for the first process if necessary...')
     while True:
         if os.path.exists(RunConfig['failfile']):
@@ -98,13 +99,13 @@ def WaitExistence(donenum, RunConfig, runlog):
     runlog.info('Ok')
 
 
+def CheckDup(RunConfig, runlog):
     done = False
     ok, fail, exit = GetSubFiles(config['run'])
     runlog.info("Making sure other other processes haven't failed very basic checks...")
     while not done:
         okcount = 0
         for i in range(RunConfig['nodes']):
-
             if os.path.exists(RunConfig['failfile']):
                 raise Exception("The first process failed, and even though DBs exist, I'm still exiting.")
             if os.path.exists(fail[i]):
@@ -358,9 +359,8 @@ def Run_Balrog(tiles,images,psfs,indexstart,bands,pos, config, write, runlogdir,
 
 
         if not config['run']['isfirst']:
-            cur = desdb.connect()
-            user = cur.username
-            WaitExistence(4, config['run'], runlog)
+            WaitExistence(config['run'], runlog)
+        CheckDup(config['run'], runlog)
 
         runlog.info('Doing all the Balrog iterations for tile %s'%(tiles[i]))
         runlog.info('Found %i iterations'%(len(args)))
