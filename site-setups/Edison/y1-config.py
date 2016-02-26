@@ -27,10 +27,10 @@ def CustomConfig(run, balrog, db, tiles):
     run, balrog, tiles = Y1A1Setup(run, balrog, tiles)
 
     tstart = 0
-    tend = 1
+    tend = 4
     tiles = tiles[tstart:tend]
 
-    run['nodes'] = 1
+    run['nodes'] = 2
     run['ppn'] = 24
     run['walltime'] = '00:30:00'
     run['queue'] = 'debug'
@@ -46,11 +46,12 @@ def CustomConfig(run, balrog, db, tiles):
     run['jobdir'] = os.path.join(baseout, 'BalrogJobs')
     run['outdir'] = os.path.join(baseout, 'BalrogScratch')
 
-    run['downsample'] = 50
     balrog['ngal'] = 10
+    run['downsample'] = balrog['ngal'] * run['ppn']
     run['runnum'] = 0 
 
-    run['DBoverwrite'] = True
-    run['verifyindex'] = True
+    run['DBoverwrite'] = False
+    run['duplicate'] = 'replace'
+    run['allfail'] = True
 
     return run, balrog, db, tiles
