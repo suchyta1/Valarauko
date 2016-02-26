@@ -12,10 +12,10 @@ def CustomConfig(run, balrog, db, tiles):
     tiles = esutil.io.read(os.path.join(dir, 'spt-y1a1-only-g70-grizY.fits'))['tilename']
 
     tstart = 0
-    tend = 1
+    tend = 4
     tiles = tiles[tstart:tend]
 
-    run['nodes'] = 1
+    run['nodes'] = 2
     run['ppn'] = 24
     run['walltime'] = '00:30:00'
     run['queue'] = 'debug'
@@ -32,11 +32,11 @@ def CustomConfig(run, balrog, db, tiles):
     run['outdir'] = os.path.join(baseout, 'BalrogScratch')
 
 
-    run['downsample'] = 50
     balrog['ngal'] = 10
+    run['downsample'] = balrog['ngal']*run['ppn']
     run['runnum'] = 0 
 
-    run['DBoverwrite'] = True
+    run['DBoverwrite'] = False
     run['duplicate'] = 'replace'
     run['allfail'] = True
 
