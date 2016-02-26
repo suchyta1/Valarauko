@@ -48,7 +48,7 @@ def CustomConfig(run, balrog, db, tiles):
     balrog['ngal'] = 10
     run['runnum'] = 0 
 
-    run['DBoverwrite'] = True
+    run['DBoverwrite'] = False
     run['duplicate'] = 'replace'
     run['allfail'] = True
 
