@@ -56,6 +56,7 @@ def GetConfig(where, config):
 
     run['DBoverwrite'] =  False  # Overwrite DB tables with same names (if they exist). False means append into existing tables. Regardless, the tables will be created if they don't exist.
     run['duplicate'] = None
+    run['allfail'] = True
     #'verifyindex': True, # Check if you're trying to add balrog_index which already exists
 
     if where=='slurm':
@@ -235,6 +236,7 @@ def SubConfig(start,i, tiles, run,config, jobdir,sjobdir, shifter):
         runcopy['failfile'] = os.path.join(sjobdir, runtile.Files.cfail)
         runcopy['dupokfile'] = os.path.join(sjdir, runtile.Files.dupok)
         runcopy['dupfailfile'] = os.path.join(sjdir, runtile.Files.dupfail)
+        runcopy['anyfail'] = os.path.join(sjdir, runtile.Files.anyfail)
         runcopy['pos'] = shifter.posroot
     else:
         runcopy = copy.copy(run)
@@ -242,6 +244,7 @@ def SubConfig(start,i, tiles, run,config, jobdir,sjobdir, shifter):
         runcopy['exitfile'] = os.path.join(jdir,  runtile.Files.exit)
         runcopy['dupokfile'] = os.path.join(jdir, runtile.Files.dupok)
         runcopy['dupfailfile'] = os.path.join(jdir, runtile.Files.dupfail)
+        runcopy['anyfail'] = os.path.join(jdir, runtile.Files.anyfail)
     
     run['exitfile'] = os.path.join(jdir, runtile.Files.exit)
     if i==0:

@@ -99,9 +99,17 @@ def WaitExistence(RunConfig, runlog):
     runlog.info('Ok')
 
 
+def CheckAnyFail(RunConfig):
+    any = GetSubFiles(RunConfig, Files.anyfail)
+    for i in range(RunConfig['nodes']):
+        if os.path.exists(any[i]):
+            raise Exception('Detected that subjob %i failed (or was killed because another job failed). You used allfail=True. Exiting.' %(i+1))
+
+
 def CheckDup(RunConfig, runlog):
     done = False
-    ok, fail, exit = GetSubFiles(config['run'])
+    ok = GetSubFiles(RunConfig, Files.dupok)
+    fail = GetSubFiles(RunConfig, Files.dupfail)
     runlog.info("Making sure I can continue based your duplicate settings...")
     while not done:
         okcount = 0
@@ -115,6 +123,9 @@ def CheckDup(RunConfig, runlog):
 
     if os.path.exists(RunConfig['failfile']):
         raise Exception("The first process failed in a way which has nothing to do with duplicates, but I'm still exiting.")
+    if RunConfig['allfail']:
+        CheckAnyFail(RunConfig)
+
     runlog.info('Ok')
 
 
@@ -274,6 +285,10 @@ def run_balrog(args):
 
 
     try:
+
+        if RunConfig['allfail']:
+            CheckAnyFail(RunConfig)
+
         if it==-2:
             # Minimal Balrog run to create DB tables
             runbalrog.RunOnlyCreate(RunConfig, BalrogConfig, DerivedConfig)
@@ -361,6 +376,8 @@ def Run_Balrog(tiles,images,psfs,indexstart,bands,pos, config, write, runlogdir,
 
         if not config['run']['isfirst']:
             WaitExistence(config['run'], runlog)
+        if config['run']['allfail']:
+            CheckAnyFail(config['run'])
 
         runlog.info('Doing all the Balrog iterations for tile %s'%(tiles[i]))
         runlog.info('Found %i iterations'%(len(args)))
@@ -389,7 +406,6 @@ def OpenRunLog(runlogdir):
     return runlog
 
 
-
 class Files:
     substr = 'subjob'
     cok = 'createok'
@@ -397,6 +413,7 @@ class Files:
     dupok = 'dupok'
     dupfail = 'dupfail'
     exit = 'exit'
+    anyfail = 'anyfail'
     json = 'config'
     runlog = 'runlog'
 
@@ -409,20 +426,21 @@ def GetJsonDir(run, dirname, id):
     return jdir
 
 
-
-def GetSubFiles(RunConfig):
-    okfiles = []
-    failfiles = []
-    exitfiles = []
-
+def GetSubFiles(RunConfig, kind):
+    files = []
     dir = os.path.dirname(RunConfig['touchfile'])
     for i in range(RunConfig['nodes']):
         sdir = GetJsonDir(RunConfig, dir, i+1)
-        okfiles.append(os.path.join(sdir, Files.dupok))
-        failfiles.append(os.path.join(sdir, Files.dupfail))
-        exitfiles.append(os.path.join(sdir, Files.exit))
+        files.append( os.path.join(sdir, kind) )
+    return files
 
-    return okfiles, failfiles, exitfiles
+
+def GetAllSubFiles(RunConfig):
+    okfiles = GetSubFiles(RunConfig, Files.dupok)
+    failfiles = GetSubFiles(RunConfig, Files.dupfail)
+    exitfiles = GetSubFiles(RunConfig, Files.exit)
+    anyfiles = GetSubFiles(RunConfig, Files.anyfail)
+    return okfiles, failfiles, exitfiles, anyfiles
 
 
 def RemoveIfNeeded(runlog, *args):
@@ -441,10 +459,11 @@ def RemoveCheckFiles(config, runlog):
     if config['run']['isfirst']:
         RemoveIfNeeded(runlog, config['run']['touchfile'], config['run']['failfile'])
     BlockIfExists(config['run']['touchfile'], config['run']['failfile'])
-    RemoveIfNeeded(runlog, config['run']['dupokfile'], config['run']['dupfailfile'], config['run']['exitfile'])
-    sub = GetSubFiles(config['run'])
+    RemoveIfNeeded(runlog, config['run']['dupokfile'], config['run']['dupfailfile'], config['run']['exitfile'], config['run']['anyfail'])
+    sub = GetAllSubFiles(config['run'])
     for s in sub:
         BlockIfExists(*s) 
+
 
 if __name__ == "__main__":
     
@@ -464,6 +483,7 @@ if __name__ == "__main__":
     except:
         balrogmodule.RaiseException(runlog, fulltraceback=True, sendto=None, message='Getting traceback outside Pool')
         exit = 1
+        open(config['run']['anyfail'],'a').close()
         if config['run']['isfirst']:
             open(config['run']['failfile'],'a').close()
             
