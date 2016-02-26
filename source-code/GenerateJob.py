@@ -27,16 +27,10 @@ def TryToMake(dir):
             Exit( 'Could not make %s'%(dir) )
 
 
-
-def NewPath(run, shifter):
-    for key in run.keys():
-        if key in ['jobdir','outdir']:
-            run[key]= run[key].rstrip('/')
-            if key=='jobdir':
-                run[key] = run[key].replace( os.path.dirname(run[key]), shifter.jobroot)
-            elif key=='outdir':
-                run[key] = run[key].replace( os.path.dirname(run[key]), shifter.outroot)
-    return run
+def NewOutdir(run, shifter, key='outdir'):
+    dir = run[key].rstrip('/')
+    out = dir.replace( os.path.dirname(dir), shifter.outroot )
+    return out
 
 
 # get a default config object
@@ -221,41 +215,41 @@ def StartJsonDir(run, dirname, id):
     return jdir
 
 
-def SubConfig(start,i, tiles, run,config, jobdir,sjobdir, shifter):
+def SubConfig(start,i, tiles, run,config, jobdir, shifter=None):
     runcopy = copy.copy(run)
     end = start + run['npersubjob']
     id = i + 1
 
-    jdir = StartJsonDir(run, jobdir, id)
+    sdir = StartJsonDir(run, jobdir, id)
+    run['exitfile'] = os.path.join(sdir, runtile.Files.exit)
+    runcopy = copy.copy(run)
+
     if shifter is not None:
-        sjdir = runtile.GetJsondir(run, sjobdir, id)
-        runcopy = NewPath(runcopy, shifter)
-        runcopy['runlogdir'] = os.path.join(sjdir, runtile.Files.runlog)
-        runcopy['exitfile'] = os.path.join(sjdir, runtile.Files.exit)
-        runcopy['touchfile'] = os.path.join(sjobdir, runtile.Files.cok)
-        runcopy['failfile'] = os.path.join(sjobdir, runtile.Files.cfail)
-        runcopy['dupokfile'] = os.path.join(sjdir, runtile.Files.dupok)
-        runcopy['dupfailfile'] = os.path.join(sjdir, runtile.Files.dupfail)
-        runcopy['anyfail'] = os.path.join(sjdir, runtile.Files.anyfail)
+        runcopy['outdir'] = NewOutdir(runcopy, shifter)
+        depdir = shifter.jobroot
+        subdir = runtile.GetJsonDir(run, depdir, id)
         runcopy['pos'] = shifter.posroot
+        runcopy['exitfile'] = os.path.join(subdir, runtile.Files.exit)
     else:
-        runcopy = copy.copy(run)
-        runcopy['runlogdir'] = os.path.join(jdir, runtile.Files.runlog)
-        runcopy['exitfile'] = os.path.join(jdir,  runtile.Files.exit)
-        runcopy['dupokfile'] = os.path.join(jdir, runtile.Files.dupok)
-        runcopy['dupfailfile'] = os.path.join(jdir, runtile.Files.dupfail)
-        runcopy['anyfail'] = os.path.join(jdir, runtile.Files.anyfail)
+        depdir = jobdir
+        subdir = sdir
+
+    runcopy['touchfile'] = os.path.join(depdir, runtile.Files.cok)
+    runcopy['failfile'] = os.path.join(depdir, runtile.Files.cfail)
+    runcopy['runlogdir'] = os.path.join(subdir, runtile.Files.runlog)
+    runcopy['dupokfile'] = os.path.join(subdir, runtile.Files.dupok)
+    runcopy['dupfailfile'] = os.path.join(subdir, runtile.Files.dupfail)
+    runcopy['anyfail'] = os.path.join(subdir, runtile.Files.anyfail)
     
-    run['exitfile'] = os.path.join(jdir, runtile.Files.exit)
     if i==0:
         runcopy['isfirst'] = True
     else:
         runcopy['isfirst'] = False
     config['run'] = runcopy
-    jsonfile = WriteJson(config,jdir, tiles,start,end)
+    jsonfile = WriteJson(config, sdir, tiles,start,end)
 
     if shifter is not None:
-        jsonfile = os.path.join(sjdir, 'config.json')
+        jsonfile = os.path.join(subdir, 'config.json')
 
     return jsonfile, end
 
@@ -272,29 +266,13 @@ def CheckFails(exitfiles, space=''):
     return check, exit
 
 
-
-def GetDepDir(run, k=0):
+def GetDepJobDir(run, k=0):
+    jobdir = run['jobdir']
     if run['ndependencies'] > 1:
-        return os.path.join(jdir, 'dep_%i'%(k+1))
-    else:
-        return jdir
-
-def FindCreateFiles(run):
-    run['touchfile'] = os.path.join(run['jobdir'], runtile.Files.cok)
-    run['failfile'] = os.path.join(run['jobdir'],'fail')
-
-def GetDepJobDir(run, shifter, k=0, jroot = ''):
-    if shifter is not None:
-        jroot = shifter.jobroot
-    jobdir = GetDepDir(run['jobdir'], k=k)
-    sjobdir = GetDepDir(jroot, k=k)
-
-    if run['ndependencies'] > 1:
-        run['jobname'] = '%s_dep_%i'%(run['jobname'],k+1)
+        run['jobname'] = '%s_%s_%i'%(run['jobname'],runtile.Files.depstr,k+1)
+        jobdir = os.path.join(jobdir, '%s_%i'%(runtile.Files.depstr,k+1))
         TryToMake(jobdir)
-    
-    FindCreateFiles(run)
-    return jobdir, sjobdir
+    return jobdir
 
 
 def Generate_Job(run,balrog,db,tiles,  where, setup, shifter):
@@ -324,7 +302,7 @@ def Generate_Job(run,balrog,db,tiles,  where, setup, shifter):
         cmd = space + """nodes=(); while read -r line; do found=false; host=$line; for h in "${nodes[@]}"; do if [ "$h" = "$host" ]; then found=true; fi; done; if [ "$found" = "false" ]; then nodes+=("$host"); fi; done < %hostfile%\n"""
 
         for i in range(run['nodes']):
-            jsonfile, start = SubConfig(start,i, tiles, run,config, run['jobdir'],'', shifter)
+            jsonfile, start = SubConfig(start,i, tiles, run,config, run['jobdir'], shifter=shifter)
             cmd = cmd + space + 'mpirun -np 1 -host ${nodes[%i]} %s %s &\n' %(i, allmpi, jsonfile)
             exits.append('"%s"'%(run['exitfile']))
         cmd = cmd + space + 'wait\n'
@@ -347,7 +325,7 @@ def Generate_Job(run,balrog,db,tiles,  where, setup, shifter):
             
             if k > 0:
                 run['DBoverwrite'] = False
-            jobdir, sjobdir = GetDepJobDir(run, shifter, k)
+            jobdir = GetDepJobDir(run, k)
 
             descr = "#!/bin/bash -l \n"
             if run['shifter'] is not None:
@@ -376,12 +354,14 @@ def Generate_Job(run,balrog,db,tiles,  where, setup, shifter):
             descr = descr + '\n\n'
             descr =  descr + s + d
 
+            if run['shifter'] is not None:
+                descr = descr + 'module load shifter\n'
             if run['stripe'] is not None:
                 descr = descr + 'if ! [ -d %s ]; then mkdir %s; fi;\n' %(run['outdir'],run['outdir'])
                 descr = descr + 'lfs setstripe %s --count %i\n' %(run['outdir'],run['stripe'])
 
             for i in range(run['nodes']):
-                jsonfile, start = SubConfig(start,i, tiles, run,config, runtile.Files.substr, jobdir,sjobdir, shifter)
+                jsonfile, start = SubConfig(start,i, tiles, run,config, jobdir, shifter=shifter)
                 jdir = os.path.dirname(jsonfile)
                 exits.append('"%s"'%(run['exitfile']))
 

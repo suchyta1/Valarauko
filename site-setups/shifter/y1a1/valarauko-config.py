@@ -4,14 +4,18 @@ import esutil
 
 # change the defaults if you want
 def CustomConfig(run, balrog, db, tiles):
+    run['shifter'] = 'esuchyta/balrog-docker:v1'
 
     dir = '/scratch1/scratchdirs/esuchyta/software/balrog_config/y1a1/'
+    run['pos'] = os.path.join(dir,'spt-y1a1-only-g70-grizY-pos')
+    run['slr'] = '/scratch1/scratchdirs/esuchyta/software/balrog_config/y1a1/'
     tiles = esutil.io.read(os.path.join(dir, 'spt-y1a1-only-g70-grizY.fits'))['tilename']
+
     tstart = 0
-    tend = 1
+    tend = 4
     tiles = tiles[tstart:tend]
 
-    run['nodes'] = 1
+    run['nodes'] = 2
     run['ppn'] = 24
     run['walltime'] = '00:30:00'
     run['queue'] = 'debug'
@@ -27,16 +31,13 @@ def CustomConfig(run, balrog, db, tiles):
     run['jobdir'] = os.path.join(baseout, 'BalrogJobs')
     run['outdir'] = os.path.join(baseout, 'BalrogScratch')
 
-    run['shifter'] = 'esuchyta/balrog-docker:v1'
-    run['slr'] = '/scratch1/scratchdirs/esuchyta/software/balrog_config/y1a1/'
-    run['pos'] = os.path.join(dir,'spt-y1a1-only-g70-grizY-pos')
 
-    run['fixwrapseed'] = 100
     run['downsample'] = 100
     balrog['ngal'] = 10
     run['runnum'] = 0 
 
     run['DBoverwrite'] = True
-    run['verifyindex'] = True
+    run['duplicate'] = 'replace'
+    run['allfail'] = True
 
     return run, balrog, db, tiles

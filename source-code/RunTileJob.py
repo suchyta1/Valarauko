@@ -408,6 +408,7 @@ def OpenRunLog(runlogdir):
 
 class Files:
     substr = 'subjob'
+    depstr = 'dep'
     cok = 'createok'
     cfail = 'createfail'
     dupok = 'dupok'
