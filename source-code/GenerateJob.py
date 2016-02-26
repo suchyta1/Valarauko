@@ -47,6 +47,7 @@ def GetConfig(where, config):
     run['downsample'] = None
     run['shifter'] = None
     run['slr'] = None
+    run['cores'] = None
 
     run['DBoverwrite'] =  False  # Overwrite DB tables with same names (if they exist). False means append into existing tables. Regardless, the tables will be created if they don't exist.
     run['duplicate'] = None
@@ -294,6 +295,7 @@ def Generate_Job(run,balrog,db,tiles,  where, setup, shifter):
     deps = []
     exits = []
 
+
     if where=='wq':
         
         FindCreateFiles(run)
@@ -319,6 +321,10 @@ def Generate_Job(run,balrog,db,tiles,  where, setup, shifter):
         WriteOut(jobfile, out)
 
     elif where=='slurm':
+        corestr = ''
+        if run['cores'] is not None:
+            corestr = ' -c %i'%(run['cores'])
+
         run['email'] = None
         allnodes = run['nodes']
         for k in range(run['ndependencies']):
@@ -367,9 +373,9 @@ def Generate_Job(run,balrog,db,tiles,  where, setup, shifter):
 
                 if not run['asarray']:
                     if shifter is not None:
-                        descr = descr + 'srun -N 1 -n 1 %s /bin/bash -c "source /home/user/.bashrc; %s %s" &\n' %(scmds, allmpi, jsonfile)
+                        descr = descr + 'srun -N 1 -n 1%s %s /bin/bash -c "source /home/user/.bashrc; %s %s" &\n' %(corestr, scmds, allmpi, jsonfile)
                     else:
-                        descr = descr + 'srun -N 1 -n 1 %s %s &\n' %(allmpi, jsonfile)
+                        descr = descr + 'srun -N 1 -n 1%s %s %s &\n' %(corestr, allmpi, jsonfile)
 
                 
             if run['asarray']:

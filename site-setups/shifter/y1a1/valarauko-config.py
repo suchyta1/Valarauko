@@ -12,11 +12,13 @@ def CustomConfig(run, balrog, db, tiles):
     tiles = esutil.io.read(os.path.join(dir, 'spt-y1a1-only-g70-grizY.fits'))['tilename']
 
     tstart = 0
-    tend = 4
+    tend = 1
     tiles = tiles[tstart:tend]
 
-    run['nodes'] = 2
+    run['nodes'] = 1
     run['ppn'] = 24
+    run['cores'] = 48
+
     run['walltime'] = '00:30:00'
     run['queue'] = 'debug'
     run['runnum'] = 0     
