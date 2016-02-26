@@ -369,7 +369,7 @@ def Generate_Job(run,balrog,db,tiles,  where, setup, shifter):
                     if shifter is not None:
                         descr = descr + 'srun -N 1 -n 1 %s /bin/bash -c "source /home/user/.bashrc; %s %s" &\n' %(scmds, allmpi, jsonfile)
                     else:
-                        descr = descr + 'srun -N 1 -n 1 %s %s &\n' %(scmds, allmpi, jsonfile)
+                        descr = descr + 'srun -N 1 -n 1 %s %s &\n' %(allmpi, jsonfile)
 
                 
             if run['asarray']:

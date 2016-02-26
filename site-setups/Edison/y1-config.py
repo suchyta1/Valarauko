@@ -39,8 +39,8 @@ def CustomConfig(run, balrog, db, tiles):
     run['npersubjob'] = 1
     run['asdependency'] = True
     
-    #baseout = '/scratch3/scratchdirs/esuchyta/'
-    baseout = os.environ['SCRATCH']
+    baseout = '/scratch3/scratchdirs/esuchyta/'
+    #baseout = os.environ['SCRATCH']
     run['dbname'] = 'y1a1_etest2'
     run['joblabel'] = '%i:%i' %(tstart, tend)
     run['jobdir'] = os.path.join(baseout, 'BalrogJobs')
