@@ -230,6 +230,7 @@ def SubConfig(start,i, tiles, run,config, jobdir, shifter=None):
         depdir = shifter.jobroot
         subdir = runtile.GetJsonDir(run, depdir, id)
         runcopy['pos'] = shifter.posroot
+        runcopy['slr'] = shifter.slrroot
         runcopy['exitfile'] = os.path.join(subdir, runtile.Files.exit)
     else:
         depdir = jobdir

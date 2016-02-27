@@ -30,7 +30,7 @@ def CustomConfig(run, balrog, db, tiles):
     tend = 1
     tiles = tiles[tstart:tend]
 
-    run['nodes'] = 1
+    run['nodes'] = 2
     run['ppn'] = 24
     run['cores'] = 48
 
