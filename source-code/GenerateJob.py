@@ -307,6 +307,7 @@ def Generate_Job(run,balrog,db,tiles,  where, setup, shifter):
         for i in range(run['nodes']):
             jsonfile, start = SubConfig(start,i, tiles, run,config, run['jobdir'], shifter=shifter)
             cmd = cmd + space + 'mpirun -np 1 -host ${nodes[%i]} %s %s &\n' %(i, allmpi, jsonfile)
+            #cmd = cmd + space + 'mpirun -npernode 1 -np 1 -host ${nodes[%i]} %s %s &\n' %(i, allmpi, jsonfile)
             exits.append('"%s"'%(run['exitfile']))
         cmd = cmd + space + 'wait\n'
 

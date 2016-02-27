@@ -328,11 +328,7 @@ def Run_Balrog(tiles,images,psfs,indexstart,bands,pos, config, write, runlogdir,
         runbalrog.Mkdir(ild)
 
         args = []
-
-        if config['run']['ppn'] is not None:
-            ppn = config['run']['ppn']
-        else:
-            ppn = multiprocessing.cpu_count()
+        ppn = runbalrog.GetPPN(config['run'])
         pool = multiprocessing.Pool(ppn)
 
 
@@ -357,7 +353,12 @@ def Run_Balrog(tiles,images,psfs,indexstart,bands,pos, config, write, runlogdir,
             if (j==0):
                 runlog.info('Downloading tile data for tile %s'%(tiles[i]))
                 setup = balrogmodule.SystemCallSetup(retry=config['run']['retry'], redirect=runlog, kind=config['run']['command'], useshell=config['run']['useshell'])
-                derived['images'], derived['psfs'] = runbalrog.DownloadImages(derived['indir'], derived['images'], derived['psfs'], config['run'], setup, skip=False)
+
+                if config['run']['paralleldownload']:
+                    derived['images'], derived['psfs'] = runbalrog.ParallelDownload(derived, config['run'], runlogdir)
+                else:
+                    derived['images'], derived['psfs'] = runbalrog.DownloadImages(derived['indir'], derived['images'], derived['psfs'], config['run'], setup, skip=False)
+
                 #derived['images'], derived['psfs'] = runbalrog.DownloadImages(derived['indir'], derived['images'], derived['psfs'], config['run'], setup, skip=True)
 
                 if (It[j]==-2):
@@ -369,7 +370,11 @@ def Run_Balrog(tiles,images,psfs,indexstart,bands,pos, config, write, runlogdir,
                     args.append( [copy.copy(config['run']), balrog, derived] )
 
             else:
-                derived['images'], derived['psfs'] = runbalrog.DownloadImages(derived['indir'], derived['images'], derived['psfs'], config['run'], None, skip=True)
+                if config['run']['paralleldownload']:
+                    derived['images'], derived['psfs'] = runbalrog.GetImagePaths(derived, cnames=False)
+                else:
+                    derived['images'], derived['psfs'] = runbalrog.DownloadImages(derived['indir'], derived['images'], derived['psfs'], config['run'], None, skip=True)
+
                 derived['bands'] = runbalrog.PrependDet(config['run'])
                 args.append( [copy.copy(config['run']), balrog, derived] )
 

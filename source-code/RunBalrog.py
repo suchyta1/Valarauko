@@ -17,6 +17,7 @@ import numpy as np
 import numpy.lib.recfunctions as recfunctions
 import balrog
 import warnings
+import multiprocessing
 
 
 def GetAllBands():
@@ -90,6 +91,94 @@ def PSFDownload(indir, psf, setup, RunConfig, skip):
     pfile = os.path.join(indir, os.path.basename(psf))
     Wget(pfile, psf, setup, RunConfig, skip)
     return pfile
+
+
+def GetPPN(RunConfig):
+    if RunConfig['ppn'] is not None:
+        ppn = RunConfig['ppn']
+    else:
+        ppn = multiprocessing.cpu_count()
+    return ppn
+
+
+def GetImagePaths(derived, cnames=False):
+    downfiles = []
+    unpackfiles = []
+    pfiles = []
+    for i in range(len(derived['images'])):
+        downfiles.append( os.path.join(derived['indir'], os.path.basename(derived['images'][i])) )
+        unpackfiles.append( downfiles[i].replace('.fits.fz', '.fits') )
+        pfiles.append( os.path.join(derived['indir'], os.path.basename(derived['psfs'][i])) )
+    if cnames:
+        return unpackfiles, pfiles, downfiles
+    else:
+        return unpackfiles, pfiles
+
+def WgetFits(outfile, file, setup, RunConfig):
+    oscmd = [RunConfig['wget'], '--quiet', '--no-check-certificate', file, '-O', outfile]
+    done = False
+    while not done:
+        Remove(outfile)
+        balrog.SystemCall(oscmd, setup=setup, delfiles=[outfile])
+        with warnings.catch_warnings():
+            warnings.filterwarnings('error')
+            try:
+                f = pyfits.open(outfile, checksum=True)
+                done = True
+            except:
+                balrog.SysInfoPrint(setup, "wget failed checksum. Retrying")
+
+def FunpackFits(outfile, infile, setup, RunConfig):
+    oscmd = [RunConfig['funpack'], '-O', outfile, infile]
+    done = False
+    while not done:
+        Remove(ufile) 
+        balrog.SystemCall(oscmd, setup=setup, delfiles=[ufile], keeps=[infile])
+        with warnings.catch_warnings():
+            warnings.filterwarnings('error')
+            try:
+                f = pyfits.open(ufile, checksum=True)
+                done = True
+            except:
+                balrog.SysInfoPrint(setup, "funpack failed checksum. Retrying")
+
+def DoDownload(args):
+    file, dfile, ufile, RunConfig, dlogdir = args
+
+    host = socket.gethostname()
+    f = os.path.basename(file)
+    dfile = os.path.join(dlogdir, '%s.log'%(f))
+    runlog = runbalrog.SetupLog(dfile, host, '%s-%s'%(host,f), stream=True)
+
+    if RunConfig['command']=='popen':
+        dlog = runbalrog.SetupLog(DerivedConfig['itlogfile'], host, '%s_%i'%(BalrogConfig['tile'],it), stream=True)
+    elif RunConfig['command']=='system':
+        dlog = DerivedConfig['itlogfile']
+    logsetup = balrog.SystemCallSetup(retry=RunConfig['retry'], redirect=DerivedConfig['itlog'], kind=RunConfig['command'], useshell=RunConfig['useshell'])
+
+    WgetFits(dfile, file, logsetup, RunConfig)
+    if ufile is not None:
+        FunpackFits(ufile, dfile, logsetup, RunConfig)
+
+
+#runbalrog.DownloadImages(derived['indir'], derived['images'], derived['psfs'], config['run'], setup, skip=False)
+def ParallelDownload(derived, RunConfig, runlogdir):
+    dlogdir = os.path.join(runlogdir, 'download')
+    if os.path.exists(dlogdir):
+        shutil.rmtree(dlogdir)
+    os.makedirs(dlogdir)
+
+    args = []
+    ufiles, pfiles, dfiles = GetImagePaths(derived, cnames=True)
+    for i in range(len(ufiles)):
+        args.append( [derived['files'][i],dfiles[i],ufiles[i],RunConfig,dlogdir] )
+    for i in range(len(pfiles)):
+        args.append( [derived['psfs'][i],pfiles[i],None,RunConfig,dlogdir] )
+    
+    ppn = GetPPN(RunConfig)
+    pool = multiprocessing.Pool(ppn)
+    pool.map(DoDownload, args)
+    return ufiles, pfiles
 
 
 # Download and uncompress images

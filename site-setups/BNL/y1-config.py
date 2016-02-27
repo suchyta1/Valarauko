@@ -35,6 +35,7 @@ def CustomConfig(run, balrog, db, tiles):
     tiles = tiles[tstart:tend]
     run['npersubjob'] = 1
     run['nodes'] = 2
+    run['ppn'] = 8
 
     run['dbname'] = 'y1a1_btest'
     run['joblabel'] = '%i-%i' %(tstart, tend)
@@ -44,8 +45,9 @@ def CustomConfig(run, balrog, db, tiles):
     run['intermediate-clean'] = False # Delete an iteration's output Balrog images
     run['tile-clean'] = False  # Delete the entire outdir/run's contents
     run['fixwrapseed'] = 100
+
     run['downsample'] = 50
-    balrog['ngal'] = 10
+    balrog['ngal'] = 10*run['ppn']
     run['runnum'] = 0 
 
     run['DBoverwrite'] = False
