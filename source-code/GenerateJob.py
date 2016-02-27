@@ -48,6 +48,7 @@ def GetConfig(where, config):
     run['shifter'] = None
     run['slr'] = None
     run['cores'] = None
+    run['paralleldownload'] = None
 
     run['DBoverwrite'] =  False  # Overwrite DB tables with same names (if they exist). False means append into existing tables. Regardless, the tables will be created if they don't exist.
     run['duplicate'] = None
@@ -299,7 +300,6 @@ def Generate_Job(run,balrog,db,tiles,  where, setup, shifter):
 
     if where=='wq':
         
-        FindCreateFiles(run)
         space = "   "
         descr = 'mode: bynode\n' + 'N: %i\n' %(run['nodes']) + 'hostfile: auto\n' + 'job_name: %s' %(run['jobname'])
         cmd = space + """nodes=(); while read -r line; do found=false; host=$line; for h in "${nodes[@]}"; do if [ "$h" = "$host" ]; then found=true; fi; done; if [ "$found" = "false" ]; then nodes+=("$host"); fi; done < %hostfile%\n"""

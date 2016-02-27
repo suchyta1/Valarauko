@@ -46,10 +46,11 @@ def CustomConfig(run, balrog, db, tiles):
     run['tile-clean'] = False  # Delete the entire outdir/run's contents
     run['fixwrapseed'] = 100
 
-    run['downsample'] = 50
-    balrog['ngal'] = 10*run['ppn']
+    balrog['ngal'] = 10
+    run['downsample'] = balrog['ngal']*run['ppn']
     run['runnum'] = 0 
 
+    run['paralleldownload'] = True
     run['DBoverwrite'] = False
     run['duplicate'] = 'replace'
     run['allfail'] = True

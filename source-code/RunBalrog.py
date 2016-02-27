@@ -132,12 +132,12 @@ def FunpackFits(outfile, infile, setup, RunConfig):
     oscmd = [RunConfig['funpack'], '-O', outfile, infile]
     done = False
     while not done:
-        Remove(ufile) 
-        balrog.SystemCall(oscmd, setup=setup, delfiles=[ufile], keeps=[infile])
+        Remove(outfile) 
+        balrog.SystemCall(oscmd, setup=setup, delfiles=[outfile], keeps=[infile])
         with warnings.catch_warnings():
             warnings.filterwarnings('error')
             try:
-                f = pyfits.open(ufile, checksum=True)
+                f = pyfits.open(outfile, checksum=True)
                 done = True
             except:
                 balrog.SysInfoPrint(setup, "funpack failed checksum. Retrying")
@@ -147,21 +147,19 @@ def DoDownload(args):
 
     host = socket.gethostname()
     f = os.path.basename(file)
-    dfile = os.path.join(dlogdir, '%s.log'%(f))
-    runlog = runbalrog.SetupLog(dfile, host, '%s-%s'%(host,f), stream=True)
+    dlogfile = os.path.join(dlogdir, '%s.log'%(f))
 
     if RunConfig['command']=='popen':
-        dlog = runbalrog.SetupLog(DerivedConfig['itlogfile'], host, '%s_%i'%(BalrogConfig['tile'],it), stream=True)
+        dlog = SetupLog(dlogfile, host, f, stream=True)
     elif RunConfig['command']=='system':
-        dlog = DerivedConfig['itlogfile']
-    logsetup = balrog.SystemCallSetup(retry=RunConfig['retry'], redirect=DerivedConfig['itlog'], kind=RunConfig['command'], useshell=RunConfig['useshell'])
+        dlog = dlogfile
+    logsetup = balrog.SystemCallSetup(retry=RunConfig['retry'], redirect=dlog, kind=RunConfig['command'], useshell=RunConfig['useshell'])
 
     WgetFits(dfile, file, logsetup, RunConfig)
     if ufile is not None:
         FunpackFits(ufile, dfile, logsetup, RunConfig)
 
 
-#runbalrog.DownloadImages(derived['indir'], derived['images'], derived['psfs'], config['run'], setup, skip=False)
 def ParallelDownload(derived, RunConfig, runlogdir):
     dlogdir = os.path.join(runlogdir, 'download')
     if os.path.exists(dlogdir):
@@ -171,7 +169,7 @@ def ParallelDownload(derived, RunConfig, runlogdir):
     args = []
     ufiles, pfiles, dfiles = GetImagePaths(derived, cnames=True)
     for i in range(len(ufiles)):
-        args.append( [derived['files'][i],dfiles[i],ufiles[i],RunConfig,dlogdir] )
+        args.append( [derived['images'][i],dfiles[i],ufiles[i],RunConfig,dlogdir] )
     for i in range(len(pfiles)):
         args.append( [derived['psfs'][i],pfiles[i],None,RunConfig,dlogdir] )
     
