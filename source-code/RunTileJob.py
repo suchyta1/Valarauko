@@ -464,9 +464,11 @@ def BlockIfNotExists(dir):
 def RemoveCheckFiles(config, runlog):
     if config['run']['isfirst']:
         RemoveIfNeeded(runlog, config['run']['touchfile'], config['run']['failfile'])
+        '''
         if not os.path.exists(config['run']['outdir']):
             os.makedirs(config['run']['outdir'])
-    BlockIfNotExists(config['run']['outdir'])
+        '''
+    #BlockIfNotExists(config['run']['outdir'])
     BlockIfExists(config['run']['touchfile'], config['run']['failfile'])
     RemoveIfNeeded(runlog, config['run']['dupokfile'], config['run']['dupfailfile'], config['run']['exitfile'], config['run']['anyfail'])
     sub = GetAllSubFiles(config['run'])
