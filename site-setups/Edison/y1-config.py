@@ -27,7 +27,7 @@ def CustomConfig(run, balrog, db, tiles):
     run, balrog, tiles = Y1A1Setup(run, balrog, tiles)
 
     tstart = 0
-    tend = 1
+    tend = 2
     tiles = tiles[tstart:tend]
 
     run['nodes'] = 2
