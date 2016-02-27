@@ -464,7 +464,7 @@ def BlockIfNotExists(dir):
 def RemoveCheckFiles(config, runlog):
     if config['run']['isfirst']:
         RemoveIfNeeded(runlog, config['run']['touchfile'], config['run']['failfile'])
-        if not os.path.exist(config['run']['outdir']):
+        if not os.path.exists(config['run']['outdir']):
             os.makedirs(config['run']['outdir'])
     BlockIfNotExists(config['run']['outdir'])
     BlockIfExists(config['run']['touchfile'], config['run']['failfile'])
