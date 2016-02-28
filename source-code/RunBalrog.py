@@ -856,7 +856,7 @@ def GetBalroggedDetImage(DerivedConfig):
     return file
 
 
-def SwarpConfig(imgs, RunConfig, DerivedConfig, BalrogConfig, iext=0, wext=1):
+def SwarpConfig(imgs, wts, RunConfig, DerivedConfig, BalrogConfig, iext=0, wext=1):
     config = {'RESAMPLE': 'N',
               'COMBINE': 'Y',
               'COMBINE_TYPE': 'CHI-MEAN',
@@ -867,7 +867,12 @@ def SwarpConfig(imgs, RunConfig, DerivedConfig, BalrogConfig, iext=0, wext=1):
               'PIXEL_SCALE': str(0.270),
               'CENTER_TYPE': 'MANUAL',
               'HEADER_ONLY': 'N',
-              'WRITE_XML': 'N'}
+              'WRITE_XML': 'N',
+              #
+              'VMEM_DIR': os.path.dirname(imgs[0]),
+              'MEM_MAX': '1024',
+              'COMBINE_BUFSIZE': '1024'}
+
 
     header = pyfits.open(imgs[0])[iext].header
     xsize = header['NAXIS1']
@@ -881,7 +886,7 @@ def SwarpConfig(imgs, RunConfig, DerivedConfig, BalrogConfig, iext=0, wext=1):
     ws = []
     for i in range(len(imgs)):
         ims.append( '%s[%i]' %(imgs[i],iext) )
-        ws.append( '%s[%i]' %(imgs[i],wext) )
+        ws.append( '%s[%i]' %(wts[i],wext) )
     ims = ','.join(ims)
     ws = ','.join(ws)
 
@@ -904,40 +909,49 @@ def RunNormal2(RunConfig, BalrogConfig, DerivedConfig):
     
     coordfile = WriteCoords(DerivedConfig['pos'], DerivedConfig['outdir'])
     BalrogConfig['poscat'] = coordfile
+
+
+    ############# First do the nosim runs ###############################
+    BConfig = copy.copy(BalrogConfig)
+    BConfig['imageonly'] = False
+    BConfig['nodraw'] = True
+    BConfig['nonosim'] = True
+
     if RunConfig['dualdetection']!=None:
-
-        BConfig = copy.copy(BalrogConfig)
-        BConfig['imageonly'] = False
-        BConfig['nodraw'] = True
-        BConfig['nonosim'] = True
-
         detpsf = DerivedConfig['psfs'][0]
         BConfig['detpsf'] = detpsf
         BConfig['detimage'] = DerivedConfig['images'][0]
-        #BConfig['image'] = DerivedConfig['images'][0]
+        # With --nodraw and no subsampling, --noweightread is irrelevant, b/c the weight map automatically doesn't get read
+
+    for k in range(len(DerivedConfig['imbands'])):
+        band = DerivedConfig['imbands'][k]
+        BConfig['psf'] = DerivedConfig['psfs'][k]
+        BConfig['image'] = DerivedConfig['images'][k]
+        BConfig['band'] = band
+        BConfig['outdir'] = os.path.join(DerivedConfig['outdir'], band)
+        BConfig['zeropoint'] = GetZeropoint(RunConfig, DerivedConfig, BConfig)
+        cmd = Dict2Cmd(BConfig, RunConfig['balrog'])
+        BalrogSystemCall(cmd, DerivedConfig, func=RunConfig['balrog_as_function'])
+
+    cats, labels, valids = GetRelevantCats2(BConfig, RunConfig, DerivedConfig, allfix=None, missingfix='i', appendsim=False, sim2nosim=True, create=False)
+    NewWrite2DB2(cats, labels, valids, RunConfig, BConfig, DerivedConfig)
+    ########## end nosim runs #########################################
 
 
-        #for k in range(len(DerivedConfig['images'])):
-        for k in range(len(DerivedConfig['imbands'])):
-            band = DerivedConfig['imbands'][k]
-            BConfig['psf'] = DerivedConfig['psfs'][k]
-            BConfig['image'] = DerivedConfig['images'][k]
-            BConfig['band'] = band
-            BConfig['outdir'] = os.path.join(DerivedConfig['outdir'], band)
-            BConfig['zeropoint'] = GetZeropoint(RunConfig, DerivedConfig, BConfig)
-            cmd = Dict2Cmd(BConfig, RunConfig['balrog'])
-            BalrogSystemCall(cmd, DerivedConfig, func=RunConfig['balrog_as_function'])
-
-        cats, labels, valids = GetRelevantCats2(BConfig, RunConfig, DerivedConfig, allfix=None, missingfix='i', appendsim=False, sim2nosim=True, create=False)
-        NewWrite2DB2(cats, labels, valids, RunConfig, BConfig, DerivedConfig)
-
-        detpsf = DerivedConfig['psfs'][0]
+    ##### Build the detection coadd ###############################
+    if RunConfig['dualdetection']!=None:
         BConfig = copy.copy(BalrogConfig)
+        # Don't need these in --imageonly mode
+        #BConfig['detpsf'] = detpsf
+        #BConfig['detimage'] = DerivedConfig['images'][0]
         BConfig['imageonly'] = True
+        BConfig['noweightread'] = True
         detbands = DetBands(RunConfig)
         dbands = detbands.split(',')
         cimages = {}
+        cweights = {}
         cimgs = []
+        cwts = []
         for i, band in zip(RunConfig['dualdetection'], dbands):
             img = DerivedConfig['images'][i+1]
             BConfig['image'] = img
@@ -948,42 +962,32 @@ def RunNormal2(RunConfig, BalrogConfig, DerivedConfig):
             outimage = os.path.basename(img).replace('.fits', '.sim.fits')
             outfile = os.path.join(BConfig['outdir'], 'balrog_image', outimage)
             cimages[band] = outfile
+            cweights[band] = img
             cimgs.append(outfile)
+            cwts.append(img)
             cmd = Dict2Cmd(BConfig, RunConfig['balrog'])
             BalrogSystemCall(cmd, DerivedConfig, func=RunConfig['balrog_as_function'])
-
-            #cats, labels, valid = GetRelevantCats2(BConfig, RunConfig, DerivedConfig)
-            #NewWrite2DB2(cats, labels, valids, RunConfig, BConfig, DerivedConfig)
-
-        #cats, labels, valids = GetRelevantCats2(BConfig, RunConfig, DerivedConfig)
-        #NewWrite2DB2(cats, labels, valids, RunConfig, BConfig, DerivedConfig)
-
-        cmd, detimage, detwimage = SwarpConfig(cimgs, RunConfig, DerivedConfig, BConfig)
+        cmd, detimage, detwimage = SwarpConfig(cimgs, cwts, RunConfig, DerivedConfig, BConfig)
         balrog.SystemCall(cmd, setup=DerivedConfig['setup'])
+    ##### end build the detection coadd ###############################
 
 
-
+    ######### Do the sim runs #####################################
     for i in range(len(DerivedConfig['bands'])):
-        appendsim = False
         BConfig = copy.copy(BalrogConfig)
         BConfig['psf'] = DerivedConfig['psfs'][i]
         BConfig['band'] = DerivedConfig['bands'][i]
         BConfig['outdir'] = os.path.join(DerivedConfig['outdir'], BConfig['band'])
         BConfig['image'] = DerivedConfig['images'][i]
-
         BConfig['zeropoint'] = GetZeropoint(RunConfig, DerivedConfig, BConfig)
-
-        #BConfig['nonosim'] = False
         BConfig['nonosim'] = True
+        BConfig['noweightread'] = True
 
         if RunConfig['dualdetection']!=None:
-            appendsim = True
             BConfig['detimage'] = detimage
             BConfig['detweight'] = detwimage
             BConfig['detpsf'] = detpsf
 
-            #BConfig['nonosim'] = True
-            
             band = BConfig['band']
             if band=='det':
                 BConfig['nodraw'] = True
@@ -993,8 +997,8 @@ def RunNormal2(RunConfig, BalrogConfig, DerivedConfig):
             elif BConfig['band'] in detbands.split(','):
                 BConfig['nodraw'] = True
                 BConfig['image'] = cimages[band]
-                appendsim = True
-
+                BConfig['weight'] = cweights[band]
+                BConfig['weightext'] = 1
 
         cmd = Dict2Cmd(BConfig, RunConfig['balrog'])
         BalrogSystemCall(cmd, DerivedConfig, func=RunConfig['balrog_as_function'])
@@ -1002,10 +1006,14 @@ def RunNormal2(RunConfig, BalrogConfig, DerivedConfig):
     BConfig['nodraw'] = False
     cats, labels, valids = GetRelevantCats2(BConfig, RunConfig, DerivedConfig, appendsim=True)
     NewWrite2DB2(cats, labels, valids, RunConfig, BConfig, DerivedConfig)
+    ######### end sim runs #####################################
 
 
 
 def SetupLog(logfile, host, id, stream=False):
+    rootlog = logging.getLogger()
+    rootlog.setLevel(logging.NOTSET)
+
     log = logging.getLogger('id-%s'%(id))
     log.setLevel(logging.DEBUG)
 

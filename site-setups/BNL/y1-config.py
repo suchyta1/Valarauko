@@ -30,21 +30,17 @@ def CustomConfig(run, balrog, db, tiles):
     run, balrog, tiles = Y1A1Setup(run, balrog, tiles)
     run['email'] = 'eric.d.suchyta@gmail.com'
 
-    tstart = 1
-    tend = 3
+    tstart = 100
+    tend = 101
     tiles = tiles[tstart:tend]
     run['npersubjob'] = 1
-    run['nodes'] = 2
+    run['nodes'] = 1
     run['ppn'] = 8
 
     run['dbname'] = 'y1a1_btest'
     run['joblabel'] = '%i-%i' %(tstart, tend)
     run['outdir'] = os.path.join(os.environ['SCRATCH'],'BalrogScratch')
     run['jobdir'] = os.path.join(os.environ['GLOBALDIR'],'BalrogJobs')
-
-    run['intermediate-clean'] = False # Delete an iteration's output Balrog images
-    run['tile-clean'] = False  # Delete the entire outdir/run's contents
-    run['fixwrapseed'] = 100
 
     balrog['ngal'] = 10
     run['downsample'] = balrog['ngal']*run['ppn']
