@@ -201,7 +201,7 @@ def SLURMadd(str, val, start='#SBATCH'):
 
 
 def WriteJson(config,dirname, tiles,start,end):
-    jsonfile = os.path.join(dirname, '%s.json'%(runtile.Files.json))
+    jsonfile = os.path.join(dirname, '%s'%(runtile.Files.json))
     config['tiles'] = list(tiles[start:end])
     with open(jsonfile, 'w') as outfile:
         json.dump(config, outfile)
@@ -283,10 +283,9 @@ def GetDepJobDir(run, k=0):
 def GetMainWork(run, tiles, config, jobdir, shifter, space='', q='wq', scmds=''):
     start = 0
     for i in range(run['nodes']):
-        jsonfile, start = SubConfig(start,i, tiles, run,config, jodir, shifter=shifter)
-        jsonarr.append('"%s"'%(jsonfile))
-        rmarr.append('"%s"'%(run['startupfile']))
-        exits.append('"%s"'%(run['exitfile']))
+        jsonfile, start = SubConfig(start,i, tiles, run,config, jobdir, shifter=shifter)
+        jdir = os.path.basename( os.path.dirname(jsonfile) )
+
 
     thisdir = os.path.dirname(os.path.realpath(__file__))
     if shifter is not None:
@@ -307,44 +306,44 @@ def GetMainWork(run, tiles, config, jobdir, shifter, space='', q='wq', scmds='')
         startupfile = os.path.join(subdir, runtile.Files.startupfile)
         exitfile = os.path.join(subdir, runtile.Files.exitfile)
         cmd = space + """if [ -f %s ]; then rm %s; fi\n"""%(startupfile)
-        cmd = cmd + space + 'j=%s\n'%(os.path.join(subdir,'config.json'))
+        cmd = cmd + space + 'j=%s\n'%(os.path.join(subdir,runtile.Files.json))
         if run['shifter'] is not None:
             cmd = cmd + space + 'srun -N 1 -n 1 %s%s /bin/bash -c "source /home/user/.bashrc; %s ${j}"\n' %(corestr, scmds, allmpi)
         else:
             cmd = cmd + space + 'srun -N 1 -n 1 %s %s ${j}\n"' %(corestr, allmpi)
         cmd = cmd + space + """fails=0; files=""; read -r result < %s; if [ "$result" = "1" ]; then let "fails+=1"; files=%s; fi\n"""%(exitfile, exitfile)
-        cmd = cmd + space + """if [ $fails = "0" ]; then echo "job succeeded"; code=0; else echo "job failed -- $fails failures -- bad exit files: $files"; code=1; fi\n"""%
-
+        cmd = cmd + space + """if [ $fails = "0" ]; then echo "job succeeded"; code=0; else echo "job failed -- $fails failures -- bad exit files: $files"; code=1; fi\n"""
     
     else:
-        cmd = space + """index=(%s)\n"""%( ' '.join(np.arange(run['nodes'])) )
+        cmd = space + """dirindex=($(seq 1 %i))\n"""%(run['nodes'])
         if q=='wq':
-            cmd = space + """nodes=(); while read -r line; do found=false; host=$line; for h in "${nodes[@]}"; do if [ "$h" = "$host" ]; then found=true; fi; done; if [ "$found" = "false" ]; then nodes+=("$host"); fi; done < %hostfile%\n"""
+            cmd = cmd + space + """nodes=(); while read -r line; do found=false; host=$line; for h in "${nodes[@]}"; do if [ "$h" = "$host" ]; then found=true; fi; done; if [ "$found" = "false" ]; then nodes+=("$host"); fi; done < %hostfile%\n"""
 
-        cmd = cmd + space + """startupfiles=(%s)\n"""%(' '.join(rmarr))
-        cmd = cmd + space + """for i in ${index[@]}; do if [ -f ${startupfiles[$i]} ]; then rm ${startupfiles[$i]}; fi; done\n"""
-        cmd = cmd + space + """jsonfiles=(%s)\n"""%(' '.join(jsonarr))
+        cmd = cmd + space + """jobdir=%s\n"""%(jobdir)
+
+        file = "$jobdir/%s_$i/%s" %(runtile.Files.substr,runtile.Files.startupfile)
+        cmd = cmd + space + """for i in ${dirindex[@]}; do if [ -f %s ]; then rm %s; fi; done\n"""%(file,file)
 
         if q=='wq':
-            cmd = cmd + space + """for i in ${index[@]}; do mpirun -np 1 -host ${nodes[$i]} %s%s ${jsonfiles[$i]} &; done\n"""%(scmds,allmpi)
-
+            file = "$jobdir/%s_${dirindex[$i]}/%s" %(runtile.Files.substr,runtile.Files.json)
+            cmd = cmd + space + """for ((i=0;i<%i;i++)); do mpirun -np 1 -host ${nodes[$i]} %s%s %s & done\n"""%(run['nodes'],scmds,allmpi,file)
         elif q=='slurm':
             run['email'] = None
-        
+            file = "$jobdir/%s_$i/%s" %(runtile.Files.substr,runtile.Files.json)
             if shifter is not None:
-                cmd = cmd + space + """for i in ${index[@]}; do srun -N 1 -n 1 %s%s /bin/bash -c "source /home/user/.bashrc; %s ${jsonfiles[$i]}" &; done\n""" %(corestr, scmds, allmpi)
+                cmd = cmd + space + """for i in ${dirindex[@]}; do srun -N 1 -n 1 %s%s /bin/bash -c "source /home/user/.bashrc; %s %s" &; done\n""" %(corestr, scmds, allmpi, file)
             else:
-                cmd = cmd + space + """for i in ${index[@]}; do srun -N 1 -n 1 %s%s ${jsonfiles[$i]} &; done\n""" %(corestr, allmpi)
+                cmd = cmd + space + """for i in ${dirindex[@]}; do srun -N 1 -n 1 %s%s %s &; done\n""" %(corestr, allmpi, file)
 
-        cmd = cmd + space + 'wait\n'
-        cmd = cmd + space + """exitfiles=(%s)\n"""%(' '.join(exits))
-        cmd = cmd + space + """fails=0; files=""; for i in ${index[@]}; do read -r result < ${exitfiles[$i]}; if [ "$result" = "1" ]; then let "fails+=1"; if [ $fails = "1" ]; then files="${exitfiles[$i]}"; else files="${files},${exitfiles[$i]}"; fi; fi; done;\n"""
-        cmd = cmd + space + """if [ $fails = "0" ]; then echo "job succeeded"; code=0; else echo "job failed -- $fails failures -- bad exit files: $files"; code=1; fi\n"""%
+        cmd = cmd + space + 'wait\n\n'
+        file = "$jobdir/%s_$i/%s" %(runtile.Files.substr,runtile.Files.exit)
+        cmd = cmd + space + """fails=0; files=""; for i in ${dirindex[@]}; do read -r result < %s; if [ "$result" = "1" ]; then let "fails+=1"; if [ $fails = "1" ]; then files="%s"; else files="${files},%s"; fi; fi; done;\n"""%(file,file,file)
+        cmd = cmd + space + """if [ $fails = "0" ]; then echo "job succeeded"; code=0; else echo "job failed -- $fails failures -- bad exit files: $files"; code=1; fi\n"""
 
         if run['email'] is not None:
             cmd = cmd + space + '%s %s %s $code\n'%(sendmail, run['email'], run['jobname'])
 
-    cmd = cmd + space + 'exit $code\n'
+    cmd = cmd + space + 'exit $code\n\n'
     return cmd
 
 
@@ -363,7 +362,7 @@ def Generate_Job(run,balrog,db,tiles,  where, setup, shifter):
         
         space = "   "
         descr = 'mode: bynode\n' + 'N: %i\n' %(run['nodes']) + 'hostfile: auto\n' + 'job_name: %s' %(run['jobname'])
-        cmd = GetMainWork(run, tiles, config, run['jobdir'], shifter, allmpi, space=space, q='wq'):
+        cmd = GetMainWork(run, tiles, config, run['jobdir'], shifter, space=space, q='wq')
         out = 'command: |\n' + space + '%s%s%s%s' %(s, d, cmd, descr)
         jobfile = os.path.join(run['jobdir'], '%s.wq' %(run['jobname']))
         WriteOut(jobfile, out)

@@ -421,16 +421,19 @@ class Files:
     dupfail = 'dupfail'
     exit = 'exit'
     anyfail = 'anyfail'
-    json = 'config'
+    json = 'config.json'
     runlog = 'runlog'
 
 
 def GetJsonDir(run, dirname, id):
+    '''
     if (run['nodes'] > 1) or (run['asarray']):
         jdir = os.path.join(dirname, '%s_%i'%(Files.substr,id))
     else:
         jdir = dirname
     return jdir
+    '''
+    return os.path.join(dirname, '%s_%i'%(Files.substr,id))
 
 
 
@@ -463,22 +466,19 @@ def BlockIfExists(*args):
             if not os.path.exists(arg):
                 break
 
-def BlockIfNotExists(dir):
-    while True:
-        if os.path.exists(dir):
-            break
+def BlockIfNotExists(*args):
+    for arg in args:
+        while True:
+            if os.path.exists(arg):
+                break
 
 def RemoveCheckFiles(config, runlog):
-    
-    open(RunConfig['startupfile'],'a').close()
     if config['run']['isfirst']:
         RemoveIfNeeded(runlog, config['run']['touchfile'], config['run']['failfile'])
-    BlockIfExists(config['run']['touchfile'], config['run']['failfile'])
-
     RemoveIfNeeded(runlog, config['run']['dupokfile'], config['run']['dupfailfile'], config['run']['exitfile'], config['run']['anyfail'])
-    sub = GetAllSubFiles(config['run'])
-    for s in sub:
-        BlockIfExists(*s) 
+    open(config['run']['startupfile'],'a').close()
+    startfiles = GetSubFiles(config['run'], Files.startupfile)
+    BlockIfNotExists(*startfiles)
 
 
 if __name__ == "__main__":

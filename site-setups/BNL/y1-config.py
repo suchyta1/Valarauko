@@ -31,19 +31,19 @@ def CustomConfig(run, balrog, db, tiles):
     run['email'] = 'eric.d.suchyta@gmail.com'
 
     tstart = 90
-    tend = 100
+    tend = 95
     tiles = tiles[tstart:tend]
     run['npersubjob'] = 1
-    run['nodes'] = 10
-    run['ppn'] = None
+    run['nodes'] = 5
+    run['ppn'] = 8
 
-    run['dbname'] = 'y1a1_newtest'
+    run['dbname'] = 'y1a1_btest'
     run['joblabel'] = '%i-%i' %(tstart, tend)
     run['outdir'] = os.path.join(os.environ['SCRATCH'],'BalrogScratch')
     run['jobdir'] = os.path.join(os.environ['GLOBALDIR'],'BalrogJobs')
 
-    balrog['ngal'] = 1000
-    #run['downsample'] = balrog['ngal']*run['ppn']
+    balrog['ngal'] = 10
+    run['downsample'] = balrog['ngal']*run['ppn']
     run['runnum'] = 0 
 
     run['paralleldownload'] = True
