@@ -323,7 +323,7 @@ def ShifterCmdline(img, jobdir, run, shifter):
         scmds = "%s --volume=%s:%s"%(vol[0],vol[1]) 
     return scmds
 
-def SlurmDirectives(run, allnodes, jobdir, shifter, scmds=None):
+def SlurmDirectives(run, allnodes, jobdir, shifter, scmds=''):
     ofile = os.path.join(jobdir, '%s-%%j.out'%(run['jobname']))
     descr = "#!/bin/bash -l \n"
     descr = SLURMadd(descr, '--job-name=%s'%(run['jobname']), start='#SBATCH')
@@ -364,7 +364,7 @@ def Generate_Job(run,balrog,db,tiles,  where, setup, shifter):
 
     s = Source(setup, where, run)
     d = BalrogDir(run)
-    scmds = None
+    scmds = ''
     start = 0
 
     config = {}

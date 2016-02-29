@@ -1,6 +1,9 @@
 import os
 import esutil
-from GenerateJob import TrustEric
+import imp 
+
+dir = os.path.dirname(os.path.dirname(os.path.dirname( os.path.realpath(__file__) )))
+BuildJob = imp.load_source('BuildJob', os.path.join(dir,'BuildJob.py'))
 
 
 def Y1A1Setup(run, balrog, tiles):
@@ -26,7 +29,7 @@ def Y1A1Setup(run, balrog, tiles):
 # change the defaults if you want
 def CustomConfig(run, balrog, db, tiles):
     run, balrog, tiles = Y1A1Setup(run, balrog, tiles)
-    run = TrustEric(run, where='edison')
+    run = BuildJob.TrustEric(run, where='edison')
 
     tstart = 103
     tend = 107
