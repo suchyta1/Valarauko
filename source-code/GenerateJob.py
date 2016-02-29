@@ -55,6 +55,7 @@ def GetConfig(where, config):
     run['asdependency'] = False
     run['email'] = None # Set this to your email if running at BNL to get an email at finish. At NERSC, I've set slurm to send start, 50%, and finish emails automatically
     run['shifter'] = None
+    run['stripe'] = None
 
     if where=='slurm':
         run['queue'] = 'regular' # Which queue to use if running at NERSC. 
@@ -395,7 +396,7 @@ def wqDirectives(run):
     descr += 'N: %i' %(run['nodes']) 
     descr += 'hostfile: auto' 
     descr += 'job_name: %s' %(run['jobname'])
-    return descr.cmd
+    return descr
 
 
 def Generate_Job(run,balrog,db,tiles,  where, setup, shifter):
