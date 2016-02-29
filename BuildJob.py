@@ -8,6 +8,20 @@ import os
 import subprocess
 
 
+def TrustEric(run, where='edison'):
+    if where.lower=='edison':
+        run['ppn'] = 48
+        run['cores'] = 48
+        run['paralleldownload'] = True
+        run['DBoverwrite'] =  False 
+        run['duplicate'] = 'error'
+        run['allfail'] = True
+        run['asdependency'] = True
+        run['email'] = None 
+        run['queue'] = 'regular' # Which queue to use if running at NERSC. 
+        run['stripe'] = 2
+
+
 def Printer():
     rootlog = logging.getLogger()
     rootlog.setLevel(logging.NOTSET)

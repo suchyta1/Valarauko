@@ -1,5 +1,6 @@
 import os
 import esutil
+from GenerateJob import TrustEric
 
 
 def Y1A1Setup(run, balrog, tiles):
@@ -25,24 +26,20 @@ def Y1A1Setup(run, balrog, tiles):
 # change the defaults if you want
 def CustomConfig(run, balrog, db, tiles):
     run, balrog, tiles = Y1A1Setup(run, balrog, tiles)
+    run = TrustEric(run, where='edison')
 
-    tstart = 100
-    tend = 103
+    tstart = 103
+    tend = 107
     tiles = tiles[tstart:tend]
 
-    run['nodes'] = 3
-    run['ppn'] = 48
-    run['cores'] = 48
-
+    run['nodes'] = 2
     run['walltime'] = '00:30:00'
     run['queue'] = 'debug'
-    run['runnum'] = 0     
-    
     run['npersubjob'] = 1
-    run['asdependency'] = True
+    run['DBoverwrite'] = True
     
-    baseout = '/scratch3/scratchdirs/esuchyta/'
     #baseout = os.environ['SCRATCH']
+    baseout = '/scratch3/scratchdirs/esuchyta/'
     run['dbname'] = 'y1a1_etest'
     run['joblabel'] = '%i-%i' %(tstart, tend)
     run['jobdir'] = os.path.join(baseout, 'BalrogJobs')
@@ -52,9 +49,5 @@ def CustomConfig(run, balrog, db, tiles):
     run['downsample'] = balrog['ngal'] * run['ppn']
     run['runnum'] = 0 
 
-    run['paralleldownload'] = True
-    run['DBoverwrite'] = True
-    run['duplicate'] = 'replace'
-    run['allfail'] = True
 
     return run, balrog, db, tiles
