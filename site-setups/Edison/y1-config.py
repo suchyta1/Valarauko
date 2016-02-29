@@ -26,30 +26,28 @@ def Y1A1Setup(run, balrog, tiles):
     return run, balrog, tiles
 
 
-# change the defaults if you want
 def CustomConfig(run, balrog, db, tiles):
     run, balrog, tiles = Y1A1Setup(run, balrog, tiles)
     run = BuildJob.TrustEric(run, where='edison')
 
-    tstart = 103
-    tend = 107
+    tstart = 100
+    tend = 120
     tiles = tiles[tstart:tend]
 
-    run['nodes'] = 2
-    run['walltime'] = '00:30:00'
-    run['queue'] = 'debug'
+    run['nodes'] = 10
+    run['walltime'] = '04:00:00'
+    run['queue'] = 'regular'
     run['npersubjob'] = 1
-    run['DBoverwrite'] = True
     
     #baseout = os.environ['SCRATCH']
     baseout = '/scratch3/scratchdirs/esuchyta/'
-    run['dbname'] = 'y1a1_etest'
+    run['dbname'] = 'y1a1_ctest'
     run['joblabel'] = '%i-%i' %(tstart, tend)
     run['jobdir'] = os.path.join(baseout, 'BalrogJobs')
     run['outdir'] = os.path.join(baseout, 'BalrogScratch')
 
-    balrog['ngal'] = 10
-    run['downsample'] = balrog['ngal'] * run['ppn']
+    balrog['ngal'] = 1000
+    #run['downsample'] = balrog['ngal'] * run['ppn']
     run['runnum'] = 0 
 
 

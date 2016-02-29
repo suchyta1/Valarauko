@@ -286,7 +286,7 @@ def GetMainWork(run, tiles, config, jobdir, shifter, space='', q='wq', scmds='',
     cmd = cmd + space + """jobdir=%s\n"""%(jobdir)
     jj = 'jobdir'
     if shifter is not None:
-        cmd = cmd + space + """sjobdir=%s\n"""%(shiter.jobroot)
+        cmd = cmd + space + """sjobdir=%s\n"""%(shifter.jobroot)
         jj = 'sjobdir'
 
     file = "$jobdir/%s_$i/%s" %(runtile.Files.substr,runtile.Files.startupfile)
@@ -320,7 +320,7 @@ def ShifterCmdline(img, jobdir, run, shifter):
     vols = [ [jobdir,shifter.jobroot], [run['outdir'],shifter.outroot], [netrc,shifter.homeroot], [run['slr'],shifter.slrroot], [run['pos'],shifter.posroot] ]
     scmds = 'shifter %s'%(img)
     for vol in vols:
-        scmds = "%s --volume=%s:%s"%(vol[0],vol[1]) 
+        scmds = "%s --volume=%s:%s"%(scmds, vol[0],vol[1]) 
     return scmds
 
 def SlurmDirectives(run, allnodes, jobdir, shifter, scmds=''):

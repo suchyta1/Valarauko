@@ -1,9 +1,13 @@
 import os
 import esutil
+import imp
+
+dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname( os.path.realpath(__file__) ))))
+BuildJob = imp.load_source('BuildJob', os.path.join(dir,'BuildJob.py'))
 
 
-# change the defaults if you want
 def CustomConfig(run, balrog, db, tiles):
+    run = BuildJob.TrustEric(run, where='edison')
     run['shifter'] = 'esuchyta/balrog-docker:v1'
 
     dir = '/scratch1/scratchdirs/esuchyta/software/balrog_config/y1a1/'
@@ -14,32 +18,22 @@ def CustomConfig(run, balrog, db, tiles):
     tstart = 0
     tend = 2
     tiles = tiles[tstart:tend]
-
     run['nodes'] = 2
-    run['ppn'] = 24
-    run['cores'] = 48
 
     run['walltime'] = '00:30:00'
     run['queue'] = 'debug'
     run['runnum'] = 0     
-    
     run['npersubjob'] = 1
-    run['asdependency'] = True
     
-    baseout = '/scratch3/scratchdirs/esuchyta/'
     #baseout = os.environ['SCRATCH']
-    run['dbname'] = 'y1a1_etest3'
+    baseout = '/scratch3/scratchdirs/esuchyta/'
+    run['dbname'] = 'y1a1_stest'
     run['joblabel'] = '%i-%i' %(tstart, tend)
     run['jobdir'] = os.path.join(baseout, 'BalrogJobs')
     run['outdir'] = os.path.join(baseout, 'BalrogScratch')
 
-
     balrog['ngal'] = 10
     run['downsample'] = balrog['ngal']*run['ppn']
-    run['runnum'] = 0 
-
-    run['DBoverwrite'] = False
-    run['duplicate'] = 'replace'
-    run['allfail'] = True
+    run['DBoverwrite'] = True
 
     return run, balrog, db, tiles
