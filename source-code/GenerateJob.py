@@ -320,20 +320,24 @@ def GetMainWork(run, tiles, config, jobdir, shifter, space='', q='wq', scmds='')
             cmd = cmd + space + """nodes=(); while read -r line; do found=false; host=$line; for h in "${nodes[@]}"; do if [ "$h" = "$host" ]; then found=true; fi; done; if [ "$found" = "false" ]; then nodes+=("$host"); fi; done < %hostfile%\n"""
 
         cmd = cmd + space + """jobdir=%s\n"""%(jobdir)
+        jj = 'jobdir'
+        if shifter is not None:
+            cmd = cmd + space + """sjobdir=%s\n"""%(shiter.jobroot)
+            jj = 'sjobdir'
 
         file = "$jobdir/%s_$i/%s" %(runtile.Files.substr,runtile.Files.startupfile)
         cmd = cmd + space + """for i in ${dirindex[@]}; do if [ -f %s ]; then rm %s; fi; done\n"""%(file,file)
-
+        
         if q=='wq':
-            file = "$jobdir/%s_${dirindex[$i]}/%s" %(runtile.Files.substr,runtile.Files.json)
+            file = "$%s/%s_${dirindex[$i]}/%s" %(jj,runtile.Files.substr,runtile.Files.json)
             cmd = cmd + space + """for ((i=0;i<%i;i++)); do mpirun -np 1 -host ${nodes[$i]} %s%s %s & done\n"""%(run['nodes'],scmds,allmpi,file)
         elif q=='slurm':
             run['email'] = None
-            file = "$jobdir/%s_$i/%s" %(runtile.Files.substr,runtile.Files.json)
+            file = "$%s/%s_$i/%s" %(jj,runtile.Files.substr,runtile.Files.json)
             if shifter is not None:
-                cmd = cmd + space + """for i in ${dirindex[@]}; do srun -N 1 -n 1 %s%s /bin/bash -c "source /home/user/.bashrc; %s %s" &; done\n""" %(corestr, scmds, allmpi, file)
+                cmd = cmd + space + """for i in ${dirindex[@]}; do srun -N 1 -n 1 %s%s /bin/bash -c "source /home/user/.bashrc; %s %s" & done\n""" %(corestr, scmds, allmpi, file)
             else:
-                cmd = cmd + space + """for i in ${dirindex[@]}; do srun -N 1 -n 1 %s%s %s &; done\n""" %(corestr, allmpi, file)
+                cmd = cmd + space + """for i in ${dirindex[@]}; do srun -N 1 -n 1 %s%s %s & done\n""" %(corestr, allmpi, file)
 
         cmd = cmd + space + 'wait\n\n'
         file = "$jobdir/%s_$i/%s" %(runtile.Files.substr,runtile.Files.exit)
