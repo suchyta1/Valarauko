@@ -30,8 +30,8 @@ def CustomConfig(run, balrog, db, tiles):
     run, balrog, tiles = Y1A1Setup(run, balrog, tiles)
     run = BuildJob.TrustEric(run, where='edison')
 
-    tstart = 100
-    tend = 104
+    tstart = 104
+    tend = 108
     tiles = tiles[tstart:tend]
 
     run['nodes'] = 2
