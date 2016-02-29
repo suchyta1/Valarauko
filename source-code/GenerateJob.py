@@ -150,40 +150,6 @@ def GetConfig(where, config):
     return run, balrog, db, tiles, shifter
 
 
-def EndBNL(s):
-    return '%s\n   '%(s)
-
-def EndNERSC(s):
-    return '%s\n'%(s)
-
-def GetEnd(s, end):
-    if end=='wq':
-        s = EndBNL(s)
-    elif end=='slurm':
-        s = EndNERSC(s)
-    return s
-
-
-def BalrogDir(run):
-    d = ''
-    if run['shifter'] is None:
-        dir = os.path.dirname( os.path.realpath(run['balrog']) )
-        d = "export PYTHONPATH=%s:${PYTHONPATH}"%(dir)
-        d = GetEnd(d, 'slurm')
-    return d
-
-def Source(setup, end, run):
-    s = ''
-    if (setup is not None) and (run['shifter'] is None):
-        s = 'source %s' %(setup)
-        s = GetEnd(s, end)
-    return s
-
-
-def SLURMadd(str, val, start='#SBATCH'):
-    str = str + '\n%s %s' %(start, val)
-    return str
-
 
 def WriteJson(config,dirname, tiles,start,end):
     jsonfile = os.path.join(dirname, '%s'%(runtile.Files.json))
@@ -245,13 +211,6 @@ def SubConfig(start,i, tiles, run,config, jobdir, shifter=None):
 def WriteOut(jobfile, out):
     with open(jobfile, 'w') as job:
         job.write(out)
-
-
-def CheckFails(exitfiles, space=''):
-    files = ' '.join(exitfiles)
-    check = """%sfails=0; files=""; for f in %s; do read -r result < $f; if [ "$result" = "1" ]; then let "fails+=1"; if [ $fails = "1" ]; then files="$f"; else files="${files},${f}"; fi; fi; done;\n"""%(space,files)
-    exit = """%sif [ $fails = "0" ]; then echo "job succeeded"; code=0; else echo "job failed -- $fails failures -- bad exit files: $files"; code=1; fi\n"""%(space)
-    return check, exit
 
 
 def GetDepJobDir(run, jobname, k=0):
