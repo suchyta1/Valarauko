@@ -368,23 +368,39 @@ def SlurmDirectives(run, allnodes, jobdir, shifter, scmds=''):
         scmds = ShifterCmdline(img, jobdir, run, shifter)
     return descr, scmds
 
+
+class DepWrite(object):
+    def __init__(self, t, out):
+        self.t = t
+        self.out = out
+
+    def write(self, cmd, level=0):
+        t = ''
+        for i in range(level):
+            t = t + self.t
+        self.out.write(t + cmd + '\n')
+
+
 def WriteDepsJob(run, jobname,  t='    '):
     submit = os.path.join(run['jobdir'], 'submit.sh')
     with open(submit, 'w') as out:
+        writer = DepWrite(t, out)
         name = '%s_%s_$i'%(jobname,runtile.Files.depstr)
         file = os.path.join('$jobdir', '%s_$i'%(runtile.Files.depstr), '%s.sl'%(name))
-        out.write('jobdir=%s\n'%(run['jobdir']))
-        out.write('arr=($(seq 1 %s))\n'%(run['ndependencies']))
-        out.write('for i in "${arr[@]}"; do\n')
-        out.write('%sif [ "$i" = "1" ]; then\n'%(t))
-        out.write('%s%scmd="sbatch %s"\n'%(t,t,file))
-        out.write('%selse\n'%(t))
-        out.write('%s%scmd="sbatch --dependency=afterok:$dep %s"\n'%(t,t,file))
-        out.write('%sfi\n'%(t))
-        out.write('%sout="$($cmd)"\n'%(t))
-        out.write('%soutarr=($out)\n'%(t))
-        out.write('%sdep=${outarr[${#outarr[@]}-1]}\n'%(t))
-        out.write('done')
+
+        writer.write('jobdir=%s'%(run['jobdir']), level=0)
+        writer.write('arr=($(seq 1 %s))'%(run['ndependencies']), level=0)
+        writer.write('for i in "${arr[@]}"; do', level=0)
+        writer.write('if [ "$i" = "1" ]; then', level=1)
+        writer.write('cmd="sbatch %s"'%(file), level=2)
+        writer.write('else', level=1)
+        writer.write('cmd="sbatch --dependency=afterok:$dep %s"'%(file), level=2)
+        writer.write('fi', level=1)
+        writer.write('out="$($cmd)"', level=1)
+        writer.write('outarr=($out)', level=1)
+        writer.write('dep=${outarr[${#outarr[@]}-1]}', level=1)
+        writer.write('done', level=0)
+
     os.chmod(submit, 0755)
     jobfile = submit
     return jobfile
