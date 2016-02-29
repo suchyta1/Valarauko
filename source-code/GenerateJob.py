@@ -264,7 +264,34 @@ def GetDepJobDir(run, jobname, k=0):
     return jobdir
 
 
-def GetMainWork(run, tiles, config, jobdir, shifter, space='', q='wq', scmds='', start=0):
+class CmdFormat(object):
+    def __init__(self, indent='', cmd=''):
+        self.indent = indent
+        self.cmd = cmd
+
+    def __iadd__(self, other):
+        self.cmd = self.cmd + self.indent + other + '\n'
+        return self
+
+    def __add__(self, other):
+        self.cmd = self.cmd + '\n' + other.cmd
+        return self.cmd
+
+
+def GetMainWork(setup, run, tiles, config, jobdir, shifter, space='', q='wq', scmds='', start=0):
+    cmd = CmdFormat(indent=space)
+
+    if (setup is not None) and (run['shifter'] is None):
+        cmd += 'source %s' %(setup)
+    if run['shifter'] is None:
+        dir = os.path.dirname( os.path.realpath(run['balrog']) )
+        cmd += "export PYTHONPATH=%s:${PYTHONPATH}"%(dir)
+    if run['shifter'] is not None:
+        cmd += 'module load shifter'
+    if run['stripe'] is not None:
+        cmd += 'if ! [ -d %s ]; then mkdir %s; fi;' %(run['outdir'],run['outdir'])
+        cmd += 'lfs setstripe %s --count %i' %(run['outdir'],run['stripe'])
+
     for i in range(run['nodes']):
         jsonfile, start = SubConfig(start,i, tiles, run,config, jobdir, shifter=shifter)
         jdir = os.path.basename( os.path.dirname(jsonfile) )
@@ -278,40 +305,42 @@ def GetMainWork(run, tiles, config, jobdir, shifter, space='', q='wq', scmds='',
     corestr = ''
     if run['cores'] is not None:
         corestr = '-c %i '%(run['cores'])
- 
-    cmd = space + """dirindex=($(seq 1 %i))\n"""%(run['nodes'])
-    if q=='wq':
-        cmd = cmd + space + """nodes=(); while read -r line; do found=false; host=$line; for h in "${nodes[@]}"; do if [ "$h" = "$host" ]; then found=true; fi; done; if [ "$found" = "false" ]; then nodes+=("$host"); fi; done < %hostfile%\n"""
 
-    cmd = cmd + space + """jobdir=%s\n"""%(jobdir)
+    if cmd.cmd.strip()!='':
+        cmd += ''
+    cmd += """dirindex=($(seq 1 %i))"""%(run['nodes'])
+    if q=='wq':
+        cmd += """nodes=(); while read -r line; do found=false; host=$line; for h in "${nodes[@]}"; do if [ "$h" = "$host" ]; then found=true; fi; done; if [ "$found" = "false" ]; then nodes+=("$host"); fi; done < %hostfile%"""
+
+    cmd += """jobdir=%s"""%(jobdir)
     jj = 'jobdir'
     if shifter is not None:
-        cmd = cmd + space + """sjobdir=%s\n"""%(shifter.jobroot)
+        cmd += """sjobdir=%s"""%(shifter.jobroot)
         jj = 'sjobdir'
 
     file = "$jobdir/%s_$i/%s" %(runtile.Files.substr,runtile.Files.startupfile)
-    cmd = cmd + space + """for i in ${dirindex[@]}; do if [ -f %s ]; then rm %s; fi; done\n"""%(file,file)
+    cmd += """for i in ${dirindex[@]}; do if [ -f %s ]; then rm %s; fi; done"""%(file,file)
     
     if q=='wq':
         file = "$%s/%s_${dirindex[$i]}/%s" %(jj,runtile.Files.substr,runtile.Files.json)
-        cmd = cmd + space + """for ((i=0;i<%i;i++)); do mpirun -np 1 -host ${nodes[$i]} %s%s %s & done\n"""%(run['nodes'],scmds,allmpi,file)
+        cmd += """for ((i=0;i<%i;i++)); do mpirun -np 1 -host ${nodes[$i]} %s%s %s & done"""%(run['nodes'],scmds,allmpi,file)
     elif q=='slurm':
         run['email'] = None
         file = "$%s/%s_$i/%s" %(jj,runtile.Files.substr,runtile.Files.json)
         if shifter is not None:
-            cmd = cmd + space + """for i in ${dirindex[@]}; do srun -N 1 -n 1 %s%s /bin/bash -c "source /home/user/.bashrc; %s %s" & done\n""" %(corestr, scmds, allmpi, file)
+            cmd += """for i in ${dirindex[@]}; do srun -N 1 -n 1 %s%s /bin/bash -c "source /home/user/.bashrc; %s %s" & done""" %(corestr, scmds, allmpi, file)
         else:
-            cmd = cmd + space + """for i in ${dirindex[@]}; do srun -N 1 -n 1 %s%s %s & done\n""" %(corestr, allmpi, file)
+            cmd += """for i in ${dirindex[@]}; do srun -N 1 -n 1 %s%s %s & done""" %(corestr, allmpi, file)
 
-    cmd = cmd + space + 'wait\n\n'
+    cmd += 'wait\n'
     file = "$jobdir/%s_$i/%s" %(runtile.Files.substr,runtile.Files.exit)
-    cmd = cmd + space + """fails=0; files=""; for i in ${dirindex[@]}; do read -r result < %s; if [ "$result" = "1" ]; then let "fails+=1"; if [ $fails = "1" ]; then files="%s"; else files="${files},%s"; fi; fi; done;\n"""%(file,file,file)
-    cmd = cmd + space + """if [ $fails = "0" ]; then echo "job succeeded"; code=0; else echo "job failed -- $fails failures -- bad exit files: $files"; code=1; fi\n"""
+    cmd += """fails=0; files=""; for i in ${dirindex[@]}; do read -r result < %s; if [ "$result" = "1" ]; then let "fails+=1"; if [ $fails = "1" ]; then files="%s"; else files="${files},%s"; fi; fi; done;"""%(file,file,file)
+    cmd += """if [ $fails = "0" ]; then echo "job succeeded"; code=0; else echo "job failed -- $fails failures -- bad exit files: $files"; code=1; fi"""
 
     if run['email'] is not None:
-        cmd = cmd + space + '%s %s %s $code\n'%(sendmail, run['email'], run['jobname'])
+        cmd += '%s %s %s $code'%(sendmail, run['email'], run['jobname'])
 
-    cmd = cmd + space + 'exit $code\n\n'
+    cmd += 'exit $code'
     return cmd, start
 
 
@@ -325,16 +354,16 @@ def ShifterCmdline(img, jobdir, run, shifter):
 
 def SlurmDirectives(run, allnodes, jobdir, shifter, scmds=''):
     ofile = os.path.join(jobdir, '%s-%%j.out'%(run['jobname']))
-    descr = "#!/bin/bash -l \n"
-    descr = SLURMadd(descr, '--job-name=%s'%(run['jobname']), start='#SBATCH')
-    descr = SLURMadd(descr, '--mail-type=BEGIN,END,TIME_LIMIT_50', start='#SBATCH')
-    descr = SLURMadd(descr, '--partition=%s'%(run['queue']), start='#SBATCH')
-    descr = SLURMadd(descr, '--time=%s'%(run['walltime']), start='#SBATCH')
-    descr = SLURMadd(descr, '--nodes=%i'%(allnodes), start='#SBATCH')
-    descr = SLURMadd(descr, '--output=%s'%(ofile), start='#SBATCH')
+    descr = CmdFormat(indent='#SBATCH ', cmd="#!/bin/bash -l \n\n")
+    descr += '--job-name=%s'%(run['jobname'])
+    descr += '--mail-type=BEGIN,END,TIME_LIMIT_50'
+    descr += '--partition=%s'%(run['queue'])
+    descr += '--time=%s'%(run['walltime'])
+    descr += '--nodes=%i'%(allnodes)
+    descr += '--output=%s'%(ofile)
     if run['shifter'] is not None:
         img = '--image=docker:%s'%(run['shifter'])
-        descr = SLURMadd(descr, img, start='#SBATCH')
+        descr += img
         scmds = ShifterCmdline(img, jobdir, run, shifter)
     return descr, scmds
 
@@ -360,10 +389,16 @@ def WriteDepsJob(run, jobname,  t='    '):
     return jobfile
 
 
-def Generate_Job(run,balrog,db,tiles,  where, setup, shifter):
+def wqDirectives(run):
+    descr = CmdFormat(indent='')
+    descr += 'mode: bynode' 
+    descr += 'N: %i' %(run['nodes']) 
+    descr += 'hostfile: auto' 
+    descr += 'job_name: %s' %(run['jobname'])
+    return descr.cmd
 
-    s = Source(setup, where, run)
-    d = BalrogDir(run)
+
+def Generate_Job(run,balrog,db,tiles,  where, setup, shifter):
     scmds = ''
     start = 0
 
@@ -372,10 +407,11 @@ def Generate_Job(run,balrog,db,tiles,  where, setup, shifter):
     config['db'] = db
 
     if where=='wq':
+        descr = wqDirectives(run)
         space = "   "
-        descr = 'mode: bynode\n' + 'N: %i\n' %(run['nodes']) + 'hostfile: auto\n' + 'job_name: %s' %(run['jobname'])
-        cmd, start = GetMainWork(run, tiles, config, run['jobdir'], shifter, space=space, q='wq', scmds=scmds, start=start)
-        out = 'command: |\n' + space + '%s%s%s%s' %(s, d, cmd, descr)
+        cmd, start = GetMainWork(setup, run, tiles, config, run['jobdir'], shifter, space=space, q=where, scmds=scmds, start=start)
+        out = cmd + descr
+        out = 'command: |\n' + out
         jobfile = os.path.join(run['jobdir'], '%s.wq' %(run['jobname']))
         WriteOut(jobfile, out)
 
@@ -385,15 +421,8 @@ def Generate_Job(run,balrog,db,tiles,  where, setup, shifter):
         for k in range(run['ndependencies']):
             jobdir = GetDepJobDir(run, jobname, k=k)
             descr, scmds = SlurmDirectives(run, allnodes, jobdir, shifter)
-            descr = descr + '\n\n'
-            descr =  descr + s + d
-            if run['shifter'] is not None:
-                descr = descr + 'module load shifter\n'
-            if run['stripe'] is not None:
-                descr = descr + 'if ! [ -d %s ]; then mkdir %s; fi;\n' %(run['outdir'],run['outdir'])
-                descr = descr + 'lfs setstripe %s --count %i\n' %(run['outdir'],run['stripe'])
-            cmd, start = GetMainWork(run, tiles, config, jobdir, shifter, q='slurm', scmds=scmds, start=start)
-            out = descr + '\n' + cmd
+            cmd, start = GetMainWork(setup, run, tiles, config, jobdir, shifter, q=where, scmds=scmds, start=start)
+            out = descr + cmd
             jobfile = os.path.join(jobdir, '%s.sl' %(run['jobname']))
             WriteOut(jobfile, out)
 
