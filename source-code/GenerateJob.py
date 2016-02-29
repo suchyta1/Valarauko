@@ -224,6 +224,7 @@ def SubConfig(start,i, tiles, run,config, jobdir, shifter=None):
 
     sdir = StartJsonDir(run, jobdir, id)
     run['exitfile'] = os.path.join(sdir, runtile.Files.exit)
+    run['startupfile'] = os.path.join(sdir, runtile.Files.startupfile)
     runcopy = copy.copy(run)
 
     if shifter is not None:
@@ -233,6 +234,7 @@ def SubConfig(start,i, tiles, run,config, jobdir, shifter=None):
         runcopy['pos'] = shifter.posroot
         runcopy['slr'] = shifter.slrroot
         runcopy['exitfile'] = os.path.join(subdir, runtile.Files.exit)
+        runcopy['startupfile'] = os.path.join(subdir, runtile.Files.startupfile)
     else:
         depdir = jobdir
         subdir = sdir
@@ -278,14 +280,75 @@ def GetDepJobDir(run, k=0):
     return jobdir
 
 
-def Generate_Job(run,balrog,db,tiles,  where, setup, shifter):
+def GetMainWork(run, tiles, config, jobdir, shifter, space='', q='wq', scmds=''):
+    start = 0
+    for i in range(run['nodes']):
+        jsonfile, start = SubConfig(start,i, tiles, run,config, jodir, shifter=shifter)
+        jsonarr.append('"%s"'%(jsonfile))
+        rmarr.append('"%s"'%(run['startupfile']))
+        exits.append('"%s"'%(run['exitfile']))
 
-    if run['shifter'] is None:
-        thisdir = os.path.dirname(os.path.realpath(__file__))
-    else:
+    thisdir = os.path.dirname(os.path.realpath(__file__))
+    if shifter is not None:
         thisdir = shifter.thisdir
     allmpi = os.path.join(thisdir, 'RunTileJob.py')
     sendmail = os.path.join(thisdir, 'SendEmail.py')
+
+    corestr = ''
+    if run['cores'] is not None:
+        corestr = '-c %i '%(run['cores'])
+ 
+
+    if run['asarray']:
+        if run['shifter'] is None:
+            subdir = os.path.join(jobdir, '%s_${SLURM_ARRAY_TASK_ID}'%(runtile.Files.substr))
+        else:
+            subdir = os.path.join(shifter.jobroot, '%s_${SLURM_ARRAY_TASK_ID}'%(runtile.Files.substr))
+        startupfile = os.path.join(subdir, runtile.Files.startupfile)
+        exitfile = os.path.join(subdir, runtile.Files.exitfile)
+        cmd = space + """if [ -f %s ]; then rm %s; fi\n"""%(startupfile)
+        cmd = cmd + space + 'j=%s\n'%(os.path.join(subdir,'config.json'))
+        if run['shifter'] is not None:
+            cmd = cmd + space + 'srun -N 1 -n 1 %s%s /bin/bash -c "source /home/user/.bashrc; %s ${j}"\n' %(corestr, scmds, allmpi)
+        else:
+            cmd = cmd + space + 'srun -N 1 -n 1 %s %s ${j}\n"' %(corestr, allmpi)
+        cmd = cmd + space + """fails=0; files=""; read -r result < %s; if [ "$result" = "1" ]; then let "fails+=1"; files=%s; fi\n"""%(exitfile, exitfile)
+        cmd = cmd + space + """if [ $fails = "0" ]; then echo "job succeeded"; code=0; else echo "job failed -- $fails failures -- bad exit files: $files"; code=1; fi\n"""%
+
+    
+    else:
+        cmd = space + """index=(%s)\n"""%( ' '.join(np.arange(run['nodes'])) )
+        if q=='wq':
+            cmd = space + """nodes=(); while read -r line; do found=false; host=$line; for h in "${nodes[@]}"; do if [ "$h" = "$host" ]; then found=true; fi; done; if [ "$found" = "false" ]; then nodes+=("$host"); fi; done < %hostfile%\n"""
+
+        cmd = cmd + space + """startupfiles=(%s)\n"""%(' '.join(rmarr))
+        cmd = cmd + space + """for i in ${index[@]}; do if [ -f ${startupfiles[$i]} ]; then rm ${startupfiles[$i]}; fi; done\n"""
+        cmd = cmd + space + """jsonfiles=(%s)\n"""%(' '.join(jsonarr))
+
+        if q=='wq':
+            cmd = cmd + space + """for i in ${index[@]}; do mpirun -np 1 -host ${nodes[$i]} %s%s ${jsonfiles[$i]} &; done\n"""%(scmds,allmpi)
+
+        elif q=='slurm':
+            run['email'] = None
+        
+            if shifter is not None:
+                cmd = cmd + space + """for i in ${index[@]}; do srun -N 1 -n 1 %s%s /bin/bash -c "source /home/user/.bashrc; %s ${jsonfiles[$i]}" &; done\n""" %(corestr, scmds, allmpi)
+            else:
+                cmd = cmd + space + """for i in ${index[@]}; do srun -N 1 -n 1 %s%s ${jsonfiles[$i]} &; done\n""" %(corestr, allmpi)
+
+        cmd = cmd + space + 'wait\n'
+        cmd = cmd + space + """exitfiles=(%s)\n"""%(' '.join(exits))
+        cmd = cmd + space + """fails=0; files=""; for i in ${index[@]}; do read -r result < ${exitfiles[$i]}; if [ "$result" = "1" ]; then let "fails+=1"; if [ $fails = "1" ]; then files="${exitfiles[$i]}"; else files="${files},${exitfiles[$i]}"; fi; fi; done;\n"""
+        cmd = cmd + space + """if [ $fails = "0" ]; then echo "job succeeded"; code=0; else echo "job failed -- $fails failures -- bad exit files: $files"; code=1; fi\n"""%
+
+        if run['email'] is not None:
+            cmd = cmd + space + '%s %s %s $code\n'%(sendmail, run['email'], run['jobname'])
+
+    cmd = cmd + space + 'exit $code\n'
+    return cmd
+
+
+def Generate_Job(run,balrog,db,tiles,  where, setup, shifter):
 
     s = Source(setup, where, run)
     d = BalrogDir(run)
@@ -295,42 +358,20 @@ def Generate_Job(run,balrog,db,tiles,  where, setup, shifter):
     config['balrog'] = balrog
     config['db'] = db
     deps = []
-    exits = []
-
 
     if where=='wq':
         
         space = "   "
         descr = 'mode: bynode\n' + 'N: %i\n' %(run['nodes']) + 'hostfile: auto\n' + 'job_name: %s' %(run['jobname'])
-        cmd = space + """nodes=(); while read -r line; do found=false; host=$line; for h in "${nodes[@]}"; do if [ "$h" = "$host" ]; then found=true; fi; done; if [ "$found" = "false" ]; then nodes+=("$host"); fi; done < %hostfile%\n"""
-
-        for i in range(run['nodes']):
-            jsonfile, start = SubConfig(start,i, tiles, run,config, run['jobdir'], shifter=shifter)
-            cmd = cmd + space + 'mpirun -np 1 -host ${nodes[%i]} %s %s &\n' %(i, allmpi, jsonfile)
-            #cmd = cmd + space + 'mpirun -npernode 1 -np 1 -host ${nodes[%i]} %s %s &\n' %(i, allmpi, jsonfile)
-            exits.append('"%s"'%(run['exitfile']))
-        cmd = cmd + space + 'wait\n'
-
-        check,exit = CheckFails(exits, space=space)
-        cmd  = cmd + check
-        cmd = cmd + exit
-        if run['email'] is not None:
-            cmd = cmd + space + '%s %s %s $code\n'%(sendmail, run['email'], run['jobname'])
-        cmd = cmd + space + 'exit $code\n'
-
+        cmd = GetMainWork(run, tiles, config, run['jobdir'], shifter, allmpi, space=space, q='wq'):
         out = 'command: |\n' + space + '%s%s%s%s' %(s, d, cmd, descr)
         jobfile = os.path.join(run['jobdir'], '%s.wq' %(run['jobname']))
         WriteOut(jobfile, out)
 
     elif where=='slurm':
-        corestr = ''
-        if run['cores'] is not None:
-            corestr = ' -c %i'%(run['cores'])
 
-        run['email'] = None
         allnodes = run['nodes']
         for k in range(run['ndependencies']):
-            
             if k > 0:
                 run['DBoverwrite'] = False
             jobdir = GetDepJobDir(run, k)
@@ -340,8 +381,10 @@ def Generate_Job(run,balrog,db,tiles,  where, setup, shifter):
                 img = '--image=docker:%s'%(run['shifter'])
                 descr = SLURMadd(descr, img, start='#SBATCH')
                 netrc = os.path.join(os.environ['HOME'])
-                scmds = 'shifter %s --volume=%s:%s --volume=%s:%s --volume=%s:%s --volume=%s:%s --volume=%s:%s'%(img, jobdir,shifter.jobroot, run['outdir'],shifter.outroot, netrc,shifter.homeroot, run['slr'],shifter.slrroot, run['pos'],shifter.posroot)
-                #scmds = 'shifter %s --volume=%s:%s --volume=%s:%s --volume=%s:%s --volume=%s:%s'%(img, jobdir,shifter.jobroot, netrc,shifter.homeroot, run['slr'],shifter.slrroot, run['pos'],shifter.posroot)
+                vols = [ [jobdir,shifter.jobroot], [run['outdir'],shifter.outroot], [netrc,shifter.homeroot], [run['slr'],shifter.slrroot], [run['pos'],shifter.posroot] ]
+                scmds = 'shifter %s'%(img)
+                for vol in vols:
+                    scmds = "%s --volume=%s:%s"%(vol[0],vol[1]) 
 
             descr = SLURMadd(descr, '--job-name=%s'%(run['jobname']), start='#SBATCH')
             descr = SLURMadd(descr, '--mail-type=BEGIN,END,TIME_LIMIT_50', start='#SBATCH')
@@ -368,36 +411,9 @@ def Generate_Job(run,balrog,db,tiles,  where, setup, shifter):
             if run['stripe'] is not None:
                 descr = descr + 'if ! [ -d %s ]; then mkdir %s; fi;\n' %(run['outdir'],run['outdir'])
                 descr = descr + 'lfs setstripe %s --count %i\n' %(run['outdir'],run['stripe'])
-
-            for i in range(run['nodes']):
-                jsonfile, start = SubConfig(start,i, tiles, run,config, jobdir, shifter=shifter)
-                jdir = os.path.dirname(jsonfile)
-                exits.append('"%s"'%(run['exitfile']))
-
-                if not run['asarray']:
-                    if shifter is not None:
-                        descr = descr + 'srun -N 1 -n 1%s %s /bin/bash -c "source /home/user/.bashrc; %s %s" &\n' %(corestr, scmds, allmpi, jsonfile)
-                    else:
-                        descr = descr + 'srun -N 1 -n 1%s %s %s &\n' %(corestr, allmpi, jsonfile)
-
                 
-            if run['asarray']:
-                if run['shifter'] is None:
-                    subdir = os.path.join(jobdir, '%s_${SLURM_ARRAY_TASK_ID}'%(runtile.Files.substr))
-                else:
-                    subdir = os.path.join(sjobdir, '%s_${SLURM_ARRAY_TASK_ID}'%(runtile.Files.substr))
-
-                descr = descr + 'j=%s\n'%(os.path.join(subdir,'config.json'))
-                #descr = descr + 'l=%s\n'%(os.path.join(subdir,'runlog'))
-                #out = descr + 'srun -N 1 -n 1 %s ${j} ${l}' %(allmpi)
-                out = descr + 'srun -N 1 -n 1 %s /bin/bash -c "source /home/user/.bashrc; %s ${j}"' %(scmds, allmpi)
-
-            out = descr + 'wait\n'
-            check,exit = CheckFails(exits, space='')
-            out = out + check
-            out = out + exit
-            out = out + 'exit $code\n'
-
+            cmd = GetMainWork(run, tiles, config, jobdir, shifter, q='slurm', scmds=scmds)
+            out = descr + cmd
             jobfile = os.path.join(jobdir, '%s.sl' %(run['jobname']))
             WriteOut(jobfile, out)
             deps.append(jobfile)

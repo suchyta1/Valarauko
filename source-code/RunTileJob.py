@@ -414,6 +414,7 @@ def OpenRunLog(runlogdir):
 class Files:
     substr = 'subjob'
     depstr = 'dep'
+    startupfile = 'startupfile'
     cok = 'createok'
     cfail = 'createfail'
     dupok = 'dupok'
@@ -425,11 +426,12 @@ class Files:
 
 
 def GetJsonDir(run, dirname, id):
-    if (run['nodes'] > 1):
+    if (run['nodes'] > 1) or (run['asarray']):
         jdir = os.path.join(dirname, '%s_%i'%(Files.substr,id))
     else:
         jdir = dirname
     return jdir
+
 
 
 def GetSubFiles(RunConfig, kind):
@@ -467,14 +469,12 @@ def BlockIfNotExists(dir):
             break
 
 def RemoveCheckFiles(config, runlog):
+    
+    open(RunConfig['startupfile'],'a').close()
     if config['run']['isfirst']:
         RemoveIfNeeded(runlog, config['run']['touchfile'], config['run']['failfile'])
-        '''
-        if not os.path.exists(config['run']['outdir']):
-            os.makedirs(config['run']['outdir'])
-        '''
-    #BlockIfNotExists(config['run']['outdir'])
     BlockIfExists(config['run']['touchfile'], config['run']['failfile'])
+
     RemoveIfNeeded(runlog, config['run']['dupokfile'], config['run']['dupfailfile'], config['run']['exitfile'], config['run']['anyfail'])
     sub = GetAllSubFiles(config['run'])
     for s in sub:

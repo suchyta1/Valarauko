@@ -30,24 +30,24 @@ def CustomConfig(run, balrog, db, tiles):
     run, balrog, tiles = Y1A1Setup(run, balrog, tiles)
     run['email'] = 'eric.d.suchyta@gmail.com'
 
-    tstart = 100
-    tend = 101
+    tstart = 90
+    tend = 100
     tiles = tiles[tstart:tend]
     run['npersubjob'] = 1
-    run['nodes'] = 1
-    run['ppn'] = 8
+    run['nodes'] = 10
+    run['ppn'] = None
 
-    run['dbname'] = 'y1a1_btest'
+    run['dbname'] = 'y1a1_newtest'
     run['joblabel'] = '%i-%i' %(tstart, tend)
     run['outdir'] = os.path.join(os.environ['SCRATCH'],'BalrogScratch')
     run['jobdir'] = os.path.join(os.environ['GLOBALDIR'],'BalrogJobs')
 
-    balrog['ngal'] = 10
-    run['downsample'] = balrog['ngal']*run['ppn']
+    balrog['ngal'] = 1000
+    #run['downsample'] = balrog['ngal']*run['ppn']
     run['runnum'] = 0 
 
     run['paralleldownload'] = True
-    run['DBoverwrite'] = False
+    run['DBoverwrite'] = True
     run['duplicate'] = 'replace'
     run['allfail'] = True
 
