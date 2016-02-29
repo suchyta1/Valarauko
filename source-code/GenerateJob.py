@@ -355,7 +355,7 @@ def Generate_Job(run,balrog,db,tiles,  where, setup, shifter):
 
     s = Source(setup, where, run)
     d = BalrogDir(run)
-    start = 0
+    scmds = None
 
     config = {}
     config['balrog'] = balrog
@@ -366,7 +366,7 @@ def Generate_Job(run,balrog,db,tiles,  where, setup, shifter):
         
         space = "   "
         descr = 'mode: bynode\n' + 'N: %i\n' %(run['nodes']) + 'hostfile: auto\n' + 'job_name: %s' %(run['jobname'])
-        cmd = GetMainWork(run, tiles, config, run['jobdir'], shifter, space=space, q='wq')
+        cmd = GetMainWork(run, tiles, config, run['jobdir'], shifter, space=space, q='wq', scmds=scmds)
         out = 'command: |\n' + space + '%s%s%s%s' %(s, d, cmd, descr)
         jobfile = os.path.join(run['jobdir'], '%s.wq' %(run['jobname']))
         WriteOut(jobfile, out)
@@ -416,7 +416,7 @@ def Generate_Job(run,balrog,db,tiles,  where, setup, shifter):
                 descr = descr + 'lfs setstripe %s --count %i\n' %(run['outdir'],run['stripe'])
                 
             cmd = GetMainWork(run, tiles, config, jobdir, shifter, q='slurm', scmds=scmds)
-            out = descr + cmd
+            out = descr + '\n' + cmd
             jobfile = os.path.join(jobdir, '%s.sl' %(run['jobname']))
             WriteOut(jobfile, out)
             deps.append(jobfile)

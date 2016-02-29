@@ -5,7 +5,7 @@ import esutil
 def Y1A1Setup(run, balrog, tiles):
     dir = os.environ['Y1A1_DIR']
     tiles = esutil.io.read(os.path.join(dir, 'spt-y1a1-only-g70-grizY.fits'))['tilename']
-    run['pos'] = os.path.join(dir,'spt-y1a1-only-g70-grizY-pos')
+    run['pos'] = os.path.join(dir,'spt-y1a1-only-g70-grizY-pos-sphere')
 
     run['release'] = 'y1a1_coadd'
     run['db-columns'] = os.path.join(dir, 'y1a1_coadd_objects-columns.fits')
@@ -26,12 +26,12 @@ def Y1A1Setup(run, balrog, tiles):
 def CustomConfig(run, balrog, db, tiles):
     run, balrog, tiles = Y1A1Setup(run, balrog, tiles)
 
-    tstart = 0
-    tend = 2
+    tstart = 100
+    tend = 103
     tiles = tiles[tstart:tend]
 
-    run['nodes'] = 2
-    run['ppn'] = 24
+    run['nodes'] = 3
+    run['ppn'] = 48
     run['cores'] = 48
 
     run['walltime'] = '00:30:00'
@@ -43,8 +43,8 @@ def CustomConfig(run, balrog, db, tiles):
     
     baseout = '/scratch3/scratchdirs/esuchyta/'
     #baseout = os.environ['SCRATCH']
-    run['dbname'] = 'y1a1_etest2'
-    run['joblabel'] = '%i:%i' %(tstart, tend)
+    run['dbname'] = 'y1a1_etest'
+    run['joblabel'] = '%i-%i' %(tstart, tend)
     run['jobdir'] = os.path.join(baseout, 'BalrogJobs')
     run['outdir'] = os.path.join(baseout, 'BalrogScratch')
 
@@ -52,7 +52,8 @@ def CustomConfig(run, balrog, db, tiles):
     run['downsample'] = balrog['ngal'] * run['ppn']
     run['runnum'] = 0 
 
-    run['DBoverwrite'] = False
+    run['paralleldownload'] = True
+    run['DBoverwrite'] = True
     run['duplicate'] = 'replace'
     run['allfail'] = True
 
