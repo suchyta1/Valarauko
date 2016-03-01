@@ -37,9 +37,9 @@ def CustomConfig(run, balrog, db, tiles):
     run['ppn'] = 8
 
     tstart = 0
-    tend = 2
+    tend = 4
     tiles = tiles[tstart:tend]
-    run['npersubjob'] = 1
+    run['npersubjob'] = 2
     run['nodes'] = 2
     run['DBoverwrite'] = True
 

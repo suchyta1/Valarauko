@@ -114,9 +114,9 @@ def GetImagePaths(derived, cnames=False):
     else:
         return unpackfiles, pfiles
 
-def WgetFits(outfile, file, setup, RunConfig):
-    oscmd = [RunConfig['wget'], '--quiet', '--no-check-certificate', file, '-O', outfile]
+def FitsVerify(oscmd, outfile, str, setup, maxtries):
     done = False
+    tries = 0
     while not done:
         Remove(outfile)
         balrog.SystemCall(oscmd, setup=setup, delfiles=[outfile])
@@ -126,21 +126,18 @@ def WgetFits(outfile, file, setup, RunConfig):
                 f = pyfits.open(outfile, checksum=True)
                 done = True
             except:
-                balrog.SysInfoPrint(setup, "wget failed checksum. Retrying")
+                balrog.SysInfoPrint(setup, "Attempt %i: %s failed checksum."%(tries,str))
+                tries += 1
+        if tries >= maxtries:
+            raise Exception('%s still failing after the maximum %i tries. Giving up.'%(str,maxentries) )
+
+def WgetFits(outfile, file, setup, RunConfig):
+    oscmd = [RunConfig['wget'], '--quiet', '--no-check-certificate', file, '-O', outfile]
+    FitsVerify(oscmd, outfile, 'wget', setup, RunConfig['wgetmax'])
 
 def FunpackFits(outfile, infile, setup, RunConfig):
     oscmd = [RunConfig['funpack'], '-O', outfile, infile]
-    done = False
-    while not done:
-        Remove(outfile) 
-        balrog.SystemCall(oscmd, setup=setup, delfiles=[outfile], keeps=[infile])
-        with warnings.catch_warnings():
-            warnings.filterwarnings('error')
-            try:
-                f = pyfits.open(outfile, checksum=True)
-                done = True
-            except:
-                balrog.SysInfoPrint(setup, "funpack failed checksum. Retrying")
+    FitsVerify(oscmd, outfile, 'funpack', setup, RunConfig['funpackmax'])
 
 def DoDownload(args):
     file, dfile, ufile, RunConfig, dlogdir = args

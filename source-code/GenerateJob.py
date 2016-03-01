@@ -87,7 +87,9 @@ def GetConfig(where, config):
     run['balrog_as_function'] = True
     run['command'] = 'popen' #['system', 'popen']
     run['useshell'] = False # Only relevant with popen
-    run['retry'] = True
+    run['retry'] = False
+    run['wgetmax'] = 10
+    run['funpackmax'] = 10
 
     balrog['systemcmd'] = run['command']
     balrog['retrycmd'] = run['retry']
