@@ -14,7 +14,8 @@ def Y1A1Setup(run, balrog, tiles):
 
     run['balrog'] = '/gpfs01/astro/workarea/esuchyta/git-repos/BalrogDirs/2015-Nov/Balrog/balrog.py'
     run['db-columns'] = '/gpfs01/astro/workarea/esuchyta/software/Y1A1-config/y1a1_coadd_objects-columns.fits'
-    balrog['pyconfig'] = '/gpfs01/astro/workarea/esuchyta/software/Y1A1-pyconfig/Y1-only.py'
+    #balrog['pyconfig'] = '/gpfs01/astro/workarea/esuchyta/software/Y1A1-pyconfig/Y1-only.py'
+    balrog['pyconfig'] = '/gpfs01/astro/workarea/esuchyta/git-repos/BalrogDirs/2015-Nov/BalrogMPI/pyconfig/BNL-y1.py'
 
     balrog['sexnnw'] = '/gpfs01/astro/workarea/esuchyta/software/Y1A1-config/20150806_sex.nnw'
     balrog['sexconv'] = '/gpfs01/astro/workarea/esuchyta/software/Y1A1-config/20150806_sex.conv'
@@ -25,7 +26,8 @@ def Y1A1Setup(run, balrog, tiles):
     #balrog['sexconfig'] = '/gpfs01/astro/workarea/esuchyta/software/Y1A1-config/20150806_sex.config'
 
     tiles = esutil.io.read('/gpfs01/astro/workarea/esuchyta/git-repos/BalrogDirs/2015-Nov/BalrogMPI/tiles/spt-y1a1-only-g70-grizY.fits')['tilename']
-    run['pos'] = '/gpfs01/astro/workarea/esuchyta/software/Y1A1-config/spt-y1a1-only-g70-grizY-pos-sphere'
+    #run['pos'] = '/gpfs01/astro/workarea/esuchyta/software/Y1A1-config/spt-y1a1-only-g70-grizY-pos-sphere'
+    run['pos'] = '/gpfs01/astro/workarea/esuchyta/software/Y1A1-config/spt-y1a1-only-g70-grizY-pos-tile'
 
     return run, balrog, tiles
 
@@ -37,13 +39,13 @@ def CustomConfig(run, balrog, db, tiles):
     run['ppn'] = 8
 
     tstart = 0
-    tend = 4
+    tend = 2
     tiles = tiles[tstart:tend]
-    run['npersubjob'] = 2
+    run['npersubjob'] = 1
     run['nodes'] = 2
     run['DBoverwrite'] = True
 
-    run['dbname'] = 'y1a1_btest'
+    run['dbname'] = 'y1a1_btest3'
     run['joblabel'] = '%i-%i' %(tstart, tend)
     run['outdir'] = os.path.join(os.environ['SCRATCH'],'BalrogScratch')
     run['jobdir'] = os.path.join(os.environ['GLOBALDIR'],'BalrogJobs')
