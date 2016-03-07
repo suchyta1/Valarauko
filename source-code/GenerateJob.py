@@ -43,13 +43,11 @@ def GetConfig(where, config):
     # hide these from user
     run['ppn'] = None
     run['downsample'] = None
-    run['slr'] = None
     run['paralleldownload'] = True
     run['DBoverwrite'] =  False  # Overwrite DB tables with same names (if they exist). False means append into existing tables. Regardless, the tables will be created if they don't exist.
     run['duplicate'] = None
     run['allfail'] = True
     run['npersubjob'] = 1
-
 
     run['cores'] = None
     run['asdependency'] = False
@@ -64,6 +62,8 @@ def GetConfig(where, config):
 
     # will get passed as command line arguments to balrog
     balrog = RunConfigurations.BalrogConfigurations.default
+    balrog['slrdir'] = None
+    balrog['catalog'] = None
 
     # DB connection info
     db = RunConfigurations.DBInfo.default
@@ -95,11 +95,14 @@ def GetConfig(where, config):
     balrog['retrycmd'] = run['retry']
     balrog['useshell'] = run['useshell']
   
+    if balrog['slrdir'] is None:
+        Exit( "You need to set the slr directory (where the SLR FITS files live), because I can't make this publicly available" )
+    if balrog['catalog'] is None:
+        Exit( "You need to set the catalog to sample from." )
+
     if (run['shifter'] is not None):
         print "You're using shifter, super cool. I've detected shifter=%s. I'm configuring a bunch of stuff for you automatically that I don't let you overwrite."%(run['shifter'])
         shifter = shiftermodule.GetShifter(run,balrog)
-        if run['slr'] is None:
-            Exit( "You need to set the slr directory with shifter, because I can't make this public" )
     else:
         shifter = None
 
@@ -183,7 +186,7 @@ def SubConfig(start,i, tiles, run,config, jobdir, shifter=None):
         depdir = shifter.jobroot
         subdir = runtile.GetJsonDir(run, depdir, id)
         runcopy['pos'] = shifter.posroot
-        runcopy['slr'] = shifter.slrroot
+        #runcopy['slr'] = shifter.slrroot
         runcopy['exitfile'] = os.path.join(subdir, runtile.Files.exit)
         runcopy['startupfile'] = os.path.join(subdir, runtile.Files.startupfile)
     else:
@@ -243,16 +246,20 @@ class CmdFormat(object):
 def GetMainWork(setup, run, tiles, config, jobdir, shifter, space='', q='wq', scmds='', start=0):
     cmd = CmdFormat(indent=space)
 
-    if (setup is not None) and (run['shifter'] is None):
-        cmd += 'source %s' %(setup)
-    if run['shifter'] is None:
+
+    if shifter is None:
+        if setup is not None:
+            cmd += 'source %s' %(setup)
         dir = os.path.dirname( os.path.realpath(run['balrog']) )
         cmd += "export PYTHONPATH=%s:${PYTHONPATH}"%(dir)
-    if run['shifter'] is not None:
+    else:
         cmd += 'module load shifter'
+        config['balrog']['slrdir'] = shifter.slrroot
+
     if run['stripe'] is not None:
         cmd += 'if ! [ -d %s ]; then mkdir %s; fi;' %(run['outdir'],run['outdir'])
         cmd += 'lfs setstripe %s --count %i' %(run['outdir'],run['stripe'])
+
 
     for i in range(run['nodes']):
         jsonfile, start = SubConfig(start,i, tiles, run,config, jobdir, shifter=shifter)

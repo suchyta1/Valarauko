@@ -9,12 +9,17 @@ BuildJob = imp.load_source('BuildJob', os.path.join(dir,'BuildJob.py'))
 def Y1A1Setup(run, balrog, tiles):
     dir = os.environ['Y1A1_DIR']
     tiles = esutil.io.read(os.path.join(dir, 'spt-y1a1-only-g70-grizY.fits'))['tilename']
-    run['pos'] = os.path.join(dir,'spt-y1a1-only-g70-grizY-pos-sphere')
+    #run['pos'] = os.path.join(dir,'spt-y1a1-only-g70-grizY-pos-sphere')
+    run['pos'] = os.path.join(dir,'spt-y1a1-only-g70-grizY-pos-tile')
 
     run['release'] = 'y1a1_coadd'
     run['db-columns'] = os.path.join(dir, 'y1a1_coadd_objects-columns.fits')
-    balrog['pyconfig'] = os.path.join(dir, 'Y1-only.py')
     run['balrog'] = os.path.join(os.environ['LOCAL'], 'software', 'balrog.py')
+
+    #balrog['pyconfig'] = os.path.join(dir, 'Y1-only.py')
+    balrog['pyconfig'] = os.path.join( os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__)))), 'pyconfig', 'y1a1.py')
+    balrog['catalog'] = os.path.join(dir, 'CMC_originalR_v1.fits')
+    balrog['slrdir'] = dir
 
     run['swarp-config'] = os.path.join(dir, '20150806_default.swarp')
     balrog['sexnnw'] = os.path.join(dir, '20150806_sex.nnw')
@@ -29,13 +34,14 @@ def Y1A1Setup(run, balrog, tiles):
 def CustomConfig(run, balrog, db, tiles):
     run, balrog, tiles = Y1A1Setup(run, balrog, tiles)
     run = BuildJob.TrustEric(run, where='edison')
+    run['ppn'] = 24
 
-    tstart = 104
-    tend = 108
+    tstart = 0
+    tend = 1
     tiles = tiles[tstart:tend]
 
-    run['nodes'] = 2
-    run['walltime'] = '00:30:00'
+    run['nodes'] = 1
+    run['walltime'] = '00:25:00'
     run['queue'] = 'debug'
     run['npersubjob'] = 1
     
@@ -50,6 +56,5 @@ def CustomConfig(run, balrog, db, tiles):
     run['downsample'] = balrog['ngal'] * run['ppn']
     run['runnum'] = 0 
     run['DBoverwrite'] = True
-
 
     return run, balrog, db, tiles
