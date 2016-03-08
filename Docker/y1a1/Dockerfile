@@ -2,7 +2,7 @@ FROM debian:7.9
 MAINTAINER Eric Suchyta <eric.d.suchyta@gmail.com>
 
 ENV valarauko /Valarauko-job
-RUN  apt-get update && apt-get install -y wget libaio-dev python-dev python-numpy libfftw3-dev libboost-all-dev libblas-dev g++ scons git make python-pip libatlas-base-dev && \
+RUN  apt-get update && apt-get install -y wget libaio-dev python-dev python-numpy libfftw3-dev libboost-all-dev libblas-dev scons git make python-pip libatlas-base-dev && \
 	mv /bin/sh /bin/sh.orig && ln -s /bin/bash /bin/sh && \
 	pip install --no-deps astropy fitsio esutil && \
 	mkdir /software && cd /software && wget http://www.cosmo.bnl.gov/www/esheldon/code/misc/des-oracle-linux-x86-64-v2.tar.gz && \
@@ -13,10 +13,13 @@ RUN  apt-get update && apt-get install -y wget libaio-dev python-dev python-nump
 	git clone https://github.com/emhuff/Balrog.git && cd Balrog/ && rm -r default_example/ && rm -r astro_config/ && rm cosmos* && yes | rm -r .git/ && \
 	cd /software && git clone https://github.com/suchyta1/Valarauko.git && \
 
+	# This version of TMV was built by me and then I just used the binaries to save build time when testing.
+	wget https://googledrive.com/host/0B4AAwvZlUdfeWFNiN1RLZUpVOU0 -O tmv-0.72-debian.tar.gz && tar xvzf tmv-0.72-debian.tar.gz && rm tmv-0.72-debian.tar.gz && \
+	git clone https://github.com/GalSim-developers/GalSim.git && cd GalSim && scons TMV_DIR=/software/tmv-0.72-debian && scons install && cd /software && rm -r GalSim/ && \
 
-	mkdir tmv && wget https://googledrive.com/host/0B6hIz9tCW5iZdEcybFNjRHFmOEE/tmv0.72.tar.gz && tar xvzf tmv0.72.tar.gz && rm tmv0.72.tar.gz && \
-	cd tmv0.72 && scons install PREFIX=/software/tmv && cd /software && rm -r tmv0.72 && \
-	git clone https://github.com/GalSim-developers/GalSim.git && cd GalSim && scons TMV_DIR=/software/tmv && scons install  && cd /software && rm -r GalSim/ && \
+	#mkdir tmv && wget https://googledrive.com/host/0B6hIz9tCW5iZdEcybFNjRHFmOEE/tmv0.72.tar.gz && tar xvzf tmv0.72.tar.gz && rm tmv0.72.tar.gz && \
+	#cd tmv0.72 && scons install PREFIX=/software/tmv && cd /software && rm -r tmv0.72 && \
+	#git clone https://github.com/GalSim-developers/GalSim.git && cd GalSim && scons TMV_DIR=/software/tmv && scons install  && cd /software && rm -r GalSim/ && \
 
 	wget --no-check-certificate 'https://googledrive.com/host/0B4AAwvZlUdfeT2V0ZTVhTlFDc1E' -O swarp-2.36.2.tar.gz && tar xvzf swarp-2.36.2.tar.gz && rm swarp-2.36.2.tar.gz && \
 	cd swarp-2.36.2/ && ./configure && make && make install && cd /software && rm -r swarp-2.36.2/ && \
@@ -25,7 +28,7 @@ RUN  apt-get update && apt-get install -y wget libaio-dev python-dev python-nump
 	wget --no-check-certificate 'https://googledrive.com/host/0B4AAwvZlUdfeOV9QQmxGNmlrcUE' -O cfitsio-3.360.tar.gz && tar xvzf cfitsio-3.360.tar.gz && rm cfitsio-3.360.tar.gz && \
 	cd cfitsio && ./configure && make && make install && make funpack && cp funpack /usr/bin && cd /software && rm -r cfitsio && \
 
-	apt-get --purge autoremove -y libblas-dev g++ scons git make python-pip libatlas-base-dev && apt-get -y clean && \
+	apt-get --purge autoremove -y libblas-dev scons git make python-pip libatlas-base-dev && apt-get -y clean && \
 
 	mkdir $valarauko && mkdir $valarauko/jobroot && mkdir $valarauko/outroot && mkdir $valarauko/slrroot && mkdir $valarauko/catroot && mkdir $valarauko/posroot && \
 	mkdir /home/user && mkdir /home/user/site && \
@@ -40,6 +43,3 @@ RUN  apt-get update && apt-get install -y wget libaio-dev python-dev python-nump
 	cp /root/.bash_profile /home/user/.bash_profile && chmod 755 /home/user/.bash_profile
 
 
-# This version of TMV was built by me and then I just used the binaries to save build time when testing.
-#wget https://googledrive.com/host/0B4AAwvZlUdfeWFNiN1RLZUpVOU0 -O tmv-0.72-debian.tar.gz && tar xvzf tmv-0.72-debian.tar.gz && rm tmv-0.72-debian.tar.gz && \
-#git clone https://github.com/GalSim-developers/GalSim.git && cd GalSim && scons TMV_DIR=/software/tmv-0.72-debian && scons install && cd /software && rm -r GalSim/ && \
