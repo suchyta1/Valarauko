@@ -14,7 +14,7 @@ def Y1A1Setup(run, balrog, tiles):
 
     run['release'] = 'y1a1_coadd'
     run['db-columns'] = os.path.join(dir, 'y1a1_coadd_objects-columns.fits')
-    run['balrog'] = os.path.join(os.environ['LOCAL'], 'software', 'balrog.py')
+    run['balrog'] = os.path.join(os.environ['LOCAL'], 'software', 'Balrog', 'balrog.py')
 
     #balrog['pyconfig'] = os.path.join(dir, 'Y1-only.py')
     balrog['pyconfig'] = os.path.join( os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__)))), 'pyconfig', 'y1a1.py')

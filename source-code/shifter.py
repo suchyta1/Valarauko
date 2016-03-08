@@ -15,6 +15,7 @@ class Y1A1shifter(object):
         self.jobroot = '/Valarauko-job/jobroot'
         self.outroot = '/Valarauko-job/outroot'
         self.slrroot = '/Valarauko-job/slrroot'
+        self.catroot = '/Valarauko-job/catroot'
         self.posroot = '/Valarauko-job/posroot'
         self.homeroot = '/home/user/site'
 

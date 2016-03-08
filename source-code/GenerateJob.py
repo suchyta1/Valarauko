@@ -254,7 +254,6 @@ def GetMainWork(setup, run, tiles, config, jobdir, shifter, space='', q='wq', sc
         cmd += "export PYTHONPATH=%s:${PYTHONPATH}"%(dir)
     else:
         cmd += 'module load shifter'
-        config['balrog']['slrdir'] = shifter.slrroot
 
     if run['stripe'] is not None:
         cmd += 'if ! [ -d %s ]; then mkdir %s; fi;' %(run['outdir'],run['outdir'])
@@ -313,15 +312,15 @@ def GetMainWork(setup, run, tiles, config, jobdir, shifter, space='', q='wq', sc
     return cmd, start
 
 
-def ShifterCmdline(img, jobdir, run, shifter):
+def ShifterCmdline(img, jobdir, run, shifter, balrog):
     netrc = os.path.join(os.environ['HOME'])
-    vols = [ [jobdir,shifter.jobroot], [run['outdir'],shifter.outroot], [netrc,shifter.homeroot], [run['slr'],shifter.slrroot], [run['pos'],shifter.posroot] ]
+    vols = [ [jobdir,shifter.jobroot], [run['outdir'],shifter.outroot], [netrc,shifter.homeroot], [balrog['slrdir'],shifter.slrroot], [run['pos'],shifter.posroot], [os.path.dirname(balrog['catalog']),shifter.catroot] ]
     scmds = 'shifter %s'%(img)
     for vol in vols:
         scmds = "%s --volume=%s:%s"%(scmds, vol[0],vol[1]) 
     return scmds
 
-def SlurmDirectives(run, allnodes, jobdir, shifter, scmds=''):
+def SlurmDirectives(run, config, allnodes, jobdir, shifter, scmds=''):
     ofile = os.path.join(jobdir, '%s-%%j.out'%(run['jobname']))
     descr = CmdFormat(indent='#SBATCH ', cmd="#!/bin/bash -l \n\n")
     descr += '--job-name=%s'%(run['jobname'])
@@ -333,7 +332,9 @@ def SlurmDirectives(run, allnodes, jobdir, shifter, scmds=''):
     if run['shifter'] is not None:
         img = '--image=docker:%s'%(run['shifter'])
         descr += img
-        scmds = ShifterCmdline(img, jobdir, run, shifter)
+        config['balrog']['slrdir'] = shifter.slrroot
+        config['balrog']['catalog'] = os.path.join(shifter.catroog, os.path.basename(config['balrog']['catalog']))
+        scmds = ShifterCmdline(img, jobdir, run, shifter, config['balrog'])
     return descr, scmds
 
 
@@ -405,7 +406,7 @@ def Generate_Job(run,balrog,db,tiles,  where, setup, shifter):
         jobname = run['jobname']
         for k in range(run['ndependencies']):
             jobdir = GetDepJobDir(run, jobname, k=k)
-            descr, scmds = SlurmDirectives(run, allnodes, jobdir, shifter)
+            descr, scmds = SlurmDirectives(run, config, allnodes, jobdir, shifter)
             cmd, start = GetMainWork(setup, run, tiles, config, jobdir, shifter, q=where, scmds=scmds, start=start)
             out = descr + cmd
             jobfile = os.path.join(jobdir, '%s.sl' %(run['jobname']))
