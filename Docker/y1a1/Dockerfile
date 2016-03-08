@@ -3,6 +3,7 @@ MAINTAINER Eric Suchyta <eric.d.suchyta@gmail.com>
 
 ENV valarauko /Valarauko-job
 RUN  apt-get update && apt-get install -y wget libaio-dev python-dev python-numpy libfftw3-dev libboost-all-dev libblas-dev g++ scons git make python-pip libatlas-base-dev && \
+	mv /bin/sh /bin/sh.orig && ln -s /bin/bash /bin/sh && \
 	pip install --no-deps astropy fitsio esutil && \
 	mkdir /software && cd /software && wget http://www.cosmo.bnl.gov/www/esheldon/code/misc/des-oracle-linux-x86-64-v2.tar.gz && \
 	tar xvzf des-oracle-linux-x86-64-v2.tar.gz && rm des-oracle-linux-x86-64-v2.tar.gz && cd des-oracle-linux-x86-64-v2 && ./do-install /software/des-oracle-linux-x86-64-v2/install && \
@@ -39,7 +40,6 @@ RUN  apt-get update && apt-get install -y wget libaio-dev python-dev python-nump
 	cp /root/.bash_profile /home/user/.bash_profile && chmod 755 /home/user/.bash_profile
 
 
-# Don't need to use these. This version of TMV was built by me and then reused to save build time when testing.
-#mv /bin/sh /bin/sh.orig && ln -s /bin/bash /bin/sh && \
+# This version of TMV was built by me and then I just used the binaries to save build time when testing.
 #wget https://googledrive.com/host/0B4AAwvZlUdfeWFNiN1RLZUpVOU0 -O tmv-0.72-debian.tar.gz && tar xvzf tmv-0.72-debian.tar.gz && rm tmv-0.72-debian.tar.gz && \
 #git clone https://github.com/GalSim-developers/GalSim.git && cd GalSim && scons TMV_DIR=/software/tmv-0.72-debian && scons install && cd /software && rm -r GalSim/ && \
