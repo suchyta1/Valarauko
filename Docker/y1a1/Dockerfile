@@ -27,7 +27,7 @@ RUN  apt-get update && apt-get install -y wget libaio-dev python-dev python-nump
 	cd sextractor-2.18.10/ && ./configure --with-atlas-incdir=/usr/include/atlas && make && make install && cd /software && rm -r sextractor-2.18.10/ && \
 	wget --no-check-certificate 'https://googledrive.com/host/0B4AAwvZlUdfeOV9QQmxGNmlrcUE' -O cfitsio-3.360.tar.gz && tar xvzf cfitsio-3.360.tar.gz && rm cfitsio-3.360.tar.gz && \
 	cd cfitsio && ./configure && make && make install && make funpack && cp funpack /usr/bin && cd /software && \
-	pip install --nodeps healpy && rm -r cfitsio && \
+	pip install --no-deps healpy && rm -r cfitsio && \
 
 	apt-get --purge autoremove -y libblas-dev scons git make python-pip libatlas-base-dev && apt-get -y clean && \
 
