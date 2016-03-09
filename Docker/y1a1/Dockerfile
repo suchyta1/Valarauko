@@ -5,8 +5,6 @@ ENV valarauko /Valarauko-job
 RUN  mkdir /software && \
 	apt-get update && apt-get install -y wget libaio-dev python-dev libfftw3-dev libboost-all-dev libblas-dev scons git make libatlas-base-dev && \
 	mv /bin/sh /bin/sh.orig && ln -s /bin/bash /bin/sh && \
-	#pip install --no-deps --upgrade setuptools && \
-	#pip install --no-deps --upgrade distribute && \
 	cd /software && wget https://bootstrap.pypa.io/get-pip.py && python get-pip.py && \
 	pip install --no-deps --upgrade numpy && \
 	pip install --no-deps astropy fitsio esutil healpy && \
@@ -30,10 +28,22 @@ RUN  mkdir /software && \
 	cd swarp-2.36.2/ && ./configure && make && make install && cd /software && rm -r swarp-2.36.2/ && \
 	wget --no-check-certificate 'https://googledrive.com/host/0B4AAwvZlUdfeeURxS3RsZWw5VDg' -O sextractor-2.18.10.tar.gz && tar xvzf sextractor-2.18.10.tar.gz && rm sextractor-2.18.10.tar.gz && \
 	cd sextractor-2.18.10/ && ./configure --with-atlas-incdir=/usr/include/atlas && make && make install && cd /software && rm -r sextractor-2.18.10/ && \
-	wget --no-check-certificate 'https://googledrive.com/host/0B4AAwvZlUdfeOV9QQmxGNmlrcUE' -O cfitsio-3.360.tar.gz && tar xvzf cfitsio-3.360.tar.gz && rm cfitsio-3.360.tar.gz && \
-	cd cfitsio && ./configure && make && make install && make funpack && cp funpack /usr/bin && cd /software && rm -r cfitsio && \
+	
+	#wget --no-check-certificate 'https://googledrive.com/host/0B4AAwvZlUdfeOV9QQmxGNmlrcUE' -O cfitsio-3.360.tar.gz && tar xvzf cfitsio-3.360.tar.gz && rm cfitsio-3.360.tar.gz && \
+	#cd cfitsio && ./configure && make && make install && make funpack && cp funpack /usr/bin && cd /software && rm -r cfitsio && \
 
-	apt-get --purge autoremove -y libblas-dev scons git make python-pip libatlas-base-dev && apt-get -y clean && \
+	# should see if I can make funpack and then get rid of all the libraries
+	wget --no-check-certificate 'https://googledrive.com/host/0B4AAwvZlUdfeOV9QQmxGNmlrcUE' -O cfitsio-3.360.tar.gz && tar xvzf cfitsio-3.360.tar.gz && rm cfitsio-3.360.tar.gz && \
+	cd cfitsio && ./configure && make && make funpack && cp funpack /usr/bin && cd /software && rm -r cfitsio && \
+
+
+	#apt-get --purge autoremove -y libblas-dev scons git make python-pip libatlas-base-dev && apt-get -y clean && \
+	#apt-get remove --purge -y libicu-dev g++ libboost1.49-dev python2.7-dev libicu48 gcc-4.7 g++-4.4 libopenmpi-dev cpp-4.7 libc6-dev cpp-4.4 libopenmpi1.3 binutils libmagic1 linux-libc-dev manpages-dev libfftw3-dev libboost-wave1.49.0 libboost-math1.49.0 libboost-mpi-python1.49.0 libboost-test1.49.0 libboost-serialization1.49.0 libboost-program-options1.49.0 && \
+
+	python -m pip uninstall -y pip setuptools wheel && rm -r /root/.cache/pip/ && \
+	apt-get --purge autoremove -y libblas-dev scons git make libatlas-base-dev && apt-get -y clean && \
+	apt-get remove --purge -y libicu-dev g++ libboost1.49-dev python2.7-dev libicu48 gcc-4.7 g++-4.4 libopenmpi-dev cpp-4.7 libc6-dev cpp-4.4 libopenmpi1.3 binutils libmagic1 linux-libc-dev manpages-dev libfftw3-dev libboost-wave1.49.0 libboost-math1.49.0 libboost-mpi-python1.49.0 libboost-test1.49.0 libboost-serialization1.49.0 libboost-program-options1.49.0 && \
+
 
 	mkdir $valarauko && mkdir $valarauko/jobroot && mkdir $valarauko/outroot && mkdir $valarauko/slrroot && mkdir $valarauko/catroot && mkdir $valarauko/posroot && \
 	mkdir /home/user && mkdir /home/user/site && \
@@ -45,6 +55,5 @@ RUN  mkdir /software && \
 	echo 'export DESPROJ=OPS' >> ~/.bashrc && \
 	echo 'export HOME=/home/user/site' >> ~/.bashrc && \
 	cp /root/.bashrc /home/user/.bashrc && chmod 755 /home/user/.bashrc && \
-	cp /root/.bash_profile /home/user/.bash_profile && chmod 755 /home/user/.bash_profile && \
+	cp /root/.bash_profile /home/user/.bash_profile && chmod 755 /home/user/.bash_profile 
 
-	apt-get remove --purge -y libicu-dev g++ libboost1.49-dev python2.7-dev libicu48 gcc-4.7 g++-4.4 libopenmpi-dev cpp-4.7 libc6-dev cpp-4.4 libopenmpi1.3 binutils libmagic1 linux-libc-dev manpages-dev libfftw3-dev libboost-wave1.49.0 libboost-math1.49.0 libboost-mpi-python1.49.0 libboost-test1.49.0 libboost-serialization1.49.0 libboost-program-options1.49.0
