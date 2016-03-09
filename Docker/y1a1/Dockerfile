@@ -2,11 +2,15 @@ FROM debian:7.9
 MAINTAINER Eric Suchyta <eric.d.suchyta@gmail.com>
 
 ENV valarauko /Valarauko-job
-RUN  apt-get update && apt-get install -y wget libaio-dev python-dev libfftw3-dev libboost-all-dev libblas-dev scons git make python-pip libatlas-base-dev && \
+RUN  mkdir /software && \
+	apt-get update && apt-get install -y wget libaio-dev python-dev libfftw3-dev libboost-all-dev libblas-dev scons git make libatlas-base-dev && \
 	mv /bin/sh /bin/sh.orig && ln -s /bin/bash /bin/sh && \
-	pip install --no-deps --upgrade numpy setuptools && \
+	#pip install --no-deps --upgrade setuptools && \
+	#pip install --no-deps --upgrade distribute && \
+	cd /software && wget https://bootstrap.pypa.io/get-pip.py && python get-pip.py && \
+	pip install --no-deps --upgrade numpy && \
 	pip install --no-deps astropy fitsio esutil healpy && \
-	mkdir /software && cd /software && wget http://www.cosmo.bnl.gov/www/esheldon/code/misc/des-oracle-linux-x86-64-v2.tar.gz && \
+	cd /software && wget http://www.cosmo.bnl.gov/www/esheldon/code/misc/des-oracle-linux-x86-64-v2.tar.gz && \
 	tar xvzf des-oracle-linux-x86-64-v2.tar.gz && rm des-oracle-linux-x86-64-v2.tar.gz && cd des-oracle-linux-x86-64-v2 && ./do-install /software/des-oracle-linux-x86-64-v2/install && \
 	rm -r instantclient_11_2/ && rm -r cx_Oracle-5.1.1-ess/ && rm cx_Oracle-5.1.1-ess.tar.gz && \
 	cd /software && git clone https://github.com/esheldon/desdb.git && cd desdb/ && python setup.py install && cd /software && rm -r desdb/ && \
