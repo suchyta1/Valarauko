@@ -2,7 +2,7 @@ FROM debian:7.9
 MAINTAINER Eric Suchyta <eric.d.suchyta@gmail.com>
 
 ENV valarauko /Valarauko-job
-RUN  apt-get update && apt-get install -y wget libaio-dev python-dev python-numpy libfftw3-dev libboost-all-dev libblas-dev scons git make python-pip libatlas-base-dev && \
+RUN  apt-get update && apt-get install -y wget libaio-dev python-dev python-numpy libfftw3-dev libboost-all-dev libblas-dev scons git make python-pip libatlas-base-dev cython && \
 	mv /bin/sh /bin/sh.orig && ln -s /bin/bash /bin/sh && \
 	pip install --no-deps astropy fitsio esutil && \
 	mkdir /software && cd /software && wget http://www.cosmo.bnl.gov/www/esheldon/code/misc/des-oracle-linux-x86-64-v2.tar.gz && \
