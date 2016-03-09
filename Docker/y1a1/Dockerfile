@@ -40,6 +40,6 @@ RUN  apt-get update && apt-get install -y wget libaio-dev python-dev python-nump
 	echo 'export DESPROJ=OPS' >> ~/.bashrc && \
 	echo 'export HOME=/home/user/site' >> ~/.bashrc && \
 	cp /root/.bashrc /home/user/.bashrc && chmod 755 /home/user/.bashrc && \
-	cp /root/.bash_profile /home/user/.bash_profile && chmod 755 /home/user/.bash_profile
+	cp /root/.bash_profile /home/user/.bash_profile && chmod 755 /home/user/.bash_profile && \
 
-
+	apt-get remove --purge -y libicu-dev g++ libboost1.49-dev python2.7-dev libicu48 gcc-4.7 g++-4.4 libopenmpi-dev cpp-4.7 libc6-dev cpp-4.4 libopenmpi1.3 binutils libboost-wave1.49.0 libboost-math1.49.0 libboost-mpi-python1.49.0
