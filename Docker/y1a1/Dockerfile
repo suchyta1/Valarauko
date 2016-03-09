@@ -4,7 +4,7 @@ MAINTAINER Eric Suchyta <eric.d.suchyta@gmail.com>
 ENV valarauko /Valarauko-job
 RUN  apt-get update && apt-get install -y wget libaio-dev python-dev python-numpy libfftw3-dev libboost-all-dev libblas-dev scons git make python-pip libatlas-base-dev && \
 	mv /bin/sh /bin/sh.orig && ln -s /bin/bash /bin/sh && \
-	pip install --no-deps astropy fitsio esutil healpy && \
+	pip install --no-deps astropy fitsio esutil && \
 	mkdir /software && cd /software && wget http://www.cosmo.bnl.gov/www/esheldon/code/misc/des-oracle-linux-x86-64-v2.tar.gz && \
 	tar xvzf des-oracle-linux-x86-64-v2.tar.gz && rm des-oracle-linux-x86-64-v2.tar.gz && cd des-oracle-linux-x86-64-v2 && ./do-install /software/des-oracle-linux-x86-64-v2/install && \
 	rm -r instantclient_11_2/ && rm -r cx_Oracle-5.1.1-ess/ && rm cx_Oracle-5.1.1-ess.tar.gz && \
@@ -26,7 +26,8 @@ RUN  apt-get update && apt-get install -y wget libaio-dev python-dev python-nump
 	wget --no-check-certificate 'https://googledrive.com/host/0B4AAwvZlUdfeeURxS3RsZWw5VDg' -O sextractor-2.18.10.tar.gz && tar xvzf sextractor-2.18.10.tar.gz && rm sextractor-2.18.10.tar.gz && \
 	cd sextractor-2.18.10/ && ./configure --with-atlas-incdir=/usr/include/atlas && make && make install && cd /software && rm -r sextractor-2.18.10/ && \
 	wget --no-check-certificate 'https://googledrive.com/host/0B4AAwvZlUdfeOV9QQmxGNmlrcUE' -O cfitsio-3.360.tar.gz && tar xvzf cfitsio-3.360.tar.gz && rm cfitsio-3.360.tar.gz && \
-	cd cfitsio && ./configure && make && make install && make funpack && cp funpack /usr/bin && cd /software && rm -r cfitsio && \
+	cd cfitsio && ./configure && make && make install && make funpack && cp funpack /usr/bin && cd /software && \
+	pip install --nodeps healpy && rm -r cfitsio && \
 
 	apt-get --purge autoremove -y libblas-dev scons git make python-pip libatlas-base-dev && apt-get -y clean && \
 
