@@ -22,7 +22,8 @@ class Y1A1shifter(object):
         gitdir = '/software/Valarauko'
         self.thisdir = os.path.join(gitdir, 'source-code')
         site = os.path.join(gitdir, 'site-setups', 'shifter', 'y1a1')
-        balrog['pyconfig'] = os.path.join(site, 'balrog-config.py')
+        #balrog['pyconfig'] = os.path.join(site, 'balrog-config.py')
+        balrog['pyconfig'] = os.path.join(gitdir, 'pyconfig', 'y1a1.py')
 
         astroconfig = os.path.join(site, 'astro_config')
         run['swarp-config'] = os.path.join(astroconfig, '20150806_default.swarp')
@@ -40,4 +41,5 @@ class Y1A1shifter(object):
 def GetShifter(run, balrog):
     if run['shifter']=='esuchyta/balrog-docker:v1':
         return Y1A1shifter(run, balrog)
-
+    elif run['shifter'].endswith('y1a1'):
+        return Y1A1shifter(run, balrog)

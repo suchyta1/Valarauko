@@ -332,9 +332,9 @@ def SlurmDirectives(run, config, allnodes, jobdir, shifter, scmds=''):
     if run['shifter'] is not None:
         img = '--image=docker:%s'%(run['shifter'])
         descr += img
-        config['balrog']['slrdir'] = shifter.slrroot
-        config['balrog']['catalog'] = os.path.join(shifter.catroog, os.path.basename(config['balrog']['catalog']))
         scmds = ShifterCmdline(img, jobdir, run, shifter, config['balrog'])
+        config['balrog']['slrdir'] = shifter.slrroot
+        config['balrog']['catalog'] = os.path.join(shifter.catroot, os.path.basename(config['balrog']['catalog']))
     return descr, scmds
 
 

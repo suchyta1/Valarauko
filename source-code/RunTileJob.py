@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+print 'a'
 import sys
 import os
 import numpy as np
@@ -14,6 +15,7 @@ import esutil
 
 import RunBalrog as runbalrog
 import balrog as balrogmodule
+print 'b'
 
 
 def SendEmail(config, file):

@@ -8,15 +8,17 @@ BuildJob = imp.load_source('BuildJob', os.path.join(dir,'BuildJob.py'))
 
 def CustomConfig(run, balrog, db, tiles):
     run = BuildJob.TrustEric(run, where='edison')
-    run['shifter'] = 'esuchyta/balrog-docker:v1'
+    run['shifter'] = 'esuchyta/valarauko:y1a1'
 
     dir = '/scratch1/scratchdirs/esuchyta/software/balrog_config/y1a1/'
-    run['pos'] = os.path.join(dir,'spt-y1a1-only-g70-grizY-pos')
-    run['slr'] = '/scratch1/scratchdirs/esuchyta/software/balrog_config/y1a1/'
+    run['pos'] = os.path.join(dir,'spt-y1a1-only-g70-grizY-pos-tile')
+    balrog['catalog'] = os.path.join(dir, 'CMC_originalR_v1.fits')
+    balrog['slrdir'] = dir
+
     tiles = esutil.io.read(os.path.join(dir, 'spt-y1a1-only-g70-grizY.fits'))['tilename']
 
     tstart = 0
-    tend = 4
+    tend = 2
     tiles = tiles[tstart:tend]
     run['nodes'] = 2
 
