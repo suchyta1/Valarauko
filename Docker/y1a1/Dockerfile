@@ -3,10 +3,10 @@ MAINTAINER Eric Suchyta <eric.d.suchyta@gmail.com>
 
 ENV valarauko /Valarauko-job
 RUN  mkdir /software && \
-	apt-get update && apt-get install -y wget libaio-dev python-dev libfftw3-dev libboost-all-dev libblas-dev scons git make libatlas-base-dev && \
+	apt-get update && apt-get install -y wget libaio-dev python-dev libfftw3-dev libboost-all-dev libblas-dev scons git make libatlas-base-dev python-numpy && \
 	mv /bin/sh /bin/sh.orig && ln -s /bin/bash /bin/sh && \
 	cd /software && wget https://bootstrap.pypa.io/get-pip.py && python get-pip.py && \
-	pip install --no-deps --upgrade numpy && \
+	#pip install --no-deps --upgrade numpy && \
 	pip install --no-deps astropy fitsio esutil healpy && \
 	cd /software && wget http://www.cosmo.bnl.gov/www/esheldon/code/misc/des-oracle-linux-x86-64-v2.tar.gz && \
 	tar xvzf des-oracle-linux-x86-64-v2.tar.gz && rm des-oracle-linux-x86-64-v2.tar.gz && cd des-oracle-linux-x86-64-v2 && ./do-install /software/des-oracle-linux-x86-64-v2/install && \
