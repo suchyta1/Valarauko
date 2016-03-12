@@ -1,28 +1,16 @@
 #!/usr/bin/env python
 
-print 'a'
 import sys
-print 'b'
 import os
-print 'c'
 import numpy as np
-print 'd'
 import desdb
-print 'e'
 import copy
-print 'f'
 import socket
-print 'g'
 import logging
-print 'h'
 import json
-print 'j'
 import multiprocessing
-print 'k'
 import shutil
-print 'l'
 import esutil
-print 'm'
 
 import RunBalrog as runbalrog
 import balrog as balrogmodule

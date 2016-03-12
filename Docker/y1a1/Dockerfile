@@ -3,11 +3,14 @@ MAINTAINER Eric Suchyta <eric.d.suchyta@gmail.com>
 
 ENV valarauko /Valarauko-job
 RUN  mkdir /software && \
-	apt-get update && apt-get install -y wget libaio-dev python-dev libfftw3-dev libboost-all-dev libblas-dev scons git make libatlas-base-dev python-numpy && \
+	echo "force this" && \
+	apt-get update && apt-get install -y wget libaio-dev python-dev libfftw3-dev libboost-all-dev libblas-dev scons git make libatlas-base-dev python-numpy pkg-config libfreetype6-dev libpng12-dev && \
 	mv /bin/sh /bin/sh.orig && ln -s /bin/bash /bin/sh && \
 	cd /software && wget https://bootstrap.pypa.io/get-pip.py && python get-pip.py && \
 	#pip install --no-deps --upgrade numpy && \
-	pip install --no-deps astropy fitsio esutil healpy && \
+	pip install --no-deps astropy six pyparsing cycler python-dateutil matplotlib fitsio healpy esutil && \
+	python -c "import healpy" && \
+
 	cd /software && wget http://www.cosmo.bnl.gov/www/esheldon/code/misc/des-oracle-linux-x86-64-v2.tar.gz && \
 	tar xvzf des-oracle-linux-x86-64-v2.tar.gz && rm des-oracle-linux-x86-64-v2.tar.gz && cd des-oracle-linux-x86-64-v2 && ./do-install /software/des-oracle-linux-x86-64-v2/install && \
 	rm -r instantclient_11_2/ && rm -r cx_Oracle-5.1.1-ess/ && rm cx_Oracle-5.1.1-ess.tar.gz && \
@@ -28,32 +31,34 @@ RUN  mkdir /software && \
 	cd swarp-2.36.2/ && ./configure && make && make install && cd /software && rm -r swarp-2.36.2/ && \
 	wget --no-check-certificate 'https://googledrive.com/host/0B4AAwvZlUdfeeURxS3RsZWw5VDg' -O sextractor-2.18.10.tar.gz && tar xvzf sextractor-2.18.10.tar.gz && rm sextractor-2.18.10.tar.gz && \
 	cd sextractor-2.18.10/ && ./configure --with-atlas-incdir=/usr/include/atlas && make && make install && cd /software && rm -r sextractor-2.18.10/ && \
-	
-	#wget --no-check-certificate 'https://googledrive.com/host/0B4AAwvZlUdfeOV9QQmxGNmlrcUE' -O cfitsio-3.360.tar.gz && tar xvzf cfitsio-3.360.tar.gz && rm cfitsio-3.360.tar.gz && \
-	#cd cfitsio && ./configure && make && make install && make funpack && cp funpack /usr/bin && cd /software && rm -r cfitsio && \
-
-	# should see if I can make funpack and then get rid of all the libraries
 	wget --no-check-certificate 'https://googledrive.com/host/0B4AAwvZlUdfeOV9QQmxGNmlrcUE' -O cfitsio-3.360.tar.gz && tar xvzf cfitsio-3.360.tar.gz && rm cfitsio-3.360.tar.gz && \
 	cd cfitsio && ./configure && make && make funpack && cp funpack /usr/bin && cd /software && rm -r cfitsio && \
 
-
-	#apt-get --purge autoremove -y libblas-dev scons git make python-pip libatlas-base-dev && apt-get -y clean && \
-	#apt-get remove --purge -y libicu-dev g++ libboost1.49-dev python2.7-dev libicu48 gcc-4.7 g++-4.4 libopenmpi-dev cpp-4.7 libc6-dev cpp-4.4 libopenmpi1.3 binutils libmagic1 linux-libc-dev manpages-dev libfftw3-dev libboost-wave1.49.0 libboost-math1.49.0 libboost-mpi-python1.49.0 libboost-test1.49.0 libboost-serialization1.49.0 libboost-program-options1.49.0 && \
-
 	python -m pip uninstall -y pip setuptools wheel && rm -r /root/.cache/pip/ && \
-	apt-get --purge autoremove -y libblas-dev scons git make libatlas-base-dev && apt-get -y clean && \
+	apt-get --purge autoremove -y libblas-dev scons git make libatlas-base-dev pkg-config libpng12-dev && apt-get -y clean && \
 	apt-get remove --purge -y libicu-dev g++ libboost1.49-dev python2.7-dev libicu48 gcc-4.7 g++-4.4 libopenmpi-dev cpp-4.7 libc6-dev cpp-4.4 libopenmpi1.3 binutils libmagic1 linux-libc-dev manpages-dev libfftw3-dev libboost-wave1.49.0 libboost-math1.49.0 libboost-mpi-python1.49.0 libboost-test1.49.0 libboost-serialization1.49.0 libboost-program-options1.49.0 && \
 
 
 	mkdir $valarauko && mkdir $valarauko/jobroot && mkdir $valarauko/outroot && mkdir $valarauko/slrroot && mkdir $valarauko/catroot && mkdir $valarauko/posroot && \
 	mkdir /home/user && mkdir /home/user/site && \
-	echo 'if [ -f ~/.bashrc ]; then source ~/.bashrc; fi' >> ~/.bash_profile && \
-	echo 'export PYTHONPATH' >> /software/des-oracle-linux-x86-64-v2/install/setup.sh && \
-	echo 'source /software/des-oracle-linux-x86-64-v2/install/setup.sh' >> ~/.bashrc && \
-	echo 'export PYTHONPATH=/software/Balrog:${PYTHONPATH}' >> ~/.bashrc && \
-	echo 'export DESREMOTE=https://desar2.cosmology.illinois.edu:/DESFiles/desardata' >> ~/.bashrc && \
-	echo 'export DESPROJ=OPS' >> ~/.bashrc && \
-	echo 'export HOME=/home/user/site' >> ~/.bashrc && \
-	cp /root/.bashrc /home/user/.bashrc && chmod 755 /home/user/.bashrc && \
-	cp /root/.bash_profile /home/user/.bash_profile && chmod 755 /home/user/.bash_profile 
+
+	#echo 'if [ -f ~/.bashrc ]; then source ~/.bashrc; fi' >> ~/.bash_profile && \
+	#echo 'export PYTHONPATH' >> /software/des-oracle-linux-x86-64-v2/install/setup.sh && \
+	#echo 'source /software/des-oracle-linux-x86-64-v2/install/setup.sh' > ~/.bashrc && \
+	#echo 'export PYTHONPATH=/software/Balrog:${PYTHONPATH}' >> ~/.bashrc && \
+	#echo 'export DESREMOTE=https://desar2.cosmology.illinois.edu:/DESFiles/desardata' >> ~/.bashrc && \
+	#echo 'export DESPROJ=OPS' >> ~/.bashrc && \
+	#echo 'export HOME=/home/user/site' >> ~/.bashrc && \
+	#cp /root/.bashrc /home/user/.bashrc && chmod 755 /home/user/.bashrc && \
+	#cp /root/.bash_profile /home/user/.bash_profile && chmod 755 /home/user/.bash_profile 
+
+	echo 'export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/software/des-oracle-linux-x86-64-v2/install/instantclient_11_2' > /home/user/.bashrc && \
+	echo 'export LD_LIBRARY_PATH=/software/des-oracle-linux-x86-64-v2/install/instantclient_11_2' >> /home/user/.bashrc && \
+	echo 'export C_INCLUDE_PATH=/software/des-oracle-linux-x86-64-v2/install/instantclient_11_2' >> /home/user/.bashrc && \
+	echo 'export PYTHONPATH=/software/Balrog:/software/des-oracle-linux-x86-64-v2/install/cx_Oracle-5.1.1-ess' >> /home/user/.bashrc && \
+	echo 'export ORACLE_HOME=/software/des-oracle-linux-x86-64-v2/install/instantclient_11_2' >> /home/user/.bashrc && \
+	echo 'export DESREMOTE=https://desar2.cosmology.illinois.edu:/DESFiles/desardata' >> /home/user/.bashrc && \
+	echo 'export DESPROJ=OPS' >> /home/user/.bashrc && \
+	echo 'export HOME=/home/user/site' >> /home/user/.bashrc && \
+	chmod 755 /home/user/.bashrc
 
