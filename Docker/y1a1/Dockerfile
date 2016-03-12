@@ -3,12 +3,12 @@ MAINTAINER Eric Suchyta <eric.d.suchyta@gmail.com>
 
 ENV valarauko /Valarauko-job
 RUN  mkdir /software && \
-	echo "force this" && \
 	apt-get update && apt-get install -y wget libaio-dev python-dev libfftw3-dev libboost-all-dev libblas-dev scons git make libatlas-base-dev python-numpy pkg-config libfreetype6-dev libpng12-dev && \
 	mv /bin/sh /bin/sh.orig && ln -s /bin/bash /bin/sh && \
-	cd /software && wget https://bootstrap.pypa.io/get-pip.py && python get-pip.py && \
+	cd /software && wget https://bootstrap.pypa.io/get-pip.py && python get-pip.py && rm get-pip.py && \
 	#pip install --no-deps --upgrade numpy && \
-	pip install --no-deps astropy six pyparsing cycler python-dateutil matplotlib fitsio healpy esutil && \
+	pip install --no-deps astropy six pyparsing cycler python-dateutil matplotlib fitsio healpy && \
+	git clone https://github.com/esheldon/esutil.git && cd esutil && python setup.py install && cd /software && rm -r esutil && \
 	python -c "import healpy" && \
 
 	cd /software && wget http://www.cosmo.bnl.gov/www/esheldon/code/misc/des-oracle-linux-x86-64-v2.tar.gz && \
