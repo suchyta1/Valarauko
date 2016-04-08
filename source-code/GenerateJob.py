@@ -3,17 +3,13 @@
 import imp
 import os
 import sys
-import esutil
 import json
-import datetime
-import numpy as np
 import copy
 
-thisdir = os.path.dirname(os.path.realpath(__file__))
-updir = os.path.dirname(thisdir)
-RunConfigurations = imp.load_source('RunConfigurations', os.path.join(thisdir,'RunConfigurations.py'))
-shiftermodule = imp.load_source('shifter', os.path.join(thisdir,'shifter.py'))
-Files = imp.load_source('Files', os.path.join(thisdir,'Files.py'))
+import RunConfigurations
+import shifter
+import Files
+
 
 def Exit(msg):
     print msg
@@ -69,9 +65,7 @@ def GetConfig(where, config):
     db = RunConfigurations.DBInfo.default
 
     # what files to run balrog over
-    tileinfo = esutil.io.read(os.path.join(updir, 'tiles', 'spte-tiles.fits'))
-    tiles = tileinfo['tilename']
-
+    tiles = ['DES0438-4331']
 
     CustomConfig = imp.load_source('CustomConfig', config)
     run, balrog, db, tiles = CustomConfig.CustomConfig(run, balrog, db, tiles)
@@ -139,6 +133,7 @@ def GetConfig(where, config):
         
 
     """
+    import datetime
     hours, minutes, seconds = run['walltime'].split(':')
     duration = datetime.timedelta(hours=float(hours), minutes=float(minutes), seconds=float(seconds))
     if where.upper()=='EDISON':
