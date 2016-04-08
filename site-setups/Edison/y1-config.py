@@ -36,25 +36,25 @@ def CustomConfig(run, balrog, db, tiles):
     run = BuildJob.TrustEric(run, where='edison')
     run['ppn'] = 24
 
-    tstart = 0
-    tend = 1
+    tstart = 360
+    tend = 492
     tiles = tiles[tstart:tend]
 
-    run['nodes'] = 1
-    run['walltime'] = '00:25:00'
-    run['queue'] = 'debug'
-    run['npersubjob'] = 1
+    run['nodes'] = 33
+    run['walltime'] = '16:00:00'
+    run['queue'] = 'regular'
+    run['npersubjob'] = 4
     
     #baseout = os.environ['SCRATCH']
     baseout = '/scratch3/scratchdirs/esuchyta/'
-    run['dbname'] = 'y1a1_etest'
+    run['dbname'] = 'y1a1_sptn_01'
     run['joblabel'] = '%i-%i' %(tstart, tend)
     run['jobdir'] = os.path.join(baseout, 'BalrogJobs')
     run['outdir'] = os.path.join(baseout, 'BalrogScratch')
 
-    balrog['ngal'] = 10
-    run['downsample'] = balrog['ngal'] * run['ppn']
+    balrog['ngal'] = 1000
+    #run['downsample'] = balrog['ngal'] * run['ppn']
     run['runnum'] = 0 
-    run['DBoverwrite'] = True
+    run['DBoverwrite'] = False
 
     return run, balrog, db, tiles
