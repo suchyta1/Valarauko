@@ -7,7 +7,7 @@ BuildJob = imp.load_source('BuildJob', os.path.join(dir,'BuildJob.py'))
 
 
 def CustomConfig(run, balrog, db, tiles):
-    run['shifter'] = 'esuchyta/knope:y1a1'
+    run['shifter'] = 'esuchyta/valarauko:y1a1'
 
     '''
     run = BuildJob.TrustEric(run, where='edison')
@@ -21,7 +21,6 @@ def CustomConfig(run, balrog, db, tiles):
     dir = '/global/cscratch1/sd/esuchyta/cori-software/balrog_config/y1a1/'
     run['ppn'] = 32
     baseout = os.environ['SCRATCH']
-
 
     tiles = esutil.io.read(os.path.join(dir, 'spt-y1a1-only-g70-grizY.fits'))['tilename']
     run['pos'] = os.path.join(dir,'spt-y1a1-only-g70-grizY-pos-tile')
