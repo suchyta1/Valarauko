@@ -7,7 +7,7 @@ BuildJob = imp.load_source('BuildJob', os.path.join(dir,'BuildJob.py'))
 
 
 def CustomConfig(run, balrog, db, tiles):
-    run['shifter'] = 'esuchyta/knope:y1a1'
+    run['shifter'] = 'esuchyta/valarauko:y1a1'
 
     '''
     run = BuildJob.TrustEric(run, where='edison')
