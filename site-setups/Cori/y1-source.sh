@@ -24,7 +24,6 @@ function balrog_y1a1_setup
 	module load python-hpcp
 	module load numpy-hpcp
 	module load mpi4py-hpcp
-	module load healpy-hpcp
 	module load astropy-hpcp
 	module load boost-hpcp
 
@@ -53,6 +52,9 @@ function balrog_y1a1_setup
 	module load suchyta_utils/master
 	module load balrog/master
 	module load BalrogMPI/master
+
+	#module load healpy-hpcp
+	export PYTHONPATH=/global/cscratch1/sd/esuchyta/.local/lib/python2.7/site-packages/:${PYTHONPATH}
 }
 
 function hdf5_setup

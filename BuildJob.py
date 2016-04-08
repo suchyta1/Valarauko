@@ -18,9 +18,17 @@ def TrustEric(run, where='edison'):
         run['ppn'] = None
         run['asdependency'] = False
 
-    if where.lower()=='edison':
+    elif where.lower()=='edison':
         run['ppn'] = 48
         run['cores'] = 48
+        run['asdependency'] = True
+        run['email'] = None 
+        run['queue'] = 'regular'
+        run['stripe'] = 2
+
+    elif where.lower()=='cori':
+        run['ppn'] = 64
+        run['cores'] = 64
         run['asdependency'] = True
         run['email'] = None 
         run['queue'] = 'regular'
