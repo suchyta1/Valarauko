@@ -12,6 +12,7 @@ import multiprocessing
 import shutil
 import esutil
 
+import Files
 import RunBalrog as runbalrog
 import balrog as balrogmodule
 
@@ -100,7 +101,7 @@ def WaitExistence(RunConfig, runlog):
 
 
 def CheckAnyFail(RunConfig):
-    any = GetSubFiles(RunConfig, Files.anyfail)
+    any = GetSubFiles(RunConfig, Files.Files.anyfail)
     for i in range(RunConfig['nodes']):
         if os.path.exists(any[i]):
             raise Exception('Detected that subjob %i failed (or was killed because another job failed). You used allfail=True. Exiting.' %(i+1))
@@ -108,8 +109,8 @@ def CheckAnyFail(RunConfig):
 
 def CheckDup(RunConfig, runlog):
     done = False
-    ok = GetSubFiles(RunConfig, Files.dupok)
-    fail = GetSubFiles(RunConfig, Files.dupfail)
+    ok = GetSubFiles(RunConfig, Files.Files.dupok)
+    fail = GetSubFiles(RunConfig, Files.Files.dupfail)
     runlog.info("Making sure I can continue based your duplicate settings...")
     while not done:
         okcount = 0
@@ -411,46 +412,21 @@ def OpenRunLog(runlogdir):
     return runlog
 
 
-class Files:
-    substr = 'subjob'
-    depstr = 'dep'
-    startupfile = 'startupfile'
-    cok = 'createok'
-    cfail = 'createfail'
-    dupok = 'dupok'
-    dupfail = 'dupfail'
-    exit = 'exit'
-    anyfail = 'anyfail'
-    json = 'config.json'
-    runlog = 'runlog'
-
-
-def GetJsonDir(run, dirname, id):
-    '''
-    if (run['nodes'] > 1) or (run['asarray']):
-        jdir = os.path.join(dirname, '%s_%i'%(Files.substr,id))
-    else:
-        jdir = dirname
-    return jdir
-    '''
-    return os.path.join(dirname, '%s_%i'%(Files.substr,id))
-
-
 
 def GetSubFiles(RunConfig, kind):
     files = []
     dir = os.path.dirname(RunConfig['touchfile'])
     for i in range(RunConfig['nodes']):
-        sdir = GetJsonDir(RunConfig, dir, i+1)
+        sdir = Files.GetJsonDir(RunConfig, dir, i+1)
         files.append( os.path.join(sdir, kind) )
     return files
 
 
 def GetAllSubFiles(RunConfig):
-    okfiles = GetSubFiles(RunConfig, Files.dupok)
-    failfiles = GetSubFiles(RunConfig, Files.dupfail)
-    exitfiles = GetSubFiles(RunConfig, Files.exit)
-    anyfiles = GetSubFiles(RunConfig, Files.anyfail)
+    okfiles = GetSubFiles(RunConfig, Files.Files.dupok)
+    failfiles = GetSubFiles(RunConfig, Files.Files.dupfail)
+    exitfiles = GetSubFiles(RunConfig, Files.Files.exit)
+    anyfiles = GetSubFiles(RunConfig, Files.Files.anyfail)
     return okfiles, failfiles, exitfiles, anyfiles
 
 
@@ -477,7 +453,7 @@ def RemoveCheckFiles(config, runlog):
         RemoveIfNeeded(runlog, config['run']['touchfile'], config['run']['failfile'])
     RemoveIfNeeded(runlog, config['run']['dupokfile'], config['run']['dupfailfile'], config['run']['exitfile'], config['run']['anyfail'])
     open(config['run']['startupfile'],'a').close()
-    startfiles = GetSubFiles(config['run'], Files.startupfile)
+    startfiles = GetSubFiles(config['run'], Files.Files.startupfile)
     BlockIfNotExists(*startfiles)
 
 

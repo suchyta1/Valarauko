@@ -13,7 +13,7 @@ thisdir = os.path.dirname(os.path.realpath(__file__))
 updir = os.path.dirname(thisdir)
 RunConfigurations = imp.load_source('RunConfigurations', os.path.join(thisdir,'RunConfigurations.py'))
 shiftermodule = imp.load_source('shifter', os.path.join(thisdir,'shifter.py'))
-runtile = imp.load_source('runtile', os.path.join(thisdir,'RunTileJob.py'))
+Files = imp.load_source('Files', os.path.join(thisdir,'Files.py'))
 
 def Exit(msg):
     print msg
@@ -157,7 +157,7 @@ def GetConfig(where, config):
 
 
 def WriteJson(config,dirname, tiles,start,end):
-    jsonfile = os.path.join(dirname, '%s'%(runtile.Files.json))
+    jsonfile = os.path.join(dirname, '%s'%(Files.Files.json))
     config['tiles'] = list(tiles[start:end])
     with open(jsonfile, 'w') as outfile:
         json.dump(config, outfile)
@@ -165,7 +165,7 @@ def WriteJson(config,dirname, tiles,start,end):
 
 
 def StartJsonDir(run, dirname, id):
-    jdir = runtile.GetJsonDir(run, dirname, id)
+    jdir = Files.GetJsonDir(run, dirname, id)
     if (not os.path.exists(jdir)):
         os.makedirs(jdir)
     return jdir
@@ -177,28 +177,28 @@ def SubConfig(start,i, tiles, run,config, jobdir, shifter=None):
     id = i + 1
 
     sdir = StartJsonDir(run, jobdir, id)
-    run['exitfile'] = os.path.join(sdir, runtile.Files.exit)
-    run['startupfile'] = os.path.join(sdir, runtile.Files.startupfile)
+    run['exitfile'] = os.path.join(sdir, Files.Files.exit)
+    run['startupfile'] = os.path.join(sdir, Files.Files.startupfile)
     runcopy = copy.copy(run)
 
     if shifter is not None:
         runcopy['outdir'] = NewOutdir(runcopy, shifter)
         depdir = shifter.jobroot
-        subdir = runtile.GetJsonDir(run, depdir, id)
+        subdir = Files.GetJsonDir(run, depdir, id)
         runcopy['pos'] = shifter.posroot
         #runcopy['slr'] = shifter.slrroot
-        runcopy['exitfile'] = os.path.join(subdir, runtile.Files.exit)
-        runcopy['startupfile'] = os.path.join(subdir, runtile.Files.startupfile)
+        runcopy['exitfile'] = os.path.join(subdir, Files.Files.exit)
+        runcopy['startupfile'] = os.path.join(subdir, Files.Files.startupfile)
     else:
         depdir = jobdir
         subdir = sdir
 
-    runcopy['touchfile'] = os.path.join(depdir, runtile.Files.cok)
-    runcopy['failfile'] = os.path.join(depdir, runtile.Files.cfail)
-    runcopy['runlogdir'] = os.path.join(subdir, runtile.Files.runlog)
-    runcopy['dupokfile'] = os.path.join(subdir, runtile.Files.dupok)
-    runcopy['dupfailfile'] = os.path.join(subdir, runtile.Files.dupfail)
-    runcopy['anyfail'] = os.path.join(subdir, runtile.Files.anyfail)
+    runcopy['touchfile'] = os.path.join(depdir, Files.Files.cok)
+    runcopy['failfile'] = os.path.join(depdir, Files.Files.cfail)
+    runcopy['runlogdir'] = os.path.join(subdir, Files.Files.runlog)
+    runcopy['dupokfile'] = os.path.join(subdir, Files.Files.dupok)
+    runcopy['dupfailfile'] = os.path.join(subdir, Files.Files.dupfail)
+    runcopy['anyfail'] = os.path.join(subdir, Files.Files.anyfail)
     
     if i==0:
         runcopy['isfirst'] = True
@@ -223,8 +223,8 @@ def GetDepJobDir(run, jobname, k=0):
         run['DBoverwrite'] = False
     jobdir = run['jobdir']
     if run['ndependencies'] > 1:
-        run['jobname'] = '%s_%s_%i'%(jobname,runtile.Files.depstr,k+1)
-        jobdir = os.path.join(jobdir, '%s_%i'%(runtile.Files.depstr,k+1))
+        run['jobname'] = '%s_%s_%i'%(jobname,Files.Files.depstr,k+1)
+        jobdir = os.path.join(jobdir, '%s_%i'%(Files.Files.depstr,k+1))
         TryToMake(jobdir)
     return jobdir
 
@@ -286,22 +286,22 @@ def GetMainWork(setup, run, tiles, config, jobdir, shifter, space='', q='wq', sc
         cmd += """sjobdir=%s"""%(shifter.jobroot)
         jj = 'sjobdir'
 
-    file = "$jobdir/%s_$i/%s" %(runtile.Files.substr,runtile.Files.startupfile)
+    file = "$jobdir/%s_$i/%s" %(Files.Files.substr,Files.Files.startupfile)
     cmd += """for i in ${dirindex[@]}; do if [ -f %s ]; then rm %s; fi; done"""%(file,file)
     
     if q=='wq':
-        file = "$%s/%s_${dirindex[$i]}/%s" %(jj,runtile.Files.substr,runtile.Files.json)
+        file = "$%s/%s_${dirindex[$i]}/%s" %(jj,Files.Files.substr,Files.Files.json)
         cmd += """for ((i=0;i<%i;i++)); do mpirun -np 1 -host ${nodes[$i]} %s%s %s & done"""%(run['nodes'],scmds,allmpi,file)
     elif q=='slurm':
         run['email'] = None
-        file = "$%s/%s_$i/%s" %(jj,runtile.Files.substr,runtile.Files.json)
+        file = "$%s/%s_$i/%s" %(jj,Files.Files.substr,Files.Files.json)
         if shifter is not None:
             cmd += """for i in ${dirindex[@]}; do srun -N 1 -n 1 %s%s /bin/bash -c "source /home/user/.bashrc; %s %s" & done""" %(corestr, scmds, allmpi, file)
         else:
             cmd += """for i in ${dirindex[@]}; do srun -N 1 -n 1 %s%s %s & done""" %(corestr, allmpi, file)
 
     cmd += 'wait\n'
-    file = "$jobdir/%s_$i/%s" %(runtile.Files.substr,runtile.Files.exit)
+    file = "$jobdir/%s_$i/%s" %(Files.Files.substr,Files.Files.exit)
     cmd += """fails=0; files=""; for i in ${dirindex[@]}; do read -r result < %s; if [ "$result" = "1" ]; then let "fails+=1"; if [ $fails = "1" ]; then files="%s"; else files="${files},%s"; fi; fi; done;"""%(file,file,file)
     cmd += """if [ $fails = "0" ]; then echo "job succeeded"; code=0; else echo "job failed -- $fails failures -- bad exit files: $files"; code=1; fi"""
 
@@ -354,8 +354,8 @@ def WriteDepsJob(run, jobname,  t='    '):
     submit = os.path.join(run['jobdir'], 'submit.sh')
     with open(submit, 'w') as out:
         writer = DepWrite(t, out)
-        name = '%s_%s_$i'%(jobname,runtile.Files.depstr)
-        file = os.path.join('$jobdir', '%s_$i'%(runtile.Files.depstr), '%s.sl'%(name))
+        name = '%s_%s_$i'%(jobname,Files.Files.depstr)
+        file = os.path.join('$jobdir', '%s_$i'%(Files.Files.depstr), '%s.sl'%(name))
 
         writer.write('jobdir=%s'%(run['jobdir']), level=0)
         writer.write('arr=($(seq 1 %s))'%(run['ndependencies']), level=0)

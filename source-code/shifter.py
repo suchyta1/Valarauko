@@ -1,13 +1,4 @@
-#!/usr/bin/env python
-
-import imp
 import os
-import sys
-import esutil
-import json
-import datetime
-import numpy as np
-import copy
 
 class Y1A1shifter(object):
 
