@@ -40,20 +40,21 @@ def CustomConfig(run, balrog, db, tiles):
     run = BuildJob.TrustEric(run, where='BNL')
     run['ppn'] = 8
 
-    tstart = 0
-    tend = 2
-    tiles = tiles[tstart:tend]
+    #tstart = 0
+    #tend = 2
+    tiles = ['DES0451-3832','DES0457-3957']
     run['npersubjob'] = 1
     run['nodes'] = 2
-    run['DBoverwrite'] = True
 
-    run['dbname'] = 'y1a1_btest3'
-    run['joblabel'] = '%i-%i' %(tstart, tend)
+    run['dbname'] = 'y1a1_sptn_01'
+    #run['joblabel'] = '%i-%i' %(tstart, tend)
+    run['joblabel'] = 'missing_0_6'
     run['outdir'] = os.path.join(os.environ['SCRATCH'],'BalrogScratch')
     run['jobdir'] = os.path.join(os.environ['GLOBALDIR'],'BalrogJobs')
 
-    balrog['ngal'] = 10
-    run['downsample'] = balrog['ngal']*run['ppn']
+    balrog['ngal'] = 1000
+    #run['downsample'] = balrog['ngal'] * run['ppn']
     run['runnum'] = 0 
+    run['DBoverwrite'] = False
 
     return run, balrog, db, tiles
