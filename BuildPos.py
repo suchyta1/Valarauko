@@ -10,7 +10,8 @@ import desdb
 import esutil
 import fitsio
 import numpy.lib.recfunctions as rec
-import suchyta_utils as es
+
+import suchyta_utils.balrog
 import suchyta_utils.mpi as mpi
 from mpi4py import MPI
 
@@ -37,12 +38,19 @@ def GetPos(num, it, args):
     if args.seed is not None:
         np.random.seed(args.seed + it)
 
-    ra, dec = es.balrog.UniformRandom(num, ramin=0, ramax=360, decmin=-90, decmax=90)
+    ra, dec = suchyta_utils.balrog.UniformRandom(num, ramin=0, ramax=360, decmin=-90, decmax=90)
     pos = PosCat(ra, dec)
     return pos
 
 def FindInTile(pos, ra1, ra2, dec1, dec2):
-    cut = (pos['ra'] > ra1) & (pos['ra'] < ra2) & (pos['dec'] > dec1) & (pos['dec'] < dec2)
+    if ra2 > ra1:
+        rp = (pos['ra'] > ra1) & (pos['ra'] < ra2)
+    else:
+        rp = (pos['ra'] > ra1) | (pos['ra'] < ra2)
+
+    dp = (pos['dec'] > dec1) & (pos['dec'] < dec2)
+    cut = (rp & dp)
+
     return pos[cut]
 
 def GetTileDefs(args, strtype='|S12'):
@@ -146,7 +154,7 @@ def CatFiles(args, tilecopy, itcopy):
         outfile = os.path.join(args.outdir, '%s.fits'%(tile))
         header = GetHeader(args)
         esutil.io.write(outfile, pos, clobber=True, header=header)
-        print 'wrote %s'%(outfile)
+        print 'wrote %s'%(outfile), len(pos)
     MPI.COMM_WORLD.barrier()
 
 def AddIndexstart(tiles):
@@ -171,7 +179,7 @@ def WriteTmp(args, num, it, tiles):
 
 def EqualGen(args, tiles):
     for i  in range(len(tiles)):
-        ra, dec = es.balrog.UniformRandom(args.pertile, ramin=tiles[i]['urall'], ramax=tiles[i]['uraur'], decmin=tiles[i]['udecll'], decmax=tiles[i]['udecur'])
+        ra, dec = suchyta_utils.balrog.UniformRandom(args.pertile, ramin=tiles[i]['urall'], ramax=tiles[i]['uraur'], decmin=tiles[i]['udecll'], decmax=tiles[i]['udecur'])
         pos = PosCat(ra, dec)
         header = GetHeader(args)
         outfile = os.path.join(args.outdir, '%s.fits'%(tiles[i]['tilename']))
