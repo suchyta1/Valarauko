@@ -5,6 +5,7 @@ import numpy as np
 import esutil
 import fitsio
 import os
+import numpy.lib.recfunctions as rec
 
 if __name__ == "__main__":
 
@@ -37,9 +38,33 @@ if __name__ == "__main__":
     ntiles = fitsio.read(os.path.join(tiledir,'spt-y1a1-only-g70-grizY.fits'), ext=1, columns=['tilename'])
     cut = (~np.in1d(data['tilename'],otiles['tilename'])) & (~np.in1d(data['tilename'],ntiles['tilename']))
     data = data[cut]
-    
+
+    '''
     outfile = os.path.join(tiledir,'y1a1-spt-west-grizY.fits')
     if os.path.exists(outfile):
         os.remove(outfile)
     f = fitsio.FITS(outfile, 'rw')
     f.write(data)
+    '''
+    
+    r = np.copy(data['ra'])
+    neg = (r > 180)
+    r[neg] = r[neg] - 360
+    data = rec.append_fields(data, 'neg', r)
+    data = np.sort(data, order='neg')
+    data = rec.drop_fields(data, 'neg')
+
+
+    d1 = data[-1000:]
+    outfile = os.path.join(tiledir,'y1a1-sptw1-grizY.fits')
+    if os.path.exists(outfile):
+        os.remove(outfile)
+    f = fitsio.FITS(outfile, 'rw')
+    f.write(d1)
+
+    d2 = data[:-1000]
+    outfile = os.path.join(tiledir,'y1a1-sptw2-grizY.fits')
+    if os.path.exists(outfile):
+        os.remove(outfile)
+    f = fitsio.FITS(outfile, 'rw')
+    f.write(d2)
