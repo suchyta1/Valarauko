@@ -14,7 +14,7 @@ def Y1A1Setup(run, balrog, tiles):
     run['pos'] = os.path.join(dir,'spt-y1a1-only-g70-grizY-pos-tile')
     '''
     tiles = esutil.io.read(os.path.join(dir,'y1a1-sptw1-grizY.fits'))['tilename']
-    run['pos'] = os.path.join(dir,'y1a1-sptw1-grizY-tile-100000')
+    run['pos'] = os.path.join(dir,'y1a1-sptw2-grizY-tile-100000')
 
 
     run['release'] = 'y1a1_coadd'
@@ -43,23 +43,23 @@ def CustomConfig(run, balrog, db, tiles):
     run['ppn'] = 24
 
     tstart = 0
-    tend = 2
+    tend = 500
     tiles = tiles[tstart:tend]
 
-    run['nodes'] = 1
-    run['walltime'] = '00:30:00'
-    run['queue'] = 'debug'
-    run['npersubjob'] = 1
+    run['nodes'] = 25
+    run['walltime'] = '16:00:00'
+    run['queue'] = 'regular'
+    run['npersubjob'] = 4
     
-    #baseout = os.environ['SCRATCH']
-    baseout = '/scratch3/scratchdirs/esuchyta/'
-    run['dbname'] = 'y1a1_htest'
+    baseout = os.environ['SCRATCH']
+    #baseout = '/scratch3/scratchdirs/esuchyta/'
+    run['dbname'] = 'y1a1_sptw_02'
     run['joblabel'] = '%i-%i' %(tstart, tend)
     run['jobdir'] = os.path.join(baseout, 'BalrogJobs')
     run['outdir'] = os.path.join(baseout, 'BalrogScratch')
 
-    balrog['ngal'] = 10
-    run['downsample'] = balrog['ngal'] * run['ppn']
+    balrog['ngal'] = 1000
+    #run['downsample'] = balrog['ngal'] * run['ppn']
     run['runnum'] = 0 
     run['DBoverwrite'] = False
 
