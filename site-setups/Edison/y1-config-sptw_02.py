@@ -9,19 +9,13 @@ BuildJob = imp.load_source('BuildJob', os.path.join(dir,'BuildJob.py'))
 def Y1A1Setup(run, balrog, tiles):
     dir = os.environ['Y1A1_DIR']
 
-    '''
-    tiles = esutil.io.read(os.path.join(dir, 'spt-y1a1-only-g70-grizY.fits'))['tilename']
-    run['pos'] = os.path.join(dir,'spt-y1a1-only-g70-grizY-pos-tile')
-    '''
-    tiles = esutil.io.read(os.path.join(dir,'y1a1-sptw1-grizY.fits'))['tilename']
+    tiles = esutil.io.read(os.path.join(dir,'y1a1-sptw2-grizY.fits'))['tilename']
     run['pos'] = os.path.join(dir,'y1a1-sptw2-grizY-tile-100000')
-
 
     run['release'] = 'y1a1_coadd'
     run['db-columns'] = os.path.join(dir, 'y1a1_coadd_objects-columns.fits')
     run['balrog'] = os.path.join(os.environ['LOCAL'], 'software', 'Balrog', 'balrog.py')
 
-    #balrog['pyconfig'] = os.path.join(dir, 'Y1-only.py')
     balrog['pyconfig'] = os.path.join( os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__)))), 'pyconfig', 'y1a1.py')
     balrog['catalog'] = os.path.join(dir, 'CMC_originalR_v1.fits')
     balrog['slrdir'] = dir
