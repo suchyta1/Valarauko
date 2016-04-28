@@ -129,7 +129,7 @@ def FitsVerify(oscmd, outfile, str, setup, maxtries):
                 balrog.SysInfoPrint(setup, "Attempt %i: %s failed checksum."%(tries,str))
                 tries += 1
         if tries >= maxtries:
-            raise Exception('%s still failing after the maximum %i tries. Giving up.'%(str,maxentries) )
+            raise Exception('%s still failing after the maximum %i tries. Giving up.'%(str,maxtries) )
 
 def WgetFits(outfile, file, setup, RunConfig):
     oscmd = [RunConfig['wget'], '--quiet', '--no-check-certificate', file, '-O', outfile]
