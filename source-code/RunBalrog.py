@@ -142,24 +142,19 @@ def FunpackFits(outfile, infile, setup, RunConfig):
 def DoDownload(args):
     file, dfile, ufile, RunConfig, dlogdir = args
 
-    print 'a'
     host = socket.gethostname()
     f = os.path.basename(file)
     dlogfile = os.path.join(dlogdir, '%s.log'%(f))
 
-    print 'b'
     if RunConfig['command']=='popen':
         dlog = SetupLog(dlogfile, host, f, stream=True)
     elif RunConfig['command']=='system':
         dlog = dlogfile
-    print 'c'
     logsetup = balrog.SystemCallSetup(retry=RunConfig['retry'], redirect=dlog, kind=RunConfig['command'], useshell=RunConfig['useshell'])
-    print 'd'
 
     WgetFits(dfile, file, logsetup, RunConfig)
     if ufile is not None:
         FunpackFits(ufile, dfile, logsetup, RunConfig)
-    print 'e'
 
 
 def ParallelDownload(derived, RunConfig, runlogdir):
