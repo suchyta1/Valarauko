@@ -9,8 +9,8 @@ BuildJob = imp.load_source('BuildJob', os.path.join(dir,'BuildJob.py'))
 def Y1A1Setup(run, balrog, tiles):
     dir = os.environ['Y1A1_DIR']
 
-    tiles = esutil.io.read(os.path.join(dir,'y1a1-sptw1-grizY.fits'))['tilename']
-    run['pos'] = os.path.join(dir,'y1a1-sptw1-grizY-tile-100000')
+    tiles = esutil.io.read(os.path.join(dir,'y1a1-sptw2-grizY.fits'))['tilename']
+    run['pos'] = os.path.join(dir,'y1a1-sptw2-grizY-tile-100000')
 
     run['release'] = 'y1a1_coadd'
     run['db-columns'] = os.path.join(dir, 'y1a1_coadd_objects-columns.fits')
