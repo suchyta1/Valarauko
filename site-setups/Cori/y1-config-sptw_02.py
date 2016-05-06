@@ -8,8 +8,8 @@ BuildJob = imp.load_source('BuildJob', os.path.join(dir,'BuildJob.py'))
 
 def Y1A1Setup(run, balrog, tiles):
     dir = os.environ['BALROG_CONFIG']
-    tiles = esutil.io.read(os.path.join(dir,'y1a1-sptw1-grizY.fits'))['tilename']
-    run['pos'] = os.path.join(dir,'y1a1-sptw1-grizY-tile-100000')
+    tiles = esutil.io.read(os.path.join(dir,'y1a1-sptw2-grizY.fits'))['tilename']
+    run['pos'] = os.path.join(dir,'y1a1-sptw2-grizY-tile-100000')
 
     run['balrog'] = '/global/cscratch1/sd/esuchyta/cori-software/NewBalrog/Balrog/balrog.py'
     balrog['pyconfig'] = os.path.join( os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__)))), 'pyconfig', 'y1a1.py')
