@@ -42,24 +42,24 @@ def CustomConfig(run, balrog, db, tiles):
     run['duplicate'] = None
     run['ppn'] = 24
 
-    tstart = 0
-    tend = 2
+    tstart = 200
+    tend = 1000
     tiles = tiles[tstart:tend]
 
-    run['nodes'] = 1
-    run['walltime'] = '00:30:00'
-    run['queue'] = 'debug'
-    run['npersubjob'] = 1
+    run['nodes'] = 50
+    run['walltime'] = '16:00:00'
+    run['queue'] = 'regular'
+    run['npersubjob'] = 4
     
     #baseout = os.environ['SCRATCH']
     baseout = '/scratch3/scratchdirs/esuchyta/'
-    run['dbname'] = 'y1a1_htest'
+    run['dbname'] = 'y1a1_sptw_01'
     run['joblabel'] = '%i-%i' %(tstart, tend)
     run['jobdir'] = os.path.join(baseout, 'BalrogJobs')
     run['outdir'] = os.path.join(baseout, 'BalrogScratch')
 
-    balrog['ngal'] = 10
-    run['downsample'] = balrog['ngal'] * run['ppn']
+    balrog['ngal'] = 1000
+    #run['downsample'] = balrog['ngal'] * run['ppn']
     run['runnum'] = 0 
     run['DBoverwrite'] = False
 

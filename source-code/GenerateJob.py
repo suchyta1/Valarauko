@@ -5,6 +5,7 @@ import os
 import sys
 import json
 import copy
+import stat
 
 import RunConfigurations
 import shifter
@@ -15,12 +16,33 @@ def Exit(msg):
     print msg
     sys.exit(1)
 
-def TryToMake(dir):
+def TryToMake(dir, pcheck=None):
     if not os.path.exists(dir):
         try:
             os.makedirs(dir)
         except:
             Exit( 'Could not make %s'%(dir) )
+
+    if pcheck:
+        d = dir.rstrip('/')
+        darr = d.split('/')[1:]
+        darr[0] = '/%s'%(darr[0])
+        for i in range(len(darr)):
+            end = len(darr) - i
+            dd = os.path.join(*darr[:end])
+            st = os.stat(dd)
+
+            owner_w = bool(st.st_mode & stat.S_IWUSR)
+            if owner_w:
+                group_r = bool(st.st_mode & stat.S_IRGRP)
+                group_x = bool(st.st_mode & stat.S_IXGRP)
+                other_r = bool(st.st_mode & stat.S_IROTH)
+                other_x = bool(st.st_mode & stat.S_IXOTH)
+                all = (group_r and group_x and other_r and other_x)
+                if not all:
+                    os.chmod(dd, 0755)
+            else:
+                break
 
 
 def NewOutdir(run, shifter, key='outdir'):
@@ -118,11 +140,12 @@ def GetConfig(where, config):
     if run['jobdir'] is None:
         run['jobdir'] = os.path.dirname(os.path.realpath(__file__))
         print 'No run jobdir given, setting it to: %s'%(run['jobdir'])
-    TryToMake(run['jobdir'])
+    TryToMake(run['jobdir'], pcheck=True)
+
     if run['outdir'] is None:
         run['outdir'] = os.path.dirname(os.path.realpath(__file__))
         print 'No run jobdir given, setting it to: %s'%(run['outdir'])
-    TryToMake(run['outdir'])
+    TryToMake(run['outdir'], pcheck=True)
 
 
     run['jobname'] = '%s-%s' %(run['dbname'], run['joblabel'])
