@@ -9,6 +9,7 @@ import copy
 import stat
 import getpass
 import pwd
+import re
 
 import RunConfigurations
 import shifter
@@ -337,6 +338,15 @@ def GetMainWork(setup, run, tiles, config, jobdir, shifter, space='', q='wq', sc
     return cmd, start
 
 
+def ScratchSearch(thing, ott):
+    reg = re.compile('scratch(\d)')
+    match = reg.search(thing)
+    if match is not None:
+        s = int(match.group(1))
+        ott[s-1] = True
+    return ott
+
+
 def ShifterCmdline(img, jobdir, run, shifter, balrog):
     netrc = os.path.join(os.environ['HOME'])
     vols = [ [jobdir,shifter.jobroot], [run['outdir'],shifter.outroot], [netrc,shifter.homeroot], [balrog['slrdir'],shifter.slrroot], [run['pos'],shifter.posroot], [os.path.dirname(balrog['catalog']),shifter.catroot] ]
@@ -346,6 +356,11 @@ def ShifterCmdline(img, jobdir, run, shifter, balrog):
     return scmds
 
 def SlurmDirectives(run, config, allnodes, jobdir, shifter, scmds=''):
+
+    ott = [False, False, False]
+    ott = ScratchSearch(jobdir, ott)
+    ott = ScratchSearch(run['outdir'], ott)
+
     ofile = os.path.join(jobdir, '%s-%%j.out'%(run['jobname']))
     descr = CmdFormat(indent='#SBATCH ', cmd="#!/bin/bash -l \n\n")
     descr += '--job-name=%s'%(run['jobname'])
@@ -360,6 +375,11 @@ def SlurmDirectives(run, config, allnodes, jobdir, shifter, scmds=''):
         scmds = ShifterCmdline(img, jobdir, run, shifter, config['balrog'])
         config['balrog']['slrdir'] = shifter.slrroot
         config['balrog']['catalog'] = os.path.join(shifter.catroot, os.path.basename(config['balrog']['catalog']))
+
+    for i in range(len(ott)):
+        if ott[i]:
+            descr += '--license=scratch%i'%(i+1)
+
     return descr, scmds
 
 
