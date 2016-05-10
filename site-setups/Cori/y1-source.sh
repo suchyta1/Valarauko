@@ -55,6 +55,7 @@ function balrog_y1a1_setup
 
 	#module load healpy-hpcp
 	export PYTHONPATH=/global/cscratch1/sd/esuchyta/.local/lib/python2.7/site-packages/:${PYTHONPATH}
+	umask u=wrx,g=rx,o=rx
 }
 
 function hdf5_setup

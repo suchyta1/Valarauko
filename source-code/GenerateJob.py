@@ -5,7 +5,10 @@ import os
 import sys
 import json
 import copy
+
 import stat
+import getpass
+import pwd
 
 import RunConfigurations
 import shifter
@@ -33,13 +36,15 @@ def TryToMake(dir, pcheck=None):
             st = os.stat(dd)
 
             owner_w = bool(st.st_mode & stat.S_IWUSR)
-            if owner_w:
-                group_r = bool(st.st_mode & stat.S_IRGRP)
-                group_x = bool(st.st_mode & stat.S_IXGRP)
-                other_r = bool(st.st_mode & stat.S_IROTH)
-                other_x = bool(st.st_mode & stat.S_IXOTH)
-                all = (group_r and group_x and other_r and other_x)
-                if not all:
+            user = getpass.getuser()
+            owner = pwd.getpwuid(st.st_uid).pw_name
+
+            if (user==owner):
+                checks = [stat.S_IRUSR, stat.S_IWUSR, stat.S_IXUSR, stat.S_IRGRP, stat.S_IXGRP, stat.S_IROTH, stat.S_IXOTH]
+                sff = True
+                for check in checks:
+                    sff = (sff & bool(st.st_mode & checks[i]))
+                if not sff:
                     os.chmod(dd, 0755)
             else:
                 break
@@ -240,10 +245,12 @@ def GetDepJobDir(run, jobname, k=0):
     if k > 0:
         run['DBoverwrite'] = False
     jobdir = run['jobdir']
-    if run['ndependencies'] > 1:
-        run['jobname'] = '%s_%s_%i'%(jobname,Files.Files.depstr,k+1)
-        jobdir = os.path.join(jobdir, '%s_%i'%(Files.Files.depstr,k+1))
-        TryToMake(jobdir)
+
+    #if run['ndependencies'] > 1:
+    run['jobname'] = '%s_%s_%i'%(jobname,Files.Files.depstr,k+1)
+    jobdir = os.path.join(jobdir, '%s_%i'%(Files.Files.depstr,k+1))
+    TryToMake(jobdir)
+
     return jobdir
 
 
@@ -375,6 +382,7 @@ def WriteDepsJob(run, jobname,  t='    '):
         name = '%s_%s_$i'%(jobname,Files.Files.depstr)
         file = os.path.join('$jobdir', '%s_$i'%(Files.Files.depstr), '%s.sl'%(name))
 
+        writer.write('umask u=wrx,g=rx,o=rx', level=0)
         writer.write('jobdir=%s'%(run['jobdir']), level=0)
         writer.write('arr=($(seq 1 %s))'%(run['ndependencies']), level=0)
         writer.write('for i in "${arr[@]}"; do', level=0)
@@ -430,8 +438,8 @@ def Generate_Job(run,balrog,db,tiles,  where, setup, shifter):
             jobfile = os.path.join(jobdir, '%s.sl' %(run['jobname']))
             WriteOut(jobfile, out)
 
-    if run['ndependencies'] > 1:
-        jobfile = WriteDepsJob(run, jobname)
+    #if run['ndependencies'] > 1:
+    jobfile = WriteDepsJob(run, jobname)
 
     return jobfile
 
