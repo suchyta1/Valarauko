@@ -8,8 +8,8 @@ BuildJob = imp.load_source('BuildJob', os.path.join(dir,'BuildJob.py'))
 
 def Y1A1Setup(run, balrog, tiles):
     dir = os.environ['BALROG_CONFIG']
-    tiles = esutil.io.read(os.path.join(dir, 'spt-y1a1-only-g70-grizY.fits'))['tilename']
-    run['pos'] = os.path.join(dir,'spt-y1a1-only-g70-grizY-pos-tile')
+    tiles = esutil.io.read(os.path.join(dir,'y1a1-sptw1-grizY.fits'))['tilename']
+    run['pos'] = os.path.join(dir,'y1a1-sptw1-grizY-tile-100000')
 
     run['balrog'] = '/global/cscratch1/sd/esuchyta/cori-software/NewBalrog/Balrog/balrog.py'
     balrog['pyconfig'] = os.path.join( os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__)))), 'pyconfig', 'y1a1.py')
@@ -31,27 +31,28 @@ def Y1A1Setup(run, balrog, tiles):
 def CustomConfig(run, balrog, db, tiles):
     run, balrog, tiles = Y1A1Setup(run, balrog, tiles)
     run = BuildJob.TrustEric(run, where='cori')
+    run['duplicate'] = None
     run['ppn'] = 32
 
-    tstart = 0
-    tend = 1
+    tstart = 635
+    tend = 685
     tiles = tiles[tstart:tend]
 
-    run['nodes'] = len(tiles)
-    run['walltime'] = '00:30:00'
-    run['queue'] = 'debug'
+    run['nodes'] = 50
+    run['walltime'] = '5:00:00'
+    run['queue'] = 'regular'
     run['npersubjob'] = 1
 
     baseout = os.environ['SCRATCH']
-    run['dbname'] = 'ctest'
+    run['dbname'] = 'y1a1_sptw_01'
     run['joblabel'] = '%i-%i' %(tstart, tend)
     run['jobdir'] = os.path.join(baseout, 'BalrogJobs')
     run['outdir'] = os.path.join(baseout, 'BalrogScratch')
 
-    balrog['ngal'] = 10
-    run['downsample'] = balrog['ngal'] * run['ppn']
+    balrog['ngal'] = 1000
+    #run['downsample'] = balrog['ngal'] * run['ppn']
     run['runnum'] = 0 
-    run['DBoverwrite'] = True
+    run['DBoverwrite'] = False
 
     return run, balrog, db, tiles
 
