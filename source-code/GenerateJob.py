@@ -43,7 +43,7 @@ def TryToMake(dir, pcheck=None):
                 checks = [stat.S_IRUSR, stat.S_IWUSR, stat.S_IXUSR, stat.S_IRGRP, stat.S_IXGRP, stat.S_IROTH, stat.S_IXOTH]
                 sff = True
                 for check in checks:
-                    sff = (sff & bool(st.st_mode & checks[i]))
+                    sff = (sff & bool(st.st_mode & check))
                 if not sff:
                     os.chmod(dd, 0755)
             else:
