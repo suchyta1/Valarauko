@@ -23,9 +23,8 @@ In short, having everything setup is somewhat non-trivial.
 The package itself doesn't really require any building -- just cloning the code --
 but there are about a gazillion dependencies you need for the code to actually successfully run, most of which are python modules. 
 Right now I have everything installed on the [Astro cluster](https://wiki.bnl.gov/astro/index.php/Computing) at BNL, 
-and [Edison](http://www.nersc.gov/users/computational-systems/edison/) at NERSC.
-It's more or less installed on [Cori](http://www.nersc.gov/users/computational-systems/cori/) too, 
-(unless the hpcp modules changed there too), but I'm getting very slow performance there for some reason, so I'm not using Cori.
+and [Edison](http://www.nersc.gov/users/computational-systems/edison/) and  [Cori](http://www.nersc.gov/users/computational-systems/cori/) at NERSC,
+(but wget is broken on the compute nodes on Cori, so I'm not using it.)
 See [below](https://github.com/suchyta1/Valarauko#generating-the-balrog-job) about integrating the software setup into the `Balrog` runtime.
 
 
@@ -43,7 +42,7 @@ There is a file called [`BuildPos.py`](https://github.com/suchyta1/BalrogMPI/blo
 Run `BuildPos.py --help` for the command line arguments. They should be relatively clear.
 If you use the same `--seed`, `--density`/`--pertile`, (and `--iterateby` if using `--density`),
 with the same file given in `--tiles`, you'll get the same positions. 
-If you append to the `--tiles` file and run again, you'll ultimate generate `balrog_index` values which are consistent for the common tiles.
+If you append to the `--tiles` file and run again, you'll ultimately generate `balrog_index` values which are consistent for the common tiles.
 
 I haven't supplied a script to generate jobs for `BuildPos.py`, 
 because you likely don't need to do this very often, and at any rate, it's not very complex. You'll want an `mpirun` (or `srun`, or whatever) something like below.
@@ -104,7 +103,7 @@ look at an example ([e.g. here](https://github.com/suchyta1/BalrogMPI/blob/maste
 Some explanations are below. The `balrog` dictionary entries are command line arguments to Balrog.
 You almost definitely don't need to worry about the `db` dictionary. Most things are part of `run`.
 
-* `dbname` -- the DB tables you'll write to. You'll get tables with this names, appended with `['truth','sim','nosim']` (and empty `'des'`).
+* `dbname` -- the DB tables you'll write to. You'll get tables with this name, appended with `['truth','sim','nosim']` (and empty `'des'`).
 * `jobdir` -- where output job files write
 * `outdir` -- where output temporary files (images, etc.) write. Set this to somewhere on the scratch disk.
 * `pyconfig` -- the `Balrog` `--pyconfig` file.
@@ -115,15 +114,10 @@ You almost definitely don't need to worry about the `db` dictionary. Most things
 * `nodes` -- how many nodes your job will use.
 * `npersubjob` -- number of tiles to run on each node (in each job file). Tiles on the same node run sequentially.
 
-`len(tiles)/(nodes*npersubjob)` must be an intger with `SLURM`, and equal to 1 if you're using `wq`
-or a `SLURM` job array.
+`n = len(tiles)/(nodes*npersubjob)` must be an intger with `SLURM`, and equal to 1 if you're using `wq`.
+If `n > 1`, then `n` dependent jobs will be submitted, where the subsequent jobs are dependent on the previous one's success.
+(I'm thinking about removing the success stipulation.)
 
-#### `SLURM` only
-
-* `asdependency (default=True)` -- `if len(tiles)/(nodes*npersubjob)==N`, where `N > 1`, split the workload into `N` jobs, where each is dependent on the previous. 
-This will generate a shell script that submits the dependent jobs.
-* `asarray` -- Submit subjobs (i.e. each node running `npersubjob` tiles) as part of a [`SLURM` job array](http://slurm.schedmd.com/job_array.html). 
-* `arraymax` -- sets max number of simultaneous running subjobs in an array.
 
 #### Dangerous (but can be useful)
 

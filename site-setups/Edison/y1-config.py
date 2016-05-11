@@ -42,7 +42,7 @@ def CustomConfig(run, balrog, db, tiles):
     run['duplicate'] = None
     run['ppn'] = 24
 
-    tstart = 200
+    tstart = 800
     tend = 1000
     tiles = tiles[tstart:tend]
 
