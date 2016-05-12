@@ -37,7 +37,7 @@ def CustomConfig(run, balrog, db, tiles):
     run['ppn'] = 24
 
     tstart = 0
-    tend = 1
+    tend = 2
     tiles = tiles[tstart:tend]
 
     run['nodes'] = 1
@@ -48,7 +48,7 @@ def CustomConfig(run, balrog, db, tiles):
     #baseout = os.environ['SCRATCH']
     baseout = '/scratch3/scratchdirs/esuchyta/'
     run['dbname'] = 'y1a1_jtest'
-    run['joblabel'] = '%i-%i_4' %(tstart, tend)
+    run['joblabel'] = '%i-%i_5' %(tstart, tend)
     run['jobdir'] = os.path.join(baseout, 'BalrogJobs')
     run['outdir'] = os.path.join(baseout, 'BalrogScratch')
 

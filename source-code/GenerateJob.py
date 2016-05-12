@@ -112,6 +112,7 @@ def GetConfig(where, config):
     run['retry'] = False
     run['wgetmax'] = 10
     run['funpackmax'] = 10
+    run['dependency'] = 'afterany'
 
     balrog['systemcmd'] = run['command']
     balrog['retrycmd'] = run['retry']
@@ -409,7 +410,8 @@ def WriteDepsJob(run, jobname,  t='    '):
         writer.write('if [ "$i" = "1" ]; then', level=1)
         writer.write('cmd="sbatch %s"'%(file), level=2)
         writer.write('else', level=1)
-        writer.write('cmd="sbatch --dependency=afterok:$dep %s"'%(file), level=2)
+        #writer.write('cmd="sbatch --dependency=afterok:$dep %s"'%(file), level=2)
+        writer.write('cmd="sbatch --dependency=%s:$dep %s"'%(run['dependency'],file), level=2)
         writer.write('fi', level=1)
         writer.write('out="$($cmd)"', level=1)
         writer.write('outarr=($out)', level=1)
