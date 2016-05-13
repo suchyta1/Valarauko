@@ -460,8 +460,8 @@ def Generate_Job(run,balrog,db,tiles,  where, setup, shifter):
             jobfile = os.path.join(jobdir, '%s.sl' %(run['jobname']))
             WriteOut(jobfile, out)
 
-    #if run['ndependencies'] > 1:
-    jobfile = WriteDepsJob(run, jobname)
+        #if run['ndependencies'] > 1:
+        jobfile = WriteDepsJob(run, jobname)
 
     return jobfile
 

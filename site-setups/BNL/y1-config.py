@@ -27,9 +27,8 @@ def Y1A1Setup(run, balrog, tiles):
     balrog['sexconfig'] = '/gpfs01/astro/workarea/esuchyta/software/Y1A1-config/20150806_sex.config'
     #balrog['sexconfig'] = '/gpfs01/astro/workarea/esuchyta/software/Y1A1-config/test_sex.config'
 
-    tiles = esutil.io.read('/gpfs01/astro/workarea/esuchyta/git-repos/BalrogDirs/2015-Nov/BalrogMPI/tiles/spt-y1a1-only-g70-grizY.fits')['tilename']
-    run['pos'] = '/gpfs01/astro/workarea/esuchyta/software/Y1A1-config/spt-y1a1-only-g70-grizY-pos-tile'
-    #run['pos'] = '/gpfs01/astro/workarea/esuchyta/software/Y1A1-config/spt-y1a1-only-g70-grizY-pos-sphere'
+    tiles = esutil.io.read('/gpfs01/astro/workarea/esuchyta/git-repos/BalrogDirs/2015-Nov/BalrogMPI/tiles/y1a1-sptw1-grizY.fits')['tilename']
+    run['pos'] = '/gpfs01/astro/workarea/esuchyta/software/Y1A1-config/y1a1-sptw1-grizY-tile-100000'
 
     return run, balrog, tiles
 
@@ -38,17 +37,16 @@ def CustomConfig(run, balrog, db, tiles):
     run, balrog, tiles = Y1A1Setup(run, balrog, tiles)
     run['email'] = 'eric.d.suchyta@gmail.com'
     run = BuildJob.TrustEric(run, where='BNL')
+    run['duplicate'] = None
     run['ppn'] = 8
 
-    #tstart = 0
-    #tend = 2
-    tiles = ['DES0451-3832','DES0457-3957']
+    tiles = ['DES0324-4748', 'DES0326-4914', 'DES0326-5457', 'DES0328-4249', 'DES0328-5205']
     run['npersubjob'] = 1
-    run['nodes'] = 2
+    run['nodes'] = 5
 
-    run['dbname'] = 'y1a1_sptn_01'
+    run['dbname'] = 'y1a1_sptw_01'
     #run['joblabel'] = '%i-%i' %(tstart, tend)
-    run['joblabel'] = 'missing_0_6'
+    run['joblabel'] = 'cori-wget-600-635'
     run['outdir'] = os.path.join(os.environ['SCRATCH'],'BalrogScratch')
     run['jobdir'] = os.path.join(os.environ['GLOBALDIR'],'BalrogJobs')
 
