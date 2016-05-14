@@ -339,13 +339,15 @@ def GetMainWork(setup, run, tiles, config, jobdir, shifter, space='', q='wq', sc
     return cmd, start
 
 
-def ScratchSearch(thing, ott):
-    reg = re.compile('scratch(\d)')
+def ScratchSearch(thing, ott, cott):
+    reg = re.compile('c?scratch(\d)')
     match = reg.search(thing)
     if match is not None:
         s = int(match.group(1))
         ott[s-1] = True
-    return ott
+        if match.group(0)[0]=='c':
+            cott[s-1] = 'c'
+    return ott, cott
 
 
 def ShifterCmdline(img, jobdir, run, shifter, balrog):
@@ -359,8 +361,9 @@ def ShifterCmdline(img, jobdir, run, shifter, balrog):
 def SlurmDirectives(run, config, allnodes, jobdir, shifter, scmds=''):
 
     ott = [False, False, False]
-    ott = ScratchSearch(jobdir, ott)
-    ott = ScratchSearch(run['outdir'], ott)
+    cott = ['','','']
+    ott, cott = ScratchSearch(jobdir, ott, cott)
+    ott, cott = ScratchSearch(run['outdir'], ott, cott)
 
     ofile = os.path.join(jobdir, '%s-%%j.out'%(run['jobname']))
     descr = CmdFormat(indent='#SBATCH ', cmd="#!/bin/bash -l \n\n")
@@ -379,7 +382,7 @@ def SlurmDirectives(run, config, allnodes, jobdir, shifter, scmds=''):
 
     for i in range(len(ott)):
         if ott[i]:
-            descr += '--license=scratch%i'%(i+1)
+            descr += '--license=%sscratch%i'%(cott[i],i+1)
 
     return descr, scmds
 

@@ -35,17 +35,17 @@ def CustomConfig(run, balrog, db, tiles):
     run['ppn'] = 32
 
     tstart = 0
-    tend = 1
+    tend = 25
     tiles = tiles[tstart:tend]
 
-    run['nodes'] = 1
-    run['walltime'] = '00:30:00'
-    run['queue'] = 'debug'
+    run['nodes'] = 25
+    run['walltime'] = '01:00:00'
+    run['queue'] = 'regular'
     run['npersubjob'] = 1
 
     baseout = os.environ['SCRATCH']
     run['dbname'] = 'y1a1_ctest'
-    run['joblabel'] = '%i-%i' %(tstart, tend)
+    run['joblabel'] = '%i-%i_timeout' %(tstart, tend)
     run['jobdir'] = os.path.join(baseout, 'BalrogJobs')
     run['outdir'] = os.path.join(baseout, 'BalrogScratch')
 
