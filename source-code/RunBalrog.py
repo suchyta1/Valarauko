@@ -119,7 +119,7 @@ def FitsVerify(oscmd, outfile, str, setup, maxtries):
     tries = 0
     while not done:
         Remove(outfile)
-        balrog.SystemCall(oscmd, setup=setup, delfiles=[outfile], timeout=(60*15))
+        balrog.SystemCall(oscmd, setup=setup, delfiles=[outfile])
         with warnings.catch_warnings():
             warnings.filterwarnings('error')
             try:

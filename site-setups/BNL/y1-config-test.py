@@ -16,9 +16,8 @@ def Y1A1Setup(run, balrog, tiles):
     run['db-columns'] = '/gpfs01/astro/workarea/esuchyta/software/Y1A1-config/y1a1_coadd_objects-columns.fits'
 
     balrog['pyconfig'] = os.path.join( os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__)))), 'pyconfig', 'y1a1.py')
+    balrog['catalog'] = '/astro/u/jelena/Balrog/Catalogs/CMC_originalR_v1.fits'
     balrog['slrdir'] = '/gpfs01/astro/workarea/esuchyta/software/SLR'
-    #balrog['catalog'] = '/astro/u/jelena/Balrog/Catalogs/CMC_originalR_v1.fits'
-    balrog['catalog'] = '/gpfs01/astro/workarea/esuchyta/git-repos/BalrogDirs/2015-Nov/BalrogMPI/aux/CMC_originalR_v1_100-n.fits'
 
     balrog['sexnnw'] = '/gpfs01/astro/workarea/esuchyta/software/Y1A1-config/20150806_sex.nnw'
     balrog['sexconv'] = '/gpfs01/astro/workarea/esuchyta/software/Y1A1-config/20150806_sex.conv'
@@ -40,21 +39,20 @@ def CustomConfig(run, balrog, db, tiles):
     run = BuildJob.TrustEric(run, where='BNL')
     run['duplicate'] = None
     run['ppn'] = 8
-    run['fixwrapseed'] = 100
 
-    tstart = 785
-    tend = 800
+    tstart = 0
+    tend = 1
     tiles = tiles[tstart:tend]
     run['npersubjob'] = 1
-    run['nodes'] = 15
+    run['nodes'] = 1
 
-    run['dbname'] = 'y1a1_n100'
+    run['dbname'] = 'y1a1_btest'
     run['joblabel'] = '%i-%i' %(tstart, tend)
     run['outdir'] = os.path.join(os.environ['SCRATCH'],'BalrogScratch')
     run['jobdir'] = os.path.join(os.environ['GLOBALDIR'],'BalrogJobs')
 
-    balrog['ngal'] = 1000
-    #run['downsample'] = balrog['ngal'] * run['ppn']
+    balrog['ngal'] = 10
+    run['downsample'] = balrog['ngal'] * run['ppn']
     run['runnum'] = 0 
     run['DBoverwrite'] = False
 
