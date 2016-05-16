@@ -42,14 +42,14 @@ def CustomConfig(run, balrog, db, tiles):
     run['duplicate'] = None
     run['ppn'] = 24
 
-    tstart = 800
-    tend = 1000
+    tstart = 635
+    tend = 785
     tiles = tiles[tstart:tend]
 
-    run['nodes'] = 50
-    run['walltime'] = '16:00:00'
+    run['nodes'] = 75
+    run['walltime'] = '10:00:00'
     run['queue'] = 'regular'
-    run['npersubjob'] = 4
+    run['npersubjob'] = 2
     
     #baseout = os.environ['SCRATCH']
     baseout = '/scratch3/scratchdirs/esuchyta/'
