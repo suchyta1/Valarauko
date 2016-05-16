@@ -200,10 +200,16 @@ def InitCommonToTile(tile,images,psfs,indexstart,bands, config):
                    'indexstart': indexstart,
                    'db': config['db'],
                    'imbands': bands}
+
         if config['run']['fixwrapseed'] != None:
             derived['seedoffset'] = config['run']['fixwrapseed']
         else:
             derived['seedoffset'] = np.random.randint(10000)
+
+        if config['run']['fixnoiseseed'] != None:
+            derived['nseedoffset'] = config['run']['fixnoiseseed']
+        else:
+            derived['nseedoffset'] = np.random.randint(10000)
 
         balrog = copy.copy(config['balrog'])
         balrog['tile'] = tile
@@ -349,7 +355,9 @@ def Run_Balrog(tiles,images,psfs,indexstart,bands,pos, config, write, runlogdir,
             if it >= 0:
                 balrog['indexstart'] += it*balrog['ngal']
                 balrog['ngal'] = len(derived['pos'])
+
             balrog['seed'] = balrog['indexstart'] + derived['seedoffset']
+            balrog['noiseseed'] = balrog['indexstart'] + derived['nseedoffset']
 
             if (j==0):
                 runlog.info('Downloading tile data for tile %s'%(tiles[i]))

@@ -24,7 +24,8 @@ class RunConfigurations:
             'jobdir': None,  # The ouput directory for all job files and job logs. This should be in the scratch area on the node.
             'pos': 'tilepos',
 
-            'fixwrapseed': None # Fix this to an integer to get the same Balrog sampling realizations each time you run
+            'fixwrapseed': None, # Fix this to an integer to get the same Balrog sampling realizations each time you run
+            'fixnoiseseed': None # Fix this to an integer to get the same Balrog noise realizations each time you run
         }
 
 
